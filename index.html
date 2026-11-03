@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>勤政殿</title>
+<!-- 按序加载全部脚本：file:// 下禁用 ES Module（CORS 拦截），全部走全局 QZD 命名空间 -->
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <h1>勤政殿</h1>
+      <p>学习驱动 · 勤政模拟</p>
+    </div>
+    <nav class="nav" id="nav"></nav>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <h2 id="page-title">帝王总览</h2>
+      <div class="dims" id="dims"></div>
+    </header>
+    <div class="banner" id="storage-warn">
+      当前浏览器在 file:// 下禁用了 localStorage，存档仅保存在内存中，刷新即丢失。请改用 Chrome / Edge 打开。
+    </div>
+    <div class="page-root" id="page-root"></div>
+  </main>
+</div>
+
+<div id="pomo-root"></div>
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+
+<script src="js/config.js"></script>
+<script src="js/assets-manifest.js"></script>
+<script src="js/formulas.js"></script>
+<script src="js/state.js"></script>
+<script src="js/systems/resources.js"></script>
+<script src="js/systems/study.js"></script>
+<script src="js/systems/checkin.js"></script>
+<script src="js/systems/memorials.js"></script>
+<script src="js/systems/conquest.js"></script>
+<script src="js/systems/ministers.js"></script>
+<script src="js/systems/harem.js"></script>
+<script src="js/systems/works.js"></script>
+<script src="js/systems/treasury.js"></script>
+<script src="js/systems/pomodoro.js"></script>
+<script src="js/systems/weekly.js"></script>
+<script src="js/systems/plan.js"></script>
+<script src="js/systems/meetings.js"></script>
+<script src="js/systems/reading.js"></script>
+<script src="js/systems/backup.js"></script>
+<script src="js/systems/idea.js"></script>
+<script src="js/systems/thesis.js"></script>
+<script src="js/systems/goals.js"></script>
+<script src="js/systems/archive.js"></script>
+<script src="js/ui/render.js"></script>
+<script src="js/ui/portrait.js"></script>
+<script src="js/ui/live2d.js"></script>
+<script src="js/ui/heatmap.js"></script>
+<script src="js/ui/pomodoro.js"></script>
+<script src="js/ui/pages/overview.js"></script>
+<script src="js/ui/pages/memorials.js"></script>
+<script src="js/ui/pages/tasks.js"></script>
+<script src="js/ui/pages/meetings.js"></script>
+<script src="js/ui/pages/conquest.js"></script>
+<script src="js/ui/pages/fiefs.js"></script>
+<script src="js/ui/pages/works.js"></script>
+<script src="js/ui/pages/treasure.js"></script>
+<script src="js/ui/pages/roster.js"></script>
+<script src="js/ui/pages/logs.js"></script>
+<script src="js/ui/pages/settings.js"></script>
+<script src="js/ui/assets-refresh.js"></script>
+<script src="js/ui/pages/library.js"></script>
+<script src="js/ui/pages/chronos.js"></script>
+<script src="js/ui/pages/idea.js"></script>
+<script src="js/ui/pages/thesis.js"></script>
+<script src="js/ui/pages/goals.js"></script>
+<script src="js/ui/pages/archive.js"></script>
+<script src="js/ui/hotkeys.js"></script>
+<script src="js/tick.js"></script>
+<script src="js/gate-config.js"></script>
+<script src="js/ui/gate.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

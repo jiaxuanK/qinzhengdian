@@ -1,0 +1,156 @@
+/* ============================================================
+   勤政殿 · 基础层：设计令牌 / 重置 / 通用组件
+   配色令牌只在此处定义，其余组件禁止写死颜色
+   ============================================================ */
+:root{
+  --paper:#F6F2E8;    /* 全局底（宣纸） */
+  --card:#FCFAF3;     /* 卡片底 */
+  --ink:#363A32;      /* 主文字（墨） */
+  --ink2:#7C7869;     /* 次要文字 */
+  --daiqing:#3E6B5C;  /* 主操作 / 勤政值 */
+  --zhuqian:#A8573F;  /* 强调 / 急奏 / 警示 */
+  --teng:#A8842C;     /* 金钱 / BUFF */
+  --dailan:#4C6E8C;   /* 国力 / 常奏 */
+  --xuanzi:#7C6B94;   /* 声望 */
+  --line:#DAD3C0;     /* 边框 / 分割 */
+  --soft:#EFEBDD;     /* 淡底 */
+  --skin-1:#F3DAC3;   /* 立绘肤色 · 浅 */
+  --skin-2:#E9C8A8;   /* 立绘肤色 · 中 */
+  --skin-3:#DCB590;   /* 立绘肤色 · 深 */
+  --hair-1:#2B2722;   /* 立绘发色 · 墨 */
+  --hair-2:#453B2F;   /* 立绘发色 · 褐 */
+  --hair-3:#5E4B36;   /* 立绘发色 · 栗 */
+  --pt-bg-1:#2B2F3A;  /* 妃绘背景 · 中心冷光 */
+  --pt-bg-2:#101218;  /* 妃绘背景 · 四周夜墨 */
+  --pt-halo:#8FA6C8;  /* 妃绘 · 身后光晕 */
+  --pt-rim:#DCE6F5;   /* 妃绘 · 轮廓光 */
+  --pt-skin-hi:#F9E6D6;/* 妃绘肤色 · 高光 */
+  --pt-skin-mid:#EFCBB2;
+  --pt-skin-lo:#D3A68B;/* 妃绘肤色 · 暗部 */
+  --pt-hair-hi:#4C5361;/* 妃绘发色 · 高光 */
+  --pt-hair-mid:#22252D;
+  --pt-hair-lo:#0A0C11;
+  --pt-robe-hi:#F4EFE6;/* 妃绘 · 纱裙亮 */
+  --pt-robe-lo:#C7C0AF;/* 妃绘 · 纱裙暗 */
+  --pt-sash:#8A3D50;  /* 妃绘 · 齐胸裙头黛绛 */
+  --pt-gold:#C9A45C;  /* 妃绘 · 金饰 */
+  --pt-pearl:#F2EEE5; /* 妃绘 · 珍珠 */
+  --pt-blush:#D98A82; /* 妃绘 · 腮红 */
+  --pt-lip:#B0574F;   /* 妃绘 · 唇 */
+  --pt-lip-hi:#E0A39B;
+  --pt-eye:#1C1E24;   /* 妃绘 · 眼线瞳 */
+  --pt-iris:#4A382A;  /* 妃绘 · 虹膜 */
+  --pt-veil:#EAF0F8;  /* 妃绘 · 披帛纱色 */
+  --radius:10px;
+  --shadow:0 1px 3px rgba(54,58,50,.06);
+  --serif:"Noto Serif SC","Songti SC","STSong","SimSun",serif;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--serif);
+  font-size:15px;
+  line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{margin:0;font-weight:700;letter-spacing:.5px}
+p{margin:0}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:inherit;color:var(--ink)}
+
+/* ---------- 卡片 ---------- */
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:16px 20px;
+  margin-bottom:16px;
+}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.card-title{font-size:15px;font-weight:700}
+.card-note{font-size:12px;color:var(--ink2)}
+
+/* ---------- 药丸 / 徽章 ---------- */
+.pill{
+  display:flex;align-items:center;gap:8px;min-width:0;
+  background:var(--card);border:1px solid var(--line);border-radius:999px;
+  padding:6px 14px;box-shadow:var(--shadow);
+}
+.pill .dot{width:8px;height:8px;border-radius:50%;flex:none}
+.pill-name{font-size:13px;color:var(--ink2);white-space:nowrap}
+.pill-val{font-size:15px;margin-left:auto}
+.badge{
+  display:inline-block;white-space:nowrap;font-size:12px;color:var(--ink2);
+  background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:1px 10px;
+}
+.badge.ok{color:var(--daiqing);background:#E7EFEA;border-color:#CBDCD2}
+
+/* ---------- 进度条 ---------- */
+.bar{height:10px;border-radius:5px;background:#E8E2D0;overflow:hidden}
+.bar > i{display:block;height:100%;border-radius:5px;background:var(--daiqing);transition:width .3s ease}
+
+/* ---------- 按钮 ---------- */
+.btn{
+  border-radius:999px;border:1px solid transparent;padding:7px 18px;
+  background:transparent;color:var(--ink);
+  transition:filter .15s ease,background .15s ease;
+}
+.btn.primary{background:var(--daiqing);color:var(--card)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{border-color:var(--line);background:var(--card);color:var(--daiqing)}
+.btn.ghost:hover{background:var(--soft)}
+.btn.danger{border-color:var(--zhuqian);color:var(--zhuqian);background:var(--card)}
+.btn.danger:hover{background:var(--zhuqian);color:var(--card)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+
+/* ---------- 输入 ---------- */
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.field label{font-size:13px;color:var(--ink2)}
+.field input,.field select,.field textarea{
+  height:36px;padding:0 12px;background:var(--card);
+  border:1px solid var(--line);border-radius:8px;outline:none;
+}
+.field textarea{height:auto;min-height:76px;padding:9px 12px;line-height:1.7;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--daiqing)}
+
+/* ---------- 空态 ---------- */
+.empty{
+  text-align:center;color:var(--ink2);font-size:13px;
+  padding:28px 12px;border:1px dashed var(--line);border-radius:var(--radius);
+  background:rgba(252,250,243,.6);
+}
+.empty .card-note{display:block;margin-top:6px}
+
+/* ---------- 弹窗 ---------- */
+.modal-mask{
+  position:fixed;inset:0;z-index:50;padding:20px;
+  background:rgba(54,58,50,.28);
+  display:flex;align-items:center;justify-content:center;
+}
+.dialog{
+  width:min(460px,100%);padding:20px 22px;
+  background:var(--card);border:1px solid var(--line);border-radius:16px;
+  box-shadow:0 8px 28px rgba(54,58,50,.16);
+  animation:dialog-in .18s ease;
+}
+@keyframes dialog-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.dialog-title{font-size:16px;margin-bottom:10px}
+.dialog-body{font-size:14px;color:var(--ink2);line-height:1.8}
+.dialog-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+
+/* ---------- toast ---------- */
+#toast-root{
+  position:fixed;left:50%;bottom:76px;transform:translateX(-50%);z-index:60;
+  display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;
+}
+.toast{
+  background:var(--ink);color:#F6F2E8;font-size:13px;border-radius:999px;
+  padding:8px 18px;animation:toast-in .2s ease;
+}
+.toast.out{opacity:0;transition:opacity .3s ease}
+@keyframes toast-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}

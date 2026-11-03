@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>勤政殿 · 专注</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/pages.css">
+<style>
+  /* ============================================================
+     悬浮窗布局（小巧版，高≈屏 1/3.6）：
+     左立绘（下方聊天气泡，点击立绘出对话，问候同步浮现名字条）
+     右侧竖排：奏折名 / 时钟 / 此折累计 / 按钮（竖排）
+     底部通栏：加成一行 + 结算说明。
+     用 CSS Grid 重排同一份卡片 DOM，页面内卡片不受影响。
+     ============================================================ */
+  html, body { margin: 0; height: 100%; }
+  body {
+    padding: 6px;
+    box-sizing: border-box;
+    overflow: hidden;
+    background: var(--bg, #f4efe6);
+    display: flex;
+  }
+  #pomo-root {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+  }
+  #pomo-card {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    resize: none;
+    padding: 9px 11px;
+    gap: 5px 9px;
+    display: grid;
+    grid-template-columns: minmax(92px, 44%) 1fr;
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto auto auto;
+    grid-template-areas:
+      "head  head"
+      "comp  mem"
+      "comp  clock"
+      "comp  cum"
+      "comp  btns"
+      "gains gains"
+      "note  note";
+  }
+  #pomo-card .pomo-head { grid-area: head; margin: 0; }
+  #pomo-card .pomo-title { font-size: 12px; }
+  #pomo-card .pomo-sub { display: none; }          /* 「本次已专注…」行在小窗隐藏 */
+  /* 左列：立绘 + 下方聊天气泡 */
+  #pomo-card .pomo-companion {
+    grid-area: comp;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 0;
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  #pomo-card .pomo-comp-avatar {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    height: auto;
+    max-width: none;
+    border-radius: 12px;
+    background: linear-gradient(160deg,#f3ede1,#e7dcc8);
+  }
+  #pomo-card .pomo-comp-avatar .portrait-img,
+  #pomo-card .pomo-comp-avatar .portrait-l2d,
+  #pomo-card .pomo-comp-avatar .portrait-fallback {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  /* 名字条：单行「名字 + 问候/陪伴中」，点击立绘后问候在此浮现 */
+  #pomo-card .pomo-comp-info {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(0,0,0,.45);
+    padding: 3px 7px;
+  }
+  #pomo-card .pomo-comp-name { color: #fff; font-size: 12px; flex: none; }
+  #pomo-card .pomo-comp-tag {
+    color: rgba(255,255,255,.92); font-size: 10px;
+    flex: 1 1 auto; min-width: 0;
+    display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    text-align: right;
+  }
+  /* 右列：信息竖排，时钟吃掉剩余高度并居中 */
+  #pomo-card .pomo-mem {
+    grid-area: mem; margin: 0; font-size: 11px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  #pomo-card .pomo-clock {
+    grid-area: clock;
+    align-self: center; justify-self: center;
+    width: 100%; text-align: center;
+    font-size: clamp(24px, 8vh, 46px);
+    line-height: 1.1;
+  }
+  #pomo-card .pomo-cum {
+    display: block;             /* 覆盖 pages.css 的 display:none（页面卡片隐藏用） */
+    grid-area: cum; margin: 0; font-size: 10px;
+    text-align: center; color: var(--ink2, #8a8574);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  /* 按钮竖排放在右列下方 */
+  #pomo-card .pomo-btns {
+    grid-area: btns;
+    margin: 0; gap: 4px;
+    display: flex; flex-direction: column;
+  }
+  #pomo-card .pomo-btns .btn { padding: 6px 2px; font-size: 11px; }
+  /* 底部通栏：加成一行 + 结算说明 */
+  #pomo-card .pomo-gains {
+    grid-area: gains;
+    display: flex; flex-direction: row; flex-wrap: nowrap;
+    justify-content: center; align-items: center; gap: 10px;
+    font-size: 11px; white-space: nowrap;
+  }
+  #pomo-card .pomo-note {
+    grid-area: note; margin: 0; font-size: 9.5px;
+    text-align: center; color: var(--ink2, #8a8574);
+  }
+</style>
+</head>
+<body>
+  <div id="pomo-root"></div>
+  <script>
+  /* 自杀开关（带令牌校验）：每秒检查
+     ① 主窗口是否仍在专注；
+     ② 本窗是否是主窗口当前认可的悬浮窗（URL 令牌 === opener.__qzdFloatToken）。
+     专注结束 / 主页面关闭或刷新（令牌失配）/ 状态异常 → 窗口自己 close()。 */
+  (function(){
+    var my = null;
+    try { my = new URLSearchParams(location.search).get('t') || location.search.replace(/^\?t=/, ''); }
+    catch(e){ my = location.search.replace(/^\?t=/, ''); }
+    setInterval(function(){
+      try {
+        var op = window.opener;
+        if(!op || op.closed){ window.close(); return; }
+        var st = op.QZD && op.QZD.state && op.QZD.state.pomodoro;
+        if(!my || op.__qzdFloatToken !== my) { window.close(); return; }   /* 孤儿窗：主页面已刷新 */
+        if(!st || (st.status !== 'running' && st.status !== 'paused')) window.close();
+      } catch(e){ /* 读不到 opener（如 file:// 跨源）：退回由父窗口主动关闭 */ }
+    }, 1000);
+  })();
+  </script>
+</body>
+</html>
