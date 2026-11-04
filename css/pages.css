@@ -162,6 +162,13 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 @media(max-width:560px){
   .consort-grid{grid-template-columns:1fr}
 }
+/* 名臣 / 皇子 / 候选卡：窄屏下立绘与信息仍占第一行，操作按钮整行换行铺满，
+   避免中间信息列被 3 个按钮挤成 ~50px 导致三维属性竖排溢出 */
+@media(max-width:560px){
+  .talent-card:not(.consort){flex-wrap:wrap;align-items:flex-start}
+  .talent-card:not(.consort) .talent-action{flex:1 0 100%;display:flex;gap:8px;flex-wrap:wrap}
+  .talent-card:not(.consort) .talent-action .btn{flex:1;min-width:0}
+}
 
 /* ---------- 御案奏折 ---------- */
 .chip-row{display:flex;flex-wrap:wrap;gap:8px}
