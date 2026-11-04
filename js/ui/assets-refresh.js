@@ -25,6 +25,10 @@
   var FALLBACK_P = ['wen', 'huo', 'qing', 'mei', 'duan', 'jue', 'min', 'chou'];
   var VIDEO_META = [{ name: '霓裳', personality: 'mei' }];
 
+  /* 占位/代号文件夹的雅名分配器（与 scripts/gen_manifest.js 共用同一模块）。
+     若模块未加载（老页面缓存），降级为「文件夹名即名字」，不影响功能。 */
+  var ASSET_NAMES = (window.QZD && window.QZD.assetNames) || null;
+
   var isDesktop = !!(window.QZDNative && window.QZDNative.isDesktop);
 
   function applyManifest(m){
@@ -55,6 +59,22 @@
       relPaths.push(rp.slice(idx + 'images/'.length));
     }
     relPaths.sort();
+
+    /* 先收集所有「有效子文件夹」，统一算雅名映射。
+       与 gen_manifest.js 的 built 集合口径一致（只含有图片/视频的目录），
+       保证桌面端与浏览器端给同一文件夹分配同一个名字。 */
+    var nameMap = {};
+    if(ASSET_NAMES){
+      var folders = [], seenF = {};
+      relPaths.forEach(function(p){
+        var parts = p.split('/');
+        if(parts.length > 1 && parts[0] && parts[0].toLowerCase() !== 'king' && !seenF[parts[0]]){
+          seenF[parts[0]] = true; folders.push(parts[0]);
+        }
+      });
+      nameMap = ASSET_NAMES.assignNames(folders);
+    }
+
     relPaths.forEach(function(p){
       if(!p) return;
       var parts = p.split('/');
@@ -78,7 +98,7 @@
       if(!isImg && !isVid) return;
       var entry = findRare(rare, folder);
       if(!entry){
-        entry = { folder: folder, name: folder, personality: PERSONALITY[folder] || FALLBACK_P[pi++ % FALLBACK_P.length], poses: [] };
+        entry = { folder: folder, name: nameMap[folder] || folder, personality: PERSONALITY[folder] || FALLBACK_P[pi++ % FALLBACK_P.length], poses: [] };
         rare.push(entry);
       }
       if(isImg) entry.poses.push('assets/images/' + encodeURI(p));

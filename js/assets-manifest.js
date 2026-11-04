@@ -127,7 +127,7 @@ QZD.ASSETS = {
     },
     {
       "folder": "新建文件夹",
-      "name": "新建文件夹",
+      "name": "碧痕",
       "personality": "wen",
       "poses": [
         "enc:YXNzZXRzL2E4Zi8zMDYxNzhhYWY5NjM5ZGUxLmpwZw==",
@@ -139,7 +139,7 @@ QZD.ASSETS = {
     },
     {
       "folder": "新建文件夹 (2)",
-      "name": "新建文件夹 (2)",
+      "name": "皎月",
       "personality": "huo",
       "poses": [
         "enc:YXNzZXRzL2E4Zi9hY2Q5NzA0NmQ1Nzk4MzQ0LmpwZw==",
@@ -156,7 +156,7 @@ QZD.ASSETS = {
     },
     {
       "folder": "新建文件夹 (3)",
-      "name": "新建文件夹 (3)",
+      "name": "微霰",
       "personality": "qing",
       "poses": [
         "enc:YXNzZXRzL2E4Zi84OWZlYTJiMThlOTlmOGEwLmpwZw==",
@@ -170,7 +170,7 @@ QZD.ASSETS = {
     },
     {
       "folder": "新建文件夹 (4)",
-      "name": "新建文件夹 (4)",
+      "name": "映雪",
       "personality": "mei",
       "poses": [
         "enc:YXNzZXRzL2E4Zi9hNmViOGQ0MmRhYTQ4ZjYxLmpwZw==",
@@ -180,7 +180,7 @@ QZD.ASSETS = {
     },
     {
       "folder": "新建文件夹 (5)",
-      "name": "新建文件夹 (5)",
+      "name": "星杓",
       "personality": "duan",
       "poses": [
         "enc:YXNzZXRzL2E4Zi80MDQ1Y2EwYjRmNjU1MTM1LmpwZw==",
@@ -193,7 +193,7 @@ QZD.ASSETS = {
     },
     {
       "folder": "新建文件夹 (6)",
-      "name": "新建文件夹 (6)",
+      "name": "子衿",
       "personality": "jue",
       "poses": [
         "enc:YXNzZXRzL2E4Zi82NTdiN2U0NjgwODc1MTcyLmpwZw==",
@@ -204,7 +204,7 @@ QZD.ASSETS = {
     },
     {
       "folder": "新建文件夹 (7)",
-      "name": "新建文件夹 (7)",
+      "name": "汀兰",
       "personality": "min",
       "poses": [
         "enc:YXNzZXRzL2E4Zi8yNDg3ZGE0MWJjNmJmZjc5LmpwZw==",
@@ -213,7 +213,7 @@ QZD.ASSETS = {
     },
     {
       "folder": "新建文件夹 (8)",
-      "name": "新建文件夹 (8)",
+      "name": "琼琚",
       "personality": "chou",
       "poses": [
         "enc:YXNzZXRzL2E4Zi82M2IyM2U0NTc1M2I5ZTY1LmpwZw==",
@@ -224,7 +224,7 @@ QZD.ASSETS = {
     },
     {
       "folder": "新建文件夹 (9)",
-      "name": "新建文件夹 (9)",
+      "name": "澧兰",
       "personality": "wen",
       "poses": [
         "enc:YXNzZXRzL2E4Zi8xYWIwOWU4Y2QzYWE5YjQ5LmpwZw==",
@@ -234,7 +234,7 @@ QZD.ASSETS = {
     },
     {
       "folder": "新建文件夹 (10)",
-      "name": "新建文件夹 (10)",
+      "name": "听澜",
       "personality": "huo",
       "poses": [
         "enc:YXNzZXRzL2E4Zi82NmZkMWVmYjFjNzYxMTkwLmpwZw==",
@@ -245,7 +245,7 @@ QZD.ASSETS = {
     },
     {
       "folder": "新建文件夹 (11)",
-      "name": "新建文件夹 (11)",
+      "name": "嫣然",
       "personality": "qing",
       "poses": [
         "enc:YXNzZXRzL2E4Zi8xYmQ1MDM3NmEyYzZhYWVmLmpwZw==",
@@ -254,7 +254,7 @@ QZD.ASSETS = {
     },
     {
       "folder": "新建文件夹 (12)",
-      "name": "新建文件夹 (12)",
+      "name": "杜若",
       "personality": "mei",
       "poses": [
         "enc:YXNzZXRzL2E4Zi9kZjkxNGQzYjE1OWQwZWFhLmpwZw==",
@@ -265,7 +265,7 @@ QZD.ASSETS = {
     },
     {
       "folder": "新建文件夹 (13)",
-      "name": "新建文件夹 (13)",
+      "name": "粲然",
       "personality": "duan",
       "poses": [
         "enc:YXNzZXRzL2E4Zi9jODkwNjBhZWUxMmE2MDZlLmpwZw==",
@@ -274,7 +274,7 @@ QZD.ASSETS = {
     },
     {
       "folder": "新建文件夹 (14)",
-      "name": "新建文件夹 (14)",
+      "name": "白芷",
       "personality": "jue",
       "poses": [
         "enc:YXNzZXRzL2E4Zi9hYzdkODUwNzAxN2U1ZmJkLmpwZw==",
@@ -284,7 +284,7 @@ QZD.ASSETS = {
     },
     {
       "folder": "新建文件夹 (15)",
-      "name": "新建文件夹 (15)",
+      "name": "令仪",
       "personality": "min",
       "poses": [
         "enc:YXNzZXRzL2E4Zi9jNTNmNjQ3NzNhYjMyNDE5LmpwZw==",
@@ -294,7 +294,7 @@ QZD.ASSETS = {
     },
     {
       "folder": "新建文件夹 (16)",
-      "name": "新建文件夹 (16)",
+      "name": "流萤",
       "personality": "chou",
       "poses": [
         "enc:YXNzZXRzL2E4Zi9mMmE5ZTcyNjFmYTRkOGE3LmpwZw==",
