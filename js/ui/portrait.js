@@ -67,8 +67,9 @@
      - Live2D：仅当 opts.model 存在时渲染容器，挂载后由名册页 mount 钩子调用 QZD.live2d.mount。
      - 占位：提示"暂无立绘"，并指引放置路径。 */
   function femaleImage(img, alt){
+    /* loading=lazy 视口外不加载；decoding=async 避免图片解码阻塞主线程（手机端防卡） */
     return '<img class="portrait-img" src="' + esc(img) + '" alt="' + esc(alt || '') +
-      '" loading="lazy" onerror="QZD.portrait.imgError(this)">';
+      '" loading="lazy" decoding="async" onerror="QZD.portrait.imgError(this)">';
   }
 
   function l2dContainer(model, alt){
