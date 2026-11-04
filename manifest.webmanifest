@@ -1,0 +1,56 @@
+{
+  "name": "勤政殿 · 科研学习专注小殿",
+  "short_name": "勤政殿",
+  "description": "学习驱动 · 勤政模拟。帝王总览、待办奏章、番茄专注、周报与目标管理，一个把科研学习做成帝王政务的手机端 PWA。",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "id": "/qinzhengdian/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "portrait",
+  "background_color": "#121018",
+  "theme_color": "#121018",
+  "categories": ["productivity", "education", "lifestyle"],
+  "icons": [
+    {
+      "src": "assets/pwa/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/pwa/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/pwa/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/pwa/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "帝王总览",
+      "short_name": "总览",
+      "url": "./index.html",
+      "icons": [{ "src": "assets/pwa/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "开始专注",
+      "short_name": "专注",
+      "url": "./index.html#pomodoro",
+      "icons": [{ "src": "assets/pwa/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
