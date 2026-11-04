@@ -1,17 +1,24 @@
 /* ============================================================
-   asset-names.js · 占位/代号文件夹的「自动雅名」分配器
+   asset-names.js · 妃嫔「显示名」解析器（表优先 + 稳定哈希兜底）
    ------------------------------------------------------------
-   解决的问题：玩家把立绘丢进 assets/images/新建文件夹 (2) 或 a、c、d
-   这类代号文件夹时，清单原本会把文件夹名直接当妃嫔名字，名册里就出现
-   "新建文件夹 (12)" 这种怪名。本模块在【生成清单时】自动分配一个雅名。
+   ★ 想改妃子名字 → 去改 js/name-map.js，不要改本文件。★
 
-   三条设计约束：
+   解决的问题：assets/images 里用数字编号（01、02…）或占位名当文件夹，
+   清单原本把文件夹名直接当妃嫔名字，名册里就会显示「01」「新建文件夹 (12)」。
+   本模块在【生成清单时】把文件夹名换成雅名。
+
+   解析顺序（三层）：
+     ① 显式映射表 js/name-map.js：写了就照用 → 你完全可控，改一行改名；
+     ② 正式中文名文件夹（朝云 / 钰 / 洛神…）：直接用文件夹名当名字；
+     ③ 其余代号（未登记的编号 17、a、c、d、新建文件夹…）：
+        按文件夹名做【稳定哈希】从雅名池挑一个 → 新加文件夹免配置也能用。
+
+   三条硬约束：
    1) 位分不能当名字：才人/美人/婕妤/嫔/妃/贵妃 是 config.RANK.TITLES，
-      名字池里一个都不含（否则册封后"位分：婕妤，名字：婕妤"会撞车）。
+      名字池里一个都不含（否则册封后「位分：婕妤，名字：婕妤」会撞车）。
    2) 名字必须稳定：存档用 rareKey = folder 认人，name 只是显示。
-      若每次刷新随机，同一位妃子会改名 / 串档。故用【按 folder 稳定哈希】。
-   3) 只改显示名，不改 folder：磁盘文件夹名、a8f 锁图哈希、存档键全都不动。
-      正式中文名文件夹（朝云 / 钰 / 洛神…）保持原名，不受影响。
+      若每次刷新随机，同一位妃子会改名 / 串档。故用稳定哈希，绝不随机。
+   3) 只改显示名，不改 folder：磁盘文件夹名、图片路径、存档键全都不动。
 
    两端共用：Node（scripts/gen_manifest.js、Electron 主进程）与浏览器
    （js/ui/assets-refresh.js）都加载本文件，UMD 写法，无第三方依赖。
@@ -61,43 +68,64 @@
     return len ? h % len : 0;
   }
 
-  /* 给一组文件夹分配名字，返回 { 占位folder: 雅名 }。
-     - 按文件夹名排序后依次分配 → 结果确定、可复现；
-     - 正式中文名（非占位）先登记进 used，避免雅名和已有角色撞名；
-     - 哈希撞车时线性顺延找空位，保证同批内不重名；
-     - 新编号排在末尾（新建文件夹 (17) / e），因此不会改动已有名字。 */
-  function assignNames(folders) {
+  /* 给一组文件夹算名字，返回 { folder: 显示名 }。
+     优先级：显式映射表 > 正式中文名 > 稳定哈希兜底。
+     显式表里的名字恒定不变（用户可控）；未登记的编号按稳定哈希取，
+     且哈希撞车时线性顺延避开已被占用的名字，保证同批不重名。 */
+  function assignNames(folders, explicitMap) {
     var list = (folders || []).slice();
+    var table = explicitMap || getNameMap();
     var used = Object.create(null);
-    var map = Object.create(null);
-    var i;
+    var out = Object.create(null);
 
+    // 先把「表里的名字」和「正式中文名」登记为已占用，避免自动分配撞车
     list.forEach(function (f) {
-      if (!isPlaceholder(f)) used[f] = true;              // 正式角色名先占位
+      var n = table[f] || (!isPlaceholder(f) ? f : null);
+      if (n) { out[f] = n; used[n] = true; }
     });
 
-    var holders = list.filter(isPlaceholder).sort(function (a, b) {
-      return String(a).localeCompare(String(b), 'zh-Hans-CN', { numeric: true });
-    });
-
-    for (i = 0; i < holders.length; i++) {
-      var f = holders[i];
-      var start = seededIdx(f, NAME_POOL.length);
-      var picked = null;
-      for (var k = 0; k < NAME_POOL.length; k++) {
-        var cand = NAME_POOL[(start + k) % NAME_POOL.length];
-        if (!used[cand]) { picked = cand; break; }
-      }
-      if (picked) { map[f] = picked; used[picked] = true; }
-      else map[f] = f;                                     // 池耗尽（>60 个代号）时退回原名
-    }
-    return map;
+    // 剩下的代号文件夹：稳定哈希兜底 + 线性顺延去重
+    list.filter(function (f) { return !out[f]; })
+      .sort(function (a, b) {
+        return String(a).localeCompare(String(b), 'zh-Hans-CN', { numeric: true });
+      })
+      .forEach(function (f) {
+        var start = seededIdx(f, NAME_POOL.length);
+        var picked = null;
+        for (var k = 0; k < NAME_POOL.length; k++) {
+          var cand = NAME_POOL[(start + k) % NAME_POOL.length];
+          if (!used[cand]) { picked = cand; break; }
+        }
+        out[f] = picked || f;      // 池耗尽（>60 个代号）时退回原名
+        if (picked) used[picked] = true;
+      });
+    return out;
   }
 
   /* 单个文件夹取名字（给不方便一次性传全量列表的调用方用）。 */
   function nameOf(folder) {
-    if (!isPlaceholder(folder)) return folder;
-    return NAME_POOL[seededIdx(folder, NAME_POOL.length)];
+    return resolveName(folder);
+  }
+
+  /* 读取显式映射表：Node 走 require，浏览器走 window.QZD.nameMap。
+     两者都取不到时返回空对象（退化为纯哈希分配，功能不受影响）。 */
+  function getNameMap() {
+    var m = null;
+    if (typeof module === 'object' && module.exports) {
+      try { m = require('./name-map.js'); } catch (e) { m = null; }
+    }
+    if (!m && typeof window !== 'undefined' && window.QZD) m = window.QZD.nameMap;
+    if (!m && typeof globalThis !== 'undefined' && globalThis.QZD) m = globalThis.QZD.nameMap;
+    return m || {};
+  }
+
+  /* 单个文件夹 → 显示名（表优先）。 */
+  function resolveName(folder, explicit) {
+    var f = String(folder || '').trim();
+    var map = explicit || getNameMap();
+    if (map[f]) return map[f];                       // ① 显式表
+    if (!isPlaceholder(f)) return f;                  // ② 正式中文名
+    return NAME_POOL[seededIdx(f, NAME_POOL.length)]; // ③ 稳定哈希兜底
   }
 
   return {
@@ -106,6 +134,8 @@
     isPlaceholder: isPlaceholder,
     seededIdx: seededIdx,
     assignNames: assignNames,
-    nameOf: nameOf
+    nameOf: nameOf,
+    getNameMap: getNameMap,
+    resolveName: resolveName
   };
 });

@@ -60,9 +60,10 @@
     }
     relPaths.sort();
 
-    /* 先收集所有「有效子文件夹」，统一算雅名映射。
+    /* 先收集所有「有效子文件夹」，统一算显示名映射。
        与 gen_manifest.js 的 built 集合口径一致（只含有图片/视频的目录），
-       保证桌面端与浏览器端给同一文件夹分配同一个名字。 */
+       保证桌面端与浏览器端给同一文件夹分配同一个名字。
+       映射表由 index.html 预先加载为 window.QZD.nameMap（表优先，缺省哈希兜底）。 */
     var nameMap = {};
     if(ASSET_NAMES){
       var folders = [], seenF = {};
