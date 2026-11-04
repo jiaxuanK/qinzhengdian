@@ -1,11 +1,10 @@
-/* 自动生成：assets/images 目录清单。重新生成：node scripts/gen_manifest.js 或 npm run gen:assets，或游戏内「设置→刷新立绘素材」 */
 window.QZD = window.QZD || {};
 QZD.ASSETS = {
   "emperor": [
-    "assets/images/king/094.jpg",
-    "assets/images/king/095.jpg",
-    "assets/images/king/096.jpg",
-    "assets/images/king/097.jpg"
+    "enc:YXNzZXRzL2E4Zi84NTQ2MWFmYzMzMmFkOTk1LmpwZw==",
+    "enc:YXNzZXRzL2E4Zi83YjNlZjU0MzYwZmMzMThkLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi8wMTU4YmY2ZDdmNjc1NGYxLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi8yNGQzNWYwMzZlZDVlNjk3LmpwZw=="
   ],
   "rare": [
     {
@@ -13,12 +12,12 @@ QZD.ASSETS = {
       "name": "朝云",
       "personality": "chou",
       "poses": [
-        "assets/images/%E6%9C%9D%E4%BA%91/020.jpg",
-        "assets/images/%E6%9C%9D%E4%BA%91/023.jpg",
-        "assets/images/%E6%9C%9D%E4%BA%91/024.jpg",
-        "assets/images/%E6%9C%9D%E4%BA%91/025.jpg",
-        "assets/images/%E6%9C%9D%E4%BA%91/026.jpg",
-        "assets/images/%E6%9C%9D%E4%BA%91/027.jpg"
+        "enc:YXNzZXRzL2E4Zi9jNDM5ZTI0MThhYWFkYWMxLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9lNGM4OTdlNzcxZDI3OGQwLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi81M2VhNGVkZTVlMjI0YThkLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9lZmIxNGY5NDI2YzRlZDU1LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9jMzhiM2Y2MTk3NGRhMjU4LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi83NmE4NzA5NzZlNTkzNTRhLmpwZw=="
       ]
     },
     {
@@ -26,9 +25,9 @@ QZD.ASSETS = {
       "name": "飞燕",
       "personality": "huo",
       "poses": [
-        "assets/images/%E9%A3%9E%E7%87%95/073.jpg",
-        "assets/images/%E9%A3%9E%E7%87%95/074.jpg",
-        "assets/images/%E9%A3%9E%E7%87%95/075.jpg"
+        "enc:YXNzZXRzL2E4Zi8zYzZiMzMyZTE4ZWJlZWIxLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9kNWFkN2Y3YTc1ZDZlNTQ4LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi8wMDM3OTMzZmQ4NTYwN2U1LmpwZw=="
       ]
     },
     {
@@ -36,8 +35,8 @@ QZD.ASSETS = {
       "name": "绛雪",
       "personality": "jue",
       "poses": [
-        "assets/images/%E7%BB%9B%E9%9B%AA/091.jpg",
-        "assets/images/%E7%BB%9B%E9%9B%AA/092.jpg"
+        "enc:YXNzZXRzL2E4Zi81ZjFkZTcyYmI1Y2I1MTk3LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi85NTZlMjQ1NThjZjZhM2NjLmpwZw=="
       ]
     },
     {
@@ -45,8 +44,8 @@ QZD.ASSETS = {
       "name": "洛神",
       "personality": "qing",
       "poses": [
-        "assets/images/%E6%B4%9B%E7%A5%9E/089.jpg",
-        "assets/images/%E6%B4%9B%E7%A5%9E/090.jpg"
+        "enc:YXNzZXRzL2E4Zi9lMDZmZDQ4ODk4MWM5YWFlLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi80ZTYxMjM0MGU0ZWM3NzZiLmpwZw=="
       ]
     },
     {
@@ -54,8 +53,8 @@ QZD.ASSETS = {
       "name": "青黛",
       "personality": "wen",
       "poses": [
-        "assets/images/%E9%9D%92%E9%BB%9B/035.jpg",
-        "assets/images/%E9%9D%92%E9%BB%9B/036.jpg"
+        "enc:YXNzZXRzL2E4Zi9jMjlhOGFmNzQ4MzRhNDE3LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9iZGNjMmRlMjgwNmYzNTI0LmpwZw=="
       ]
     },
     {
@@ -63,8 +62,8 @@ QZD.ASSETS = {
       "name": "清商",
       "personality": "qing",
       "poses": [
-        "assets/images/%E6%B8%85%E5%95%86/021.jpg",
-        "assets/images/%E6%B8%85%E5%95%86/022.jpg"
+        "enc:YXNzZXRzL2E4Zi9jZGIxODZhNGZkZGQzMjM2LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi85Njc2MjM4MDFiMDljYWViLmpwZw=="
       ]
     },
     {
@@ -72,8 +71,8 @@ QZD.ASSETS = {
       "name": "如是",
       "personality": "min",
       "poses": [
-        "assets/images/%E5%A6%82%E6%98%AF/032.jpg",
-        "assets/images/%E5%A6%82%E6%98%AF/033.jpg"
+        "enc:YXNzZXRzL2E4Zi80NmZmYzA2NzBiMDZlZjlkLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9iYTY0ZTAwMGE5MGNiNWY2LmpwZw=="
       ]
     },
     {
@@ -81,8 +80,8 @@ QZD.ASSETS = {
       "name": "师师",
       "personality": "min",
       "poses": [
-        "assets/images/%E5%B8%88%E5%B8%88/063.jpg",
-        "assets/images/%E5%B8%88%E5%B8%88/064.jpg"
+        "enc:YXNzZXRzL2E4Zi82ZmViZWNiMjBkN2IwNjEwLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9hNWFjYjFjZWJhMWQ4NzljLmpwZw=="
       ]
     },
     {
@@ -90,8 +89,8 @@ QZD.ASSETS = {
       "name": "疏影",
       "personality": "jue",
       "poses": [
-        "assets/images/%E7%96%8F%E5%BD%B1/030.jpg",
-        "assets/images/%E7%96%8F%E5%BD%B1/031.jpg"
+        "enc:YXNzZXRzL2E4Zi8xYmEyNjIyNGVjMWZlYTIwLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9hMzI1YjExMTkwNDYwMTAxLmpwZw=="
       ]
     },
     {
@@ -99,8 +98,8 @@ QZD.ASSETS = {
       "name": "王嫱",
       "personality": "duan",
       "poses": [
-        "assets/images/%E7%8E%8B%E5%AB%B1/085.jpg",
-        "assets/images/%E7%8E%8B%E5%AB%B1/086.jpg"
+        "enc:YXNzZXRzL2E4Zi9iYWZhYTJhYjNhOTMyN2JlLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi85YzVkNTFiYzVlY2Q1NmE1LmpwZw=="
       ]
     },
     {
@@ -108,12 +107,12 @@ QZD.ASSETS = {
       "name": "西施",
       "personality": "mei",
       "poses": [
-        "assets/images/%E8%A5%BF%E6%96%BD/078.jpg",
-        "assets/images/%E8%A5%BF%E6%96%BD/079.jpg",
-        "assets/images/%E8%A5%BF%E6%96%BD/080.jpg",
-        "assets/images/%E8%A5%BF%E6%96%BD/081.jpg",
-        "assets/images/%E8%A5%BF%E6%96%BD/082.jpg",
-        "assets/images/%E8%A5%BF%E6%96%BD/083.jpg"
+        "enc:YXNzZXRzL2E4Zi82MmUwY2EyYjdlMzNmNTY2LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi80MDVkODA5MDIxNzQyMzZlLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi81YzJhMGU5MGY5NWUwZjVkLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9kZDQ1ZGQzMGVlMDA5ZWMyLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9lNjY1MDkzMWY3NTliOTNlLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9mM2I0NDdiYjBjMDE1OTgxLmpwZw=="
       ]
     },
     {
@@ -121,9 +120,9 @@ QZD.ASSETS = {
       "name": "小小",
       "personality": "chou",
       "poses": [
-        "assets/images/%E5%B0%8F%E5%B0%8F/060.jpg",
-        "assets/images/%E5%B0%8F%E5%B0%8F/061.jpg",
-        "assets/images/%E5%B0%8F%E5%B0%8F/062.jpg"
+        "enc:YXNzZXRzL2E4Zi8zOTUyZDRlZTFhOWEwZjU2LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9hMzNhYTI4YWJlODQ5ZjJiLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi85ZDE1MTU5N2FhYjJkODNjLmpwZw=="
       ]
     },
     {
@@ -131,9 +130,9 @@ QZD.ASSETS = {
       "name": "玉环",
       "personality": "mei",
       "poses": [
-        "assets/images/%E7%8E%89%E7%8E%AF/065.jpg",
-        "assets/images/%E7%8E%89%E7%8E%AF/066.jpg",
-        "assets/images/%E7%8E%89%E7%8E%AF/067.jpg"
+        "enc:YXNzZXRzL2E4Zi9jOTBmZjVjMDQyYWFmZmJiLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi8xYjdmOWYyNzNlZjk0N2NmLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi8zYWZjYWFlMDJlMjlmMzQ5LmpwZw=="
       ]
     },
     {
@@ -141,10 +140,10 @@ QZD.ASSETS = {
       "name": "甄宓",
       "personality": "wen",
       "poses": [
-        "assets/images/%E7%94%84%E5%AE%93/069.jpg",
-        "assets/images/%E7%94%84%E5%AE%93/070.jpg",
-        "assets/images/%E7%94%84%E5%AE%93/071.jpg",
-        "assets/images/%E7%94%84%E5%AE%93/072.jpg"
+        "enc:YXNzZXRzL2E4Zi80MmM5MTI2Y2Y4ZWY5NGIwLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi8yMzE2MTU2NmI2N2JmOGE5LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9iZTNhYjgxNDRkNDIxNDQwLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9iYTA4MjRjNTIxYzc1Y2I0LmpwZw=="
       ]
     },
     {
@@ -152,67 +151,70 @@ QZD.ASSETS = {
       "name": "霓裳",
       "personality": "mei",
       "poses": [],
-      "video": "assets/images/000.mp4"
+      "video": "enc:YXNzZXRzL2E4Zi80NDM2NzU1N2IyODM5YzUwLm1wNA=="
     }
   ],
   "pool": [
-    "assets/images/001.jpg",
-    "assets/images/002.jpg",
-    "assets/images/003.jpg",
-    "assets/images/004.jpg",
-    "assets/images/005.jpg",
-    "assets/images/006.jpg",
-    "assets/images/007.jpg",
-    "assets/images/008.jpg",
-    "assets/images/009.jpg",
-    "assets/images/010.jpg",
-    "assets/images/011.jpg",
-    "assets/images/012.jpg",
-    "assets/images/013.jpg",
-    "assets/images/014.jpg",
-    "assets/images/015.jpg",
-    "assets/images/016.jpg",
-    "assets/images/017.jpg",
-    "assets/images/018.jpg",
-    "assets/images/019.jpg",
-    "assets/images/028.jpg",
-    "assets/images/029.jpg",
-    "assets/images/034.jpg",
-    "assets/images/037.jpg",
-    "assets/images/038.jpg",
-    "assets/images/039.jpg",
-    "assets/images/040.jpg",
-    "assets/images/041.jpg",
-    "assets/images/042.jpg",
-    "assets/images/043.jpg",
-    "assets/images/044.jpg",
-    "assets/images/045.jpg",
-    "assets/images/046.jpg",
-    "assets/images/047.jpg",
-    "assets/images/048.jpg",
-    "assets/images/049.jpg",
-    "assets/images/050.jpg",
-    "assets/images/051.jpg",
-    "assets/images/052.jpg",
-    "assets/images/053.jpg",
-    "assets/images/054.jpg",
-    "assets/images/055.jpg",
-    "assets/images/056.jpg",
-    "assets/images/057.jpg",
-    "assets/images/058.jpg",
-    "assets/images/059.jpg",
-    "assets/images/068.jpg",
-    "assets/images/076.jpg",
-    "assets/images/077.jpg",
-    "assets/images/084.jpg",
-    "assets/images/087.jpg",
-    "assets/images/088.jpg",
-    "assets/images/093.jpg",
-    "assets/images/094.jpg",
-    "assets/images/095.jpg",
-    "assets/images/096.jpg",
-    "assets/images/097.jpg",
-    "assets/images/098.jpg",
-    "assets/images/099.jpg"
+    "enc:YXNzZXRzL2E4Zi9kMDNhYzcxOWNhYzRjMWNiLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi83ZWI2MTQ2YWEzZWMxMzExLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi8wNTZmYjk5YzFkNmRhOTEyLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi9iNDY2NTJlZmExMzRlOWFjLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi83NjFmZTM3ZDUyYmI3Yzg2LmpwZw==",
+    "enc:YXNzZXRzL2E4Zi8xYzYwYmZlZWVkMTliMjE0LmpwZw==",
+    "enc:YXNzZXRzL2E4Zi9lMDcyZTBkYTIxMGFhMjQ4LmpwZw==",
+    "enc:YXNzZXRzL2E4Zi81NTBlNWQ5ZDUyMDVjMDg3LmpwZw==",
+    "enc:YXNzZXRzL2E4Zi9lYmFiNzY1OWM2ZWFlNTg2LmpwZw==",
+    "enc:YXNzZXRzL2E4Zi9kZGQyNWFmZWE5ZTBjMTBmLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi9kZTdhMGRlOWJmOTAwM2JlLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi80OGJlZGEyZWVjNDJjNTAwLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi8xNGRiMjk0NDRiMTAzYjkyLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi85MWVkMTNkODM2NzU0OTBmLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi83MTYxODM4ZWY3M2RmZTc4LmpwZw==",
+    "enc:YXNzZXRzL2E4Zi9mNDY1NmUwNGEwMTNiMWJjLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi84MTIyM2FlYWRmNDcwYTJhLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi8yMzFjNGNjNzI5MjA3ZTgyLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi82NjNhY2E0MWY3ZGI4Y2VkLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi9mNmNlMmYwOGJkYTgxNjM0LmpwZw==",
+    "enc:YXNzZXRzL2E4Zi85N2Y0NGUzZGE3ZjdhZGEzLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi8yOGE2YWIyNjQwNTUzNDdjLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi84ZmZmNWVkZWI5YmYzNGE5LmpwZw==",
+    "enc:YXNzZXRzL2E4Zi9kZTg1ZWJmNTIwODAxODljLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi8xZDU5ZDFmNjJmM2NmZjE1LmpwZw==",
+    "enc:YXNzZXRzL2E4Zi85NGIzMTJhNjQ1MDVhNTc3LmpwZw==",
+    "enc:YXNzZXRzL2E4Zi8wMjY5Y2ZlNjY1N2M2M2UxLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi9iMmM1YzRmMmM0YzQ3M2U2LmpwZw==",
+    "enc:YXNzZXRzL2E4Zi9kNjliOTY0ODNhOTEyZDk1LmpwZw==",
+    "enc:YXNzZXRzL2E4Zi8zMjBhYWY0Y2UzZGI0Y2FkLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi9iMmQ5NzZmMjM3ZDUyNDVmLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi9lYzA5ZDFhMTEwYWNlY2RkLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi82NTk2NDhhMDVkZGFmYjg5LmpwZw==",
+    "enc:YXNzZXRzL2E4Zi81MDhhZmU5Yjc1ODcxMDhjLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi9hNGE1ODNkOTFlYzYxNzBkLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi9hMzg3NTBhMTE5YzBkOGExLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi9hODY3OGNlMTM4MDk4NTU1LmpwZw==",
+    "enc:YXNzZXRzL2E4Zi84ZjlhZTQyODRkNmMyZGE4LmpwZw==",
+    "enc:YXNzZXRzL2E4Zi84ZTlhMTMyNjBjN2M4NGI1LmpwZw==",
+    "enc:YXNzZXRzL2E4Zi81ZGRiZWNmYzkzZDcxMmYwLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi84YjUzYWQ5ZmViOGIxN2QwLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi82YTA1OTU4YTRiNmM4ZTU5LmpwZw==",
+    "enc:YXNzZXRzL2E4Zi80MjIyMjFkOTJhZmIxYTgyLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi84Nzk5OWI1NTdlOTM5OThlLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi8zNDcxYTVhZGI0MTFmZDVjLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi9mNjlmODRmZDg5MjhkNzFkLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi8yYTdhZGZjZTg5NWMyM2VjLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi81NmQ2NmNlZGEzYjU2ZTJlLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi8xMjUyZTI4NGQ0OWY0MDYxLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi9jN2E1MjU3ZjI5ZDkyZmE0LmpwZw==",
+    "enc:YXNzZXRzL2E4Zi81YmI2YWQ4MTkwMTM3Y2QxLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi8yNTAyYmNjNWFkN2U5OTFiLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi84NzRjOGY0ZmRkNjk3MWQ0LmpwZw==",
+    "enc:YXNzZXRzL2E4Zi9iMGE5ZTkzMTNlOTUwYTEyLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi82OTU5YmE4YTUwZjU2NmZkLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi9lNjBlN2MyYjJmMmExZjdiLmpwZw==",
+    "enc:YXNzZXRzL2E4Zi84OWFlNmUxYWFmNjZjMWI3LmpwZw==",
+    "enc:YXNzZXRzL2E4Zi9hM2VkYWFlMmFmZDg2MTQ0LmpwZw=="
   ]
 };
+
+/* 部署版图片路径混淆：源码为明文，此文件运行时还原 QZD.ASSETS 路径。 */
+(function(){function d(s){if(typeof s==='string'&&s.indexOf('enc:')===0){try{return atob(s.slice(4));}catch(e){return s;}}return s;}function w(o){if(typeof o==='string')return d(o);if(Array.isArray(o)){for(var i=0;i<o.length;i++)o[i]=w(o[i]);}else if(o&&typeof o==='object'){for(var k in o)o[k]=w(o[k]);}return o;}if(window.QZD&&window.QZD.ASSETS)w(window.QZD.ASSETS);})();

@@ -6,6 +6,6 @@
    - 桌面版不加载口令门（ui/gate.js 自动跳过）
    ============================================================ */
 window.QZD_GATE = {
-  HASH: 'f9e324e0db73e62790acf6c1de0becbbe19928066922f2cc8e8d162ea9e97869',
+  HASH: 'd4f7db7812cb0e0003c5dfac567ac8808b88c8bcb7706a33c23203a7e517197c',
   SALT: 'qzd.v1'
 };
