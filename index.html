@@ -7,6 +7,15 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>勤政殿</title>
+<!-- PWA：装到手机桌面后以独立 App 形式启动（无浏览器地址栏），并支持离线打开 -->
+<meta name="theme-color" content="#121018">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="勤政殿">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="512x512" href="assets/pwa/icon-512.png">
+<link rel="apple-touch-icon" href="assets/pwa/apple-touch-icon.png">
 <!-- 按序加载全部脚本：file:// 下禁用 ES Module（CORS 拦截），全部走全局 QZD 命名空间 -->
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/layout.css">
@@ -91,5 +100,17 @@
 <script src="js/gate-config.js"></script>
 <script src="js/ui/gate.js"></script>
 <script src="js/main.js"></script>
+<!-- PWA：注册 Service Worker，实现「装到手机桌面 + 离线可玩」 -->
+<script>
+(function () {
+  if (!('serviceWorker' in navigator)) return;
+  /* file:// 下 SW 不可用，直接跳过；http(s) 才注册 */
+  if (location.protocol === 'file:') return;
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js', { scope: './' })
+      .catch(function (e) { console.warn('[pwa] Service Worker 注册失败：', e); });
+  });
+})();
+</script>
 </body>
 </html>
