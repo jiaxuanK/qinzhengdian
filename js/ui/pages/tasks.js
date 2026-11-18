@@ -603,14 +603,8 @@
       UI.renderPage();
       return;
     }
-    /* 从总览行动区跳来：data-goto=tasks 已由全局处理跳页，这里只切 tab */
-    var ttg = e.target.closest('[data-ttab-go]');
-    if(ttg){
-      var tid = ttg.getAttribute('data-ttab-go');
-      for(var j = 0; j < TASK_TABS.length; j++) if(TASK_TABS[j].id === tid) taskTab = tid;
-      if(UI.current() === 'tasks') UI.renderPage();
-      return;
-    }
+    /* 11-18：data-ttab-go 遗留 handler 已删——它引用导航重构后不存在的
+       TASK_TABS/taskTab，点击会抛错导致跳转异常。现改用 data-goto 直达目标页。 */
 
     /* 本周三事：保存 / 重设 */
     if(e.target.closest('[data-plan-save]')){

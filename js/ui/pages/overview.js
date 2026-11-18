@@ -138,9 +138,11 @@
     }else{
       /* 2. 有批阅中奏折 → 继续专注 */
       var pizhong = (QZD.state.memorials || []).filter(function(m){ return m.status === 'pizhong'; });
+      /* 11-18：跳到奏折列表让用户自己选，不再直接 start 第一项
+         （原来强制批阅设定的那一折，没有选择空间） */
       if(pizhong.length){
-        items.push({ icon:'▸', title:'继续批阅', sub:pizhong[0].title,
-                     act:'start', target:pizhong[0].id, tone:'hot' });
+        items.push({ icon:'▸', title:'继续批阅', sub:'有 ' + pizhong.length + ' 折待续 · 点选其一',
+                     act:'goto', target:'memorials', tone:'hot' });
       }else{
         items.push({ icon:'▸', title:'开始一场专注', sub:'新建奏折或继续未完的事',
                      act:'goto', target:'tasks', tone:'hot' });
@@ -157,17 +159,17 @@
     var ck = st.checkin || { total:0 };
     if(!ck.total){
       items.push({ icon:'✓', title:'立今日打卡', sub:'还没定目标，先立一个',
-                   act:'goto-tab', target:'checkin', tone:'plain' });
+                   act:'goto', target:'checkin', tone:'plain' });
     }else if(!ck.allDone){
       items.push({ icon:'✓', title:'完成打卡', sub:ck.done + ' / ' + ck.total + ' 已达成',
-                   act:'goto-tab', target:'checkin', tone:'plain' });
+                   act:'goto', target:'checkin', tone:'plain' });
     }
 
-    /* 5. 本周三事未立 */
+    /* 5. 本周三事未立（旧 target 'brief' 是不存在的页面，改到含 planCard 的 tasks） */
     var goals = (QZD.plan && QZD.plan.goals) ? QZD.plan.goals() : [];
     if(!goals.length){
       items.push({ icon:'◇', title:'定本周三事', sub:'给这周一个方向',
-                   act:'goto-tab', target:'brief', tone:'plain' });
+                   act:'goto', target:'tasks', tone:'plain' });
     }
 
     /* 6. 最急的期限（3天内/逾期） */
@@ -177,7 +179,7 @@
         var u = due[0];
         items.push({ icon:'⏱', title:'最急期限', sub:u.title + ' · ' +
           (u.days < 0 ? ('逾期 ' + Math.abs(u.days) + ' 天') : (u.days === 0 ? '今天截止' : ('剩 ' + u.days + ' 天'))),
-          act:'goto-tab', target:'brief', tone:'urgent' });
+          act:'goto', target:'memorials', tone:'urgent' });
       }
     }
 
