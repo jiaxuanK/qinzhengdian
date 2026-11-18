@@ -1,6 +1,6 @@
 /* ============================================================
    ui/hotkeys.js · 全局快捷键
-   空格 暂停/继续专注 · F2 专注悬浮窗 · N 记灵感 · ? 快捷键说明
+   空格 暂停/继续专注 · N 记灵感 · ? 快捷键说明
    输入框 / 文本域 / 下拉框内一律不拦截，避免影响打字
    ============================================================ */
 (function(){
@@ -54,7 +54,6 @@
       title: '快捷键',
       body: '<div class="hk-list">' +
         hkRow('空格', '暂停 / 继续当前专注') +
-        hkRow('F2', '开 / 关专注悬浮窗') +
         hkRow('N', '记一条灵感（自动聚焦输入框）') +
         hkRow('?', '打开本说明') +
         hkRow('Esc', '关闭弹窗 / 收起浮层') +
@@ -72,11 +71,7 @@
       toggleFocus();
       return;
     }
-    if(e.key === 'F2'){
-      e.preventDefault();
-      if(UI.pomo && UI.pomo.toggleFloat) UI.pomo.toggleFloat();
-      return;
-    }
+    /* 11-18：F2 独立浮窗已取消（图片/手机均不可用），此快捷键移除 */
     if(e.key === 'n' || e.key === 'N'){
       e.preventDefault();
       focusIdea();

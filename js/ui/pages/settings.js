@@ -41,7 +41,7 @@
           '<button class="btn ghost sm" data-act="toggle-zen">' +
           (set.zen ? '关闭' : '开启') + '</button></span></div>' +
         '<div class="setting-row"><span class="k">快捷键</span><span class="setting-act">' +
-          '<span class="v">空格 暂停 · F2 浮窗 · N 灵感 · ? 说明</span>' +
+          '<span class="v">空格 暂停 · N 灵感 · ? 说明</span>' +
           '<button class="btn ghost sm" data-act="hotkeys">查看</button></span></div>' +
       '</section>' +
 

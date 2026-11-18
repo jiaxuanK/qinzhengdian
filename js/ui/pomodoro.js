@@ -171,16 +171,13 @@
           '</div>' +
         '</div>';
     }
-    var floating = !!floatHost();
-    var floatBtnTitle = floating ? '回到页面' : '开独立悬浮窗（缩小主窗口仍可见）';
-    var floatBtnIcon = floating ? '▣' : '⧉';
+    /* 11-18：取消独立浮窗（window.open 方案图片/手机均不可用），
+       仅保留页面内卡片 + 收起/沉浸模式 */
     var headBtns =
       '<span class="pomo-head-btns">' +
         '<button type="button" class="pomo-ico" data-pomo="reset-size" title="恢复卡片默认大小（拖小后可点此还原）">⤢</button>' +
         '<button type="button" class="pomo-ico" data-pomo="zen" title="沉浸全屏（Esc 退出）">◉</button>' +
         '<button type="button" class="pomo-ico" data-pomo="idea" title="记下此刻灵感（不中断专注）">💡</button>' +
-        '<button type="button" class="pomo-ico" data-pomo="float" title="' + floatBtnTitle + '">' +
-          floatBtnIcon + '</button>' +
         '<button type="button" class="pomo-ico" data-pomo="collapse" title="' + (pomoCompact ? '展开' : '收起') + '">' +
           (pomoCompact ? '▢' : '—') + '</button>' +
       '</span>';
@@ -330,9 +327,6 @@
   function bindCard(card, inFloat){
     card.onclick = function(e){
       try {
-        var floatBtn = e.target.closest('[data-pomo="float"]');
-        if(floatBtn){ toggleFloat(); return; }
-
         var ideaBtn = e.target.closest('[data-pomo="idea"]');
         if(ideaBtn){ openQuickIdea(); return; }
 
