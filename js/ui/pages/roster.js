@@ -177,7 +177,7 @@
     var tenReason = jin + 1e-9 < ten ? '金钱不足（需 ' + ten + '）' : '';
 
     return '<section class="card">' +
-      '<div class="card-head"><span class="card-title">选 秀 · 抽 卡</span>' +
+      '<div class="card-head"><span class="card-title">选秀</span>' +
       '<span class="card-note">单抽 ' + single + ' 金 · 十连 ' + ten + ' 金（9 折）' +
         (single !== (G.PULL_COST || 120) ? ' · 未达标 ×2' : '') + '</span></div>' +
       '<p class="today-line">单抽 <b>' + single + '</b> 金钱抽一位候选秀女；十连 <b>' + ten +

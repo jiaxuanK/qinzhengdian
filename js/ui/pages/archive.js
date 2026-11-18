@@ -41,7 +41,7 @@
     var rows = ITEMS.map(row).join('');
     return '' +
       '<section class="card">' +
-        '<div class="card-head"><span class="card-title">史 馆 档 册 · 数据导出</span>' +
+        '<div class="card-head"><span class="card-title">数据导出</span>' +
           '<span class="card-note">CSV 含 BOM，Excel 打开中文不乱码</span></div>' +
         '<div class="arc-list">' + rows + '</div>' +
       '</section>' +

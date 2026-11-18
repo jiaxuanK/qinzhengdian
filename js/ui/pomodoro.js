@@ -175,7 +175,6 @@
        仅保留页面内卡片 + 收起/沉浸模式 */
     var headBtns =
       '<span class="pomo-head-btns">' +
-        '<button type="button" class="pomo-ico" data-pomo="reset-size" title="恢复卡片默认大小（拖小后可点此还原）">⤢</button>' +
         '<button type="button" class="pomo-ico" data-pomo="zen" title="沉浸全屏（Esc 退出）">◉</button>' +
         '<button type="button" class="pomo-ico" data-pomo="idea" title="记下此刻灵感（不中断专注）">💡</button>' +
         '<button type="button" class="pomo-ico" data-pomo="collapse" title="' + (pomoCompact ? '展开' : '收起') + '">' +
@@ -332,17 +331,6 @@
 
       var collapseBtn = e.target.closest('[data-pomo="collapse"]');
       if(collapseBtn){ pomoCompact = !pomoCompact; persistCompact(); render(); return; }
-
-      /* 恢复默认大小：清掉用户 resize 拖出来的 inline 宽高，并退出紧凑模式 */
-      var resetBtn = e.target.closest('[data-pomo="reset-size"]');
-      if(resetBtn){
-        var resetCard = document.getElementById('pomo-card');
-        if(resetCard){ resetCard.style.width = ''; resetCard.style.height = ''; }
-        if(pomoCompact){ pomoCompact = false; persistCompact(); }
-        render();
-        UI.toast('已恢复专注卡默认大小');
-        return;
-      }
 
       var compEl = e.target.closest('[data-pomo-companion]');
       if(compEl){

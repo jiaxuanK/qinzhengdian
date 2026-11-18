@@ -80,6 +80,13 @@
   background:transparent;color:var(--daiqing);
   border-bottom-color:var(--daiqing);font-weight:500;
 }
+/* 手机：7 个分组标签挤进一行（此前 margin-right:16px 太宽，
+   「档册」掉到第二行单独一个，很突兀） */
+@media(max-width:640px){
+  .tab-row.page-tabs{flex-wrap:nowrap;gap:0;overflow-x:auto;padding-bottom:6px}
+  .page-tabs .tab{flex:1 0 auto;margin-right:0;padding:5px 2px;font-size:12.5px;
+    white-space:nowrap;text-align:center}
+}
 
 /* 链接样式的按钮不要下划线 */
 a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
