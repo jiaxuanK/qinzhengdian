@@ -397,11 +397,11 @@
       var K = QZD.conquest, C = CFG.CONQUEST;
       var owned = K.ownedList().length;
       var power = K.power();
-      var totals = K.totals();
+      /* 11-18 收紧：贡赋详情在「江山」卡里已有，顶部不再重复；
+         只留战力/属城，与四项资源合成 6 项＝3 列×2 行 */
       realmMini =
         '<span class="emp-res" style="border-left-color:var(--zhuqian)"><i style="background:var(--zhuqian)"></i>战力 <b>' + UI.fmt.num(power) + '</b></span>' +
-        '<span class="emp-res"><i style="background:var(--dailan)"></i>属城 <b>' + owned + '/' + C.CITIES.length + '</b></span>' +
-        '<span class="emp-res"><i style="background:var(--teng)"></i>贡赋 金<b>' + (totals.jinQian||0).toFixed(2) + '</b>国<b>' + (totals.guoJin||0).toFixed(2) + '</b>/分</span>';
+        '<span class="emp-res"><i style="background:var(--dailan)"></i>属城 <b>' + owned + '/' + C.CITIES.length + '</b></span>';
     } catch(e){}
     return '<section class="card emperor-card compact">' +
       '<div class="emp-avatar" title="点击更换立绘">' +
@@ -417,8 +417,9 @@
           '<span class="emp-name">' + UI.fmt.escape(s.meta.emperorName) + '</span>' +
           '<span class="emp-dims">' + dims + '</span>' +
         '</div>' +
-        '<div class="emp-res-row">' + res + '</div>' +
-        (realmMini ? '<div class="emp-res-row" style="margin-top:2px">' + realmMini + '</div>' : '') +
+        /* 6 项数值合并到同一网格：桌面 3 列×2 行、手机也 3 列×2 行，
+           国力与声望自然并排，不再各占一行 */
+        '<div class="emp-res-row">' + res + realmMini + '</div>' +
       '</div>' +
     '</section>';
   }
