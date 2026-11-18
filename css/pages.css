@@ -43,11 +43,15 @@
 
 /* ---------- 设置 ---------- */
 .setting-row{
-  display:flex;align-items:center;justify-content:space-between;gap:16px;
-  padding:11px 0;border-bottom:1px dashed var(--line);font-size:13px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:7px 0;border-bottom:1px dashed var(--line);font-size:13px;
 }
 .setting-row:last-child{border-bottom:none}
-.setting-row .k{color:var(--ink2)}
+.setting-row .k{color:var(--ink2);flex:none}
+/* 状态 + 操作按钮同组，避免每项拆成两行 */
+.setting-act{display:inline-flex;align-items:center;justify-content:flex-end;gap:10px;min-width:0}
+.setting-act .v{color:var(--ink);font-size:12.5px;text-align:right}
+.setting-act .btn{flex:none;padding:3px 12px}
 
 /* ---------- 角色名册 ---------- */
 .tab-row{display:flex;gap:8px;margin-bottom:14px}
@@ -561,7 +565,9 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 .badge.rare{background:linear-gradient(90deg,#d9b36b,#b04a6a);color:#fff;border:none}
 
 @media(max-width:560px){
-  .emperor-card{flex-direction:column;align-items:stretch}
+  /* 只作用于老版大卡；新版 .compact 必须保持横排（立绘左、信息右）。
+     此前漏写 :not(.compact) 导致 compact 也被竖排，立绘居中独占一行、头重脚轻 */
+  .emperor-card:not(.compact){flex-direction:column;align-items:stretch}
   .emperor-face{width:100%;height:auto;aspect-ratio:3/4}
   .emperor-res-list{width:100%}
 }
@@ -972,10 +978,14 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
   .dash-cell:nth-child(5){border-left:none}
 }
 @media(max-width:460px){
-  .dash-cell{min-width:100%;flex:1 1 100%}
-  .dash-cell+.dash-cell{border-left:none;border-top:1px solid var(--line)}
-  .dash-big b,.dash-ddl-num b{font-size:34px}
-  .dash-weekday{font-size:28px}
+  /* 今日仪表盘：两列并排（此前强制 100% 宽 → 每格独占一行，整块变成一列，太高）。
+     收紧 padding 与数字字号，保持数字为主角但一眼看全 */
+  .dash-cell{min-width:calc(50% - 1px);flex:1 1 calc(50% - 1px);padding:11px 12px}
+  .dash-cell:nth-child(2n){border-left:1px solid var(--line)}
+  .dash-cell:nth-child(2n+1){border-left:none}
+  .dash-cell:nth-child(n+3){border-top:1px solid var(--line)}
+  .dash-big b,.dash-ddl-num b{font-size:26px}
+  .dash-weekday{font-size:22px}
 }
 
 /* ---------- DDL：越近数字越大、色越醒目 ---------- */
@@ -1659,8 +1669,24 @@ body.zen .sidebar{display:none}
 .ss-item{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--ink2)}
 .ss-item i{width:8px;height:8px;border-radius:2px;flex:none}
 @media(max-width:640px){
-  .emp-dims{margin-left:0;width:100%}
+  /* 皇帝 compact 卡：立绘缩到小头像、与信息横排；四维 badge 与数值紧凑对齐 */
+  .emperor-card.compact{gap:11px;padding:10px 12px;align-items:flex-start}
+  .emperor-card.compact .emp-avatar{width:64px;height:82px}
+  .emperor-card.compact .emp-info{gap:6px}
+  .emperor-card.compact .emp-name{font-size:16px}
+  .emperor-card.compact .emp-dims{margin-left:0;width:auto}
+  /* 数值两列对齐，不再逐行掉落；最后一项（贡赋长文）跨满整行避免挤成竖字 */
+  .emperor-card.compact .emp-res-row{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px}
+  .emperor-card.compact .emp-res{font-size:11px;white-space:nowrap}
+  .emperor-card.compact .emp-res b{font-size:13px}
+  .emperor-card.compact .emp-res-row .emp-res:last-child{grid-column:1 / -1}
   .action-grid{grid-template-columns:1fr 1fr}
+  /* 今日行动小卡：副标题此前 nowrap+ellipsis 在窄屏被硬截断，
+     改为最多 2 行显示，信息完整且保持 2×2 网格 */
+  .action-item{align-items:flex-start;padding:9px 10px}
+  .action-icon{width:28px;height:28px;font-size:14px}
+  .action-text i{white-space:normal;overflow:visible;text-overflow:clip;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.35}
   /* 三个环：手机上缩小尺寸并收紧间距，尽量一行排下 */
   .wp-row{gap:10px;justify-content:space-between}
   .wp-ring{min-width:0;flex:1}

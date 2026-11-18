@@ -31,16 +31,18 @@
           '<input id="emperor-name" maxlength="12" value="' + fmtEsc(meta.emperorName || '朕') + '">' +
         '</div>' +
         '<div class="btn-row"><button class="btn primary" data-act="save-name">保存自称</button></div>' +
-        '<div class="setting-row"><span class="k">专注时免打扰</span><span class="v">' +
-          (set.focusQuiet ? '已开启（勤政中不弹随机事件）' : '已关闭') + '</span></div>' +
-        '<div class="btn-row"><button class="btn ghost" data-act="toggle-quiet">' +
-          (set.focusQuiet ? '关闭免打扰' : '开启免打扰') + '</button></div>' +
-        '<div class="setting-row"><span class="k">专注时收起侧栏</span><span class="v">' +
-          (set.zen ? '已开启（专注中隐藏左侧导航）' : '已关闭') + '</span></div>' +
-        '<div class="btn-row"><button class="btn ghost" data-act="toggle-zen">' +
-          (set.zen ? '关闭专注模式' : '开启专注模式') + '</button></div>' +
-        '<div class="setting-row"><span class="k">快捷键</span><span class="v">空格 暂停 · F2 浮窗 · N 灵感 · ? 说明</span></div>' +
-        '<div class="btn-row"><button class="btn ghost" data-act="hotkeys">查看快捷键</button></div>' +
+        /* 11-18：状态与操作按钮合并到同一行（此前每项占两行，太长） */
+        '<div class="setting-row"><span class="k">专注时免打扰</span><span class="setting-act">' +
+          '<span class="v">' + (set.focusQuiet ? '已开启' : '已关闭') + '</span>' +
+          '<button class="btn ghost sm" data-act="toggle-quiet">' +
+          (set.focusQuiet ? '关闭' : '开启') + '</button></span></div>' +
+        '<div class="setting-row"><span class="k">专注时收起侧栏</span><span class="setting-act">' +
+          '<span class="v">' + (set.zen ? '已开启' : '已关闭') + '</span>' +
+          '<button class="btn ghost sm" data-act="toggle-zen">' +
+          (set.zen ? '关闭' : '开启') + '</button></span></div>' +
+        '<div class="setting-row"><span class="k">快捷键</span><span class="setting-act">' +
+          '<span class="v">空格 暂停 · F2 浮窗 · N 灵感 · ? 说明</span>' +
+          '<button class="btn ghost sm" data-act="hotkeys">查看</button></span></div>' +
       '</section>' +
 
       /* ===== 存档信息 ===== */
