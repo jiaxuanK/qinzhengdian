@@ -27,6 +27,10 @@
     return '';
   }
   function looksUrl(s){ return /^(https?:|zotero:|10\.\d{4,9}\/|[\w.-]+\.[a-z]{2,}[\/?#]?$)/i.test(String(s || '').trim()); }
+  /* DOI 归一化：去 https://doi.org/ 前缀、去空白、小写，用于跨来源去重 */
+  function normDoi(s){
+    return String(s || '').trim().replace(/^https?:\/\/(dx\.)?doi\.org\//i, '').replace(/\s+/g, '').toLowerCase();
+  }
 
   /* 解析粘贴文本：支持 Tab 分隔（Zotero 导出）或 "标题 | 链接"，也支持纯标题行 */
   function parseText(text){
@@ -71,6 +75,59 @@
     });
     IO.save();
     return { ok: true, added: added, total: r.queue.length, parsed: items.length };
+  }
+
+  /* 导入 AI 生成的结构化文献卡（skill 输出的 JSON）。
+     兼容数组或 {cards:[...]}；标题必填，其余字段可选（缺省不覆盖）。
+     用标题去重：已存在则合并补全结构化字段，不重复入队。 */
+  function importCards(payload){
+    var arr = [];
+    if(Array.isArray(payload)) arr = payload;
+    else if(payload && Array.isArray(payload.cards)) arr = payload.cards;
+    else if(typeof payload === 'string'){
+      try {
+        var parsed = JSON.parse(payload);
+        arr = Array.isArray(parsed) ? parsed : (parsed.cards || []);
+      }catch(e){ return { ok:false, error:'JSON 解析失败：' + e.message }; }
+    }
+    if(!arr.length) return { ok:false, error:'没有可导入的文献卡' };
+
+    var FIELDS = ['authors','year','venue','doi','abstract','conclusion',
+                  'keyNumbers','relevance','takeaway','bibtex','zoteroKey','source','tags',
+                  'why','how','what','innovation','limitations','keyFigures','evidence',
+                  'readDepth','concepts','studyNext','resources',
+                  /* 对照阅读三件套：路线 / 高光批注 / 易误读点 */
+                  'readingPath','highlights','pitfalls'];
+    var r = R(), byTitle = {}, byDoi = {}, added = 0, merged = 0;
+    r.queue.forEach(function(x){
+      byTitle[x.title] = x;
+      if(x.doi) byDoi[normDoi(x.doi)] = x;
+    });
+    arr.forEach(function(c){
+      if(!c || typeof c !== 'object') return;
+      var title = String(c.title || '').trim().slice(0, 120);
+      if(!title) return;
+      var url = normUrl(c.url || c.doi || '');
+      var dk = normDoi(c.doi);
+      var item = (dk && byDoi[dk]) || byTitle[title];
+      if(!item){
+        item = { id:uid(), title:title, url:url, addedAt:Date.now(), doneAt:null };
+        r.queue.push(item);
+        byTitle[title] = item;
+        if(dk) byDoi[dk] = item;
+        added++;
+      }else{
+        if(url && !item.url) item.url = url;
+        byTitle[title] = item;
+        merged++;
+      }
+      FIELDS.forEach(function(k){
+        if(c[k] !== undefined && c[k] !== null && c[k] !== '') item[k] = c[k];
+      });
+    });
+    if(!added && !merged) return { ok:false, error:'没有有效条目（标题必填）' };
+    IO.save();
+    return { ok:true, added:added, merged:merged, total:r.queue.length };
   }
 
   function all(){ return R().queue; }
@@ -142,6 +199,29 @@
     return { ok: false, error: '条目不存在' };
   }
 
+  /* 已读文献：按读完时间倒序，供复盘区展示 */
+  function done(){
+    return R().queue.filter(function(x){ return !!x.doneAt; })
+      .sort(function(a, b){ return (b.doneAt || 0) - (a.doneAt || 0); });
+  }
+
+  /* 重读：清掉 doneAt 移回未读队列；已读次数留痕，不丢复盘信息 */
+  function reopen(id){
+    var r = R();
+    for(var i = 0; i < r.queue.length; i++){
+      if(r.queue[i].id !== id) continue;
+      if(!r.queue[i].doneAt) return { ok: false, error: '这条本来就在未读队列' };
+      r.queue[i].rereadCount = (Number(r.queue[i].rereadCount) || 0) + 1;
+      r.queue[i].doneAt = null;
+      r.pickId = id;          /* 重读即设为今日精读 */
+      r.pickDate = IO.todayStr();
+      IO.pushLog('reading', '重读 · ' + r.queue[i].title);
+      IO.save();
+      return { ok: true, item: r.queue[i] };
+    }
+    return { ok: false, error: '条目不存在' };
+  }
+
   function doneThisWeek(){
     var from = Date.now() - 7 * 86400000;
     return R().queue.filter(function(x){ return x.doneAt && x.doneAt >= from; });
@@ -156,8 +236,11 @@
   QZD.reading = {
     parseText: parseText,
     importText: importText,
+    importCards: importCards,
     list: all,
     queued: queued,
+    done: done,
+    reopen: reopen,
     todayPick: todayPick,
     nextPick: nextPick,
     setPick: setPick,

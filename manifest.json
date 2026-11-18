@@ -1,0 +1,41 @@
+{
+  "name": "勤政殿 · 千秋宏图",
+  "short_name": "勤政殿",
+  "description": "一款以帝王治国为隐喻的时间管理与人生规划游戏——奏折批览、千秋大计、文渊修书、六宫起居，把每一天活成一段可以复盘的江山史。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "id": "/qinzhengdian/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F6F2E8",
+  "theme_color": "#363A32",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "categories": ["productivity", "education", "entertainment"],
+  "icons": [
+    {
+      "src": "assets/pwa/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/pwa/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/pwa/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/pwa/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

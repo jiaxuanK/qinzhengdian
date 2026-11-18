@@ -2,20 +2,23 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>勤政殿</title>
-<!-- PWA：装到手机桌面后以独立 App 形式启动（无浏览器地址栏），并支持离线打开 -->
-<meta name="theme-color" content="#121018">
+<meta name="theme-color" content="#363A32">
+<title>勤政殿 · 千秋宏图</title>
+<!-- PWA：装到桌面后以独立 App 启动（无浏览器地址栏），支持离线 -->
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="勤政殿">
-<link rel="manifest" href="manifest.webmanifest">
+<meta name="format-detection" content="telephone=no">
+<meta name="safe-area-inset" content="true">
+<link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="512x512" href="assets/pwa/icon-512.png">
 <link rel="apple-touch-icon" href="assets/pwa/apple-touch-icon.png">
+<link rel="mask-icon" href="assets/pwa/icon-maskable-512.png" color="#363A32">
 <!-- 按序加载全部脚本：file:// 下禁用 ES Module（CORS 拦截），全部走全局 QZD 命名空间 -->
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/layout.css">
@@ -47,16 +50,21 @@
 <div id="modal-root"></div>
 <div id="toast-root"></div>
 
-<script src="js/config.js"></script>
+<script src="js/config.js?v=2"></script>
 <script src="js/name-map.js"></script>
 <script src="js/asset-names.js"></script>
 <script src="js/assets-manifest.js"></script>
 <script src="js/formulas.js"></script>
-<script src="js/state.js"></script>
+<script src="js/state.js?v=2"></script>
 <script src="js/systems/resources.js"></script>
+<script src="js/systems/privy.js"></script>
+<script src="js/systems/life.js"></script>
+<script src="js/systems/story.js"></script>
+<script src="js/systems/dynasty.js"></script>
+<script src="js/systems/morning.js"></script>
 <script src="js/systems/study.js"></script>
 <script src="js/systems/checkin.js"></script>
-<script src="js/systems/memorials.js"></script>
+<script src="js/systems/memorials.js?v=3"></script>
 <script src="js/systems/conquest.js"></script>
 <script src="js/systems/ministers.js"></script>
 <script src="js/systems/harem.js"></script>
@@ -69,31 +77,34 @@
 <script src="js/systems/reading.js"></script>
 <script src="js/systems/backup.js"></script>
 <script src="js/systems/idea.js"></script>
-<script src="js/systems/thesis.js"></script>
-<script src="js/systems/goals.js"></script>
+<script src="js/systems/thesis.js?v=3"></script>
+<script src="js/systems/goals.js?v=5"></script>
+<script src="js/systems/link.js?v=11"></script>
 <script src="js/systems/archive.js"></script>
-<script src="js/ui/render.js"></script>
+<script src="js/systems/quicklinks.js"></script>
+<script src="js/ui/render.js?v=6"></script>
 <script src="js/ui/portrait.js"></script>
 <script src="js/ui/live2d.js"></script>
 <script src="js/ui/heatmap.js"></script>
 <script src="js/ui/pomodoro.js"></script>
+<script src="js/ui/gt.js?v=3"></script>
 <script src="js/ui/pages/overview.js"></script>
-<script src="js/ui/pages/memorials.js"></script>
-<script src="js/ui/pages/tasks.js"></script>
-<script src="js/ui/pages/meetings.js"></script>
+<script src="js/ui/pages/memorials.js?v=19"></script>
+<script src="js/ui/pages/tasks.js?v=4"></script>
+<script src="js/ui/pages/meetings.js?v=2"></script>
 <script src="js/ui/pages/conquest.js"></script>
 <script src="js/ui/pages/fiefs.js"></script>
 <script src="js/ui/pages/works.js"></script>
 <script src="js/ui/pages/treasure.js"></script>
 <script src="js/ui/pages/roster.js"></script>
-<script src="js/ui/pages/logs.js"></script>
-<script src="js/ui/pages/settings.js"></script>
+<script src="js/ui/pages/logs.js?v=2"></script>
+<script src="js/ui/pages/settings.js?v=99"></script>
 <script src="js/ui/assets-refresh.js"></script>
 <script src="js/ui/pages/library.js"></script>
 <script src="js/ui/pages/chronos.js"></script>
-<script src="js/ui/pages/idea.js"></script>
-<script src="js/ui/pages/thesis.js"></script>
-<script src="js/ui/pages/goals.js"></script>
+<script src="js/ui/pages/thesis.js?v=8"></script>
+<script src="js/ui/pages/goals.js?v=10"></script>
+<!-- link.js 数据层保留，但 UI 层已合并到大计页面 -->
 <script src="js/ui/pages/archive.js"></script>
 <script src="js/ui/hotkeys.js"></script>
 <script src="js/tick.js"></script>
@@ -107,8 +118,16 @@
   /* file:// 下 SW 不可用，直接跳过；http(s) 才注册 */
   if (location.protocol === 'file:') return;
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('sw.js', { scope: './' })
-      .catch(function (e) { console.warn('[pwa] Service Worker 注册失败：', e); });
+    /* PWA Service Worker 注册：file:// 打开时会因 CORS 失败，正常（忽略 warn） */
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('service-worker.js', { scope: './' })
+        .then(function(reg){ console.log('[PWA] SW 已注册', reg.scope); })
+        .catch(function(e){ console.warn('[PWA] SW 注册失败（file:// 下属正常）：', e.message); });
+      /* 新版本 SW 就绪时，提示用户刷新 */
+      navigator.serviceWorker.addEventListener('controllerchange', function(){
+        console.log('[PWA] 检测到新版本 SW，刷新即可生效');
+      });
+    }
   });
 })();
 </script>

@@ -23,6 +23,18 @@
   QZD.ui.init();
   QZD.ui.refreshHeader();
 
+  /* P0：每日首次登录弹一次内帑分配（不阻塞、可跳过） */
+  if(QZD.privy) QZD.privy.onLaunch();
+
+  /* L2：换周结算 / 在线练习点 / 回归小结 */
+  if(QZD.life) QZD.life.onLaunch();
+
+  /* S1：旧档追认 + 开机情境判定（只给 toast，不弹模态窗） */
+  if(QZD.story) QZD.story.onLaunch();
+
+  /* F1/F2/F3：国势日结算（缺席缓降 / 分级事件 / 拨乱反正，只给 toast） */
+  if(QZD.dynasty) QZD.dynasty.onLaunch();
+
   /* 桌面版：每天首次启动自动备份存档 + 导出周报数据 */
   if(QZD.backup) QZD.backup.autoRun();
   if(restored) QZD.tick.announce(restored);

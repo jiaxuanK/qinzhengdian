@@ -142,42 +142,68 @@
     };
   }
 
+  /* 皇子出身的名臣致仕：还原为皇子，置入「已致仕宗室」——不凭空消失、可复起。
+     优先用入朝时存的 princeMeta；旧档没存则用现有字段降级还原（生母未知）。 */
+  function restoreToPrince(m){
+    if(!Array.isArray(QZD.state.princes)) QZD.state.princes = [];
+    var meta = m.princeMeta || {};
+    var prince = {
+      id: m.princeId || ('prince-restored-' + Date.now().toString(36)),
+      name: m.name,
+      seq: meta.seq || (QZD.state.princes.length + 1),
+      motherId: meta.motherId || '',
+      motherName: meta.motherName || '生母不详',
+      bornAt: meta.bornAt || m.createdAt || Date.now(),
+      war: m.war || 0, gov: m.gov || 0, lit: m.lit || 0,
+      trainCount: meta.trainCount || 0,
+      retired: true, retiredAt: Date.now(),
+      retireRefunded: 0,          /* 回归时未领皇子致仕返还；如再致仕不重复 */
+      wasMinister: true
+    };
+    QZD.state.princes.push(prince);
+    return prince;
+  }
+
   function dismiss(id){
     var list = ministers(), idx = -1;
     for(var i = 0; i < list.length; i++){ if(list[i].id === id){ idx = i; break; } }
     if(idx < 0) return { ok: false, error: '大臣不在朝中' };
     var m = list[idx];
-    if(m.fromPrince) return { ok: false, error: '皇子出身的大臣不宜致仕' };
 
     var gain = retireRefund(m);
     list.splice(idx, 1);
     QZD.resources.add(gain);
-    QZD.stateIO.pushLog('roster', '「' + m.name + '」致仕归乡 · 三维 ' +
+    var prince = null;
+    if(m.fromPrince) prince = restoreToPrince(m);
+    QZD.stateIO.pushLog('roster', '「' + m.name + '」致仕' +
+      (prince ? '归宗（皇子名册·已致仕）' : '归乡') + ' · 三维 ' +
       ((m.war||0) + (m.gov||0) + (m.lit||0)) + ' · 得金钱 ' + gain.jinQian + ' · 声望 ' + gain.shengWang);
     QZD.stateIO.save();
-    return { ok: true, name: m.name, gain: gain };
+    return { ok: true, name: m.name, gain: gain, prince: prince };
   }
 
   /* 批量：遣散全部未上阵大臣（上阵的保留） */
   function dismissIdle(){
     var list = ministers();
-    var idle = list.filter(function(m){ return !m.fielded && !m.fromPrince; });
+    var idle = list.filter(function(m){ return !m.fielded; });   /* 皇子出身的闲置名臣也可遣散 */
     if(!idle.length) return { ok: false, error: '没有可遣散的闲置大臣' };
 
-    var total = { jinQian: 0, shengWang: 0 };
+    var total = { jinQian: 0, shengWang: 0 }, backToPrince = 0;
     for(var i = 0; i < idle.length; i++){
       var g = retireRefund(idle[i]);
       total.jinQian += g.jinQian;
       total.shengWang += g.shengWang;
+      if(idle[i].fromPrince){ restoreToPrince(idle[i]); backToPrince++; }
     }
     for(var j = list.length - 1; j >= 0; j--){
-      if(!list[j].fielded && !list[j].fromPrince) list.splice(j, 1);
+      if(!list[j].fielded) list.splice(j, 1);
     }
     QZD.resources.add(total);
-    QZD.stateIO.pushLog('roster', '遣散闲置大臣 ' + idle.length + ' 人 · 得金钱 ' +
+    QZD.stateIO.pushLog('roster', '遣散闲置大臣 ' + idle.length + ' 人' +
+      (backToPrince ? '（皇子 ' + backToPrince + ' 人归宗）' : '') + ' · 得金钱 ' +
       total.jinQian + ' · 声望 ' + total.shengWang);
     QZD.stateIO.save();
-    return { ok: true, count: idle.length, gain: total };
+    return { ok: true, count: idle.length, gain: total, backToPrince: backToPrince };
   }
 
   QZD.ministers = {

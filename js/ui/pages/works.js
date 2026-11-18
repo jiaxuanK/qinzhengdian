@@ -4,9 +4,13 @@
   var W = CFG.WORKS;
   var UI = QZD.ui;
 
-  function stat(label, value, cls){
-    return '<div class="realm-stat' + (cls ? ' ' + cls : '') + '">' +
-      '<span>' + label + '</span><b>' + value + '</b></div>';
+  /* 营造概览专用：数值大字 + 单位小字分离，避免「+0.00/分」「% / %」整串被放大挤换行。
+     value 传数值部分，unit 传单位；不带 unit 时退化为纯数值。 */
+  function stat(label, value, cls, unit){
+    return '<div class="work-stat' + (cls ? ' ' + cls : '') + '">' +
+      '<span class="ws-label">' + label + '</span>' +
+      '<div class="ws-value"><b>' + value + '</b>' +
+        (unit ? '<i>' + unit + '</i>' : '') + '</div></div>';
   }
 
   function dec(n){ return (Math.round((n || 0) * 100) / 100).toFixed(2); }
@@ -77,12 +81,12 @@
     var head = '<section class="card">' +
       '<div class="card-head"><span class="card-title">营 造 概 览</span>' +
       '<span class="card-note">产出按真实时间入账 · 离线封顶 ' + W.OFFLINE_CAP_HOURS + ' 小时</span></div>' +
-      '<div class="realm-stats">' +
-        stat('营造总级', total) +
-        stat('金钱产出', '+' + dec(per.jinQian) + '/分', per.jinQian ? 'hot' : '') +
-        stat('国力产出', '+' + dec(per.guoJin) + '/分', per.guoJin ? 'hot' : '') +
-        stat('贡赋 / 战力', '+' + dec(tribute * 100) + '% / +' + dec(power * 100) + '%',
-          (tribute || power) ? 'hot' : '') +
+      '<div class="work-stats">' +
+        stat('营造总级', total, '', '级') +
+        stat('金钱产出', '+' + dec(per.jinQian), per.jinQian ? 'hot' : '', '金 / 分') +
+        stat('国力产出', '+' + dec(per.guoJin), per.guoJin ? 'hot' : '', '力 / 分') +
+        stat('贡赋加成', '+' + dec(tribute * 100), tribute ? 'hot' : '', '%') +
+        stat('战力加成', '+' + dec(power * 100), power ? 'hot' : '', '%') +
       '</div>' +
       '<p class="page-foot" style="margin-top:8px">营造即时扣金钱与国力，等级越高造价越高；贡赋加成与名臣理政加成叠乘。</p>' +
     '</section>';

@@ -12,6 +12,7 @@
    ============================================================ */
 (function(){
   var UI = QZD.ui;
+  var CFG = QZD.config;
   var P = QZD.config.POMODORO;
   var F = QZD.formulas;
 
@@ -102,7 +103,24 @@
       onOk: function(){
         var res = QZD.pomodoro.startOpen(memorialId, subId || null, selectedCompanion);
         if(!res.ok){ UI.toast(res.error); return false; }
-        UI.toast('专注开始 · 做完点「完成并退出」');
+        /* 晨课：早上开场发签约金（已到账）+ 本场金钱倍率 + 弹特殊剧情 */
+        if(QZD.morning){
+          var mr = QZD.morning.onFocusStart({ companionId: selectedCompanion });
+          if(mr.ok){
+            QZD.pomodoro.markMorning(mr.sign);
+            var sg = mr.sign || {};
+            UI.toast('晨课 · 签约金 国库 +' + (sg.jinQian || 0) +
+              ' · 勤政 +' + (sg.qinZheng || 0) + ' · 本场钱银 ×' + mr.rate);
+            if(mr.scene && QZD.story && QZD.story.queuePresent){
+              QZD.story.queuePresent({ kind: 'morning', scene: mr.scene,
+                consortId: mr.consortId || '', consortName: mr.consort ? mr.consort.name : '' });
+            }
+          }else{
+            UI.toast('专注开始 · 做完点「完成并退出」');
+          }
+        }else{
+          UI.toast('专注开始 · 做完点「完成并退出」');
+        }
         UI.onStateChanged();
       }
     });
@@ -134,12 +152,22 @@
     var compHtml = '';
     if(comp){
       var cp = QZD.portrait.svg(comp.id, comp.name, { kind: 'female', img: comp.img, model: comp.model });
+      var ready = QZD.pomodoro.companionRewardReady();
+      var count = QZD.pomodoro.companionRewardCount ? QZD.pomodoro.companionRewardCount() : 0;
+      var need = (CFG.POMODORO.COMPANION_REWARD_MIN || 25);
+      var remain = QZD.pomodoro.companionRewardRemaining ? QZD.pomodoro.companionRewardRemaining() : need;
+      var tagTxt = ready ? ('可领 · 与她相处（第 ' + (count + 1) + ' 次）')
+                         : ('距下次相处还差 ' + remain + ' 分' + (count ? ' · 已领 ' + count + ' 次' : ''));
+      var doing = QZD.harem.companionDoing ? QZD.harem.companionDoing(comp) : '';
       compHtml =
-        '<div class="pomo-companion" data-pomo-companion title="轻点妃嫔，听她问候">' +
-          '<div class="pomo-comp-avatar">' + cp + '</div>' +
+        '<div class="pomo-companion' + (ready ? ' reward-ready' : '') + '" data-pomo-companion ' +
+          'title="' + (ready ? '已满 25 分，点击免费相处一次' : '轻点看她在做什么') + '">' +
+          '<div class="pomo-comp-avatar">' + cp +
+            (ready ? '<span class="pomo-comp-badge">可相处</span>' : '') + '</div>' +
           '<div class="pomo-comp-info">' +
             '<span class="pomo-comp-name">' + UI.fmt.escape(comp.name) + '</span>' +
-            '<span class="pomo-comp-tag" id="pomo-comp-tag">轻点问候</span>' +
+            '<span class="pomo-comp-doing" id="pomo-comp-doing">' + UI.fmt.escape(doing) + '</span>' +
+            '<span class="pomo-comp-tag" id="pomo-comp-tag">' + tagTxt + '</span>' +
           '</div>' +
         '</div>';
     }
@@ -148,6 +176,8 @@
     var floatBtnIcon = floating ? '▣' : '⧉';
     var headBtns =
       '<span class="pomo-head-btns">' +
+        '<button type="button" class="pomo-ico" data-pomo="zen" title="沉浸全屏（Esc 退出）">◉</button>' +
+        '<button type="button" class="pomo-ico" data-pomo="idea" title="记下此刻灵感（不中断专注）">💡</button>' +
         '<button type="button" class="pomo-ico" data-pomo="float" title="' + floatBtnTitle + '">' +
           floatBtnIcon + '</button>' +
         '<button type="button" class="pomo-ico" data-pomo="collapse" title="' + (pomoCompact ? '展开' : '收起') + '">' +
@@ -199,6 +229,28 @@
     setText(card, '#pomo-cum', mem ? ('此折累计 ' +
       Math.round((mem.focusMin || 0) + QZD.pomodoro.realizedMinutes()) + ' 分 · ' +
       ((mem.sessions || 0) + 1) + ' 次') : '');
+
+    /* 陪伴奖励状态：每满 25 分点亮一次入口，不重建整卡（避免输入框/拖拽丢失） */
+    var comp = p.companionId ? QZD.harem.consortById(p.companionId) : null;
+    if(comp){
+      var ready = QZD.pomodoro.companionRewardReady && QZD.pomodoro.companionRewardReady();
+      var count = QZD.pomodoro.companionRewardCount ? QZD.pomodoro.companionRewardCount() : 0;
+      var remain = QZD.pomodoro.companionRewardRemaining ? QZD.pomodoro.companionRewardRemaining() : 25;
+      var tag = card.querySelector('#pomo-comp-tag');
+      if(tag) setText(card, '#pomo-comp-tag', ready
+        ? ('可领 · 与她相处（第 ' + (count + 1) + ' 次）')
+        : ('距下次相处还差 ' + remain + ' 分' + (count ? ' · 已领 ' + count + ' 次' : '')));
+      var wrap = card.querySelector('.pomo-companion');
+      if(wrap && wrap.classList) wrap.classList.toggle('reward-ready', !!ready);
+      if(ready && wrap && !wrap.querySelector('.pomo-comp-badge')){
+        var av = wrap.querySelector('.pomo-comp-avatar');
+        if(av){ var b = card.ownerDocument.createElement('span'); b.className='pomo-comp-badge'; b.textContent='可相处'; av.appendChild(b); }
+      }
+      if(!ready && wrap){
+        var badge = wrap.querySelector('.pomo-comp-badge');
+        if(badge && badge.parentNode) badge.parentNode.removeChild(badge);
+      }
+    }
   }
 
   function startDrag(e){
@@ -227,11 +279,61 @@
     document.addEventListener('mouseup', up);
   }
 
+  /* 专注时速记灵感：轻量模态框，Ctrl+Enter 秒存，Esc 关闭，不中断专注计时 */
+  function openQuickIdea(){
+    if(!QZD.idea){ UI.toast('灵感罐系统未加载'); return; }
+    /* 已有打开的速记框？关掉 */
+    var old = document.querySelector('.modal-backdrop[data-quick-idea]');
+    if(old){ old.remove(); }
+    var html = '<div class="modal-backdrop" data-quick-idea>' +
+      '<div class="modal quick-idea" style="min-width:280px">' +
+        '<h3 style="margin:0 0 6px;font-size:14px">💡 记下此刻灵感</h3>' +
+        '<textarea id="quick-idea-text" maxlength="300" rows="3" placeholder="别让它溜走…（Ctrl/⌘+Enter 秒存）" style="width:100%;padding:8px;font-size:13px;border:1px solid #d8d2c4;border-radius:6px;background:#faf7f0;font-family:inherit;resize:vertical"></textarea>' +
+        '<div style="display:flex;gap:6px;margin-top:6px">' +
+          '<input id="quick-idea-tag" maxlength="16" placeholder="标签（选填）" style="flex:1;padding:5px 8px;font-size:12px;border:1px solid #d8d2c4;border-radius:4px;background:#faf7f0">' +
+          '<button class="btn primary" id="quick-idea-save" style="padding:5px 12px;font-size:12px">落 笔</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+    var overlay = document.createElement('div');
+    overlay.innerHTML = html;
+    document.body.appendChild(overlay);
+    /* 自动 focus textarea */
+    setTimeout(function(){
+      var ta = document.getElementById('quick-idea-text');
+      if(ta){ ta.focus(); }
+    }, 50);
+    /* 事件 */
+    var onKey = function(e){
+      if(e.key === 'Escape'){ overlay.remove(); document.removeEventListener('keydown', onKey); }
+      if((e.ctrlKey || e.metaKey) && e.key === 'Enter'){
+        e.preventDefault(); doQuickIdea();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    overlay.addEventListener('click', function(e){
+      if(e.target === overlay){ overlay.remove(); document.removeEventListener('keydown', onKey); }
+      if(e.target.id === 'quick-idea-save') doQuickIdea();
+    });
+    function doQuickIdea(){
+      var text = document.getElementById('quick-idea-text').value;
+      var tag = document.getElementById('quick-idea-tag').value;
+      var r = QZD.idea.add(text, tag);
+      if(!r.ok){ UI.toast(r.error); return; }
+      overlay.remove();
+      document.removeEventListener('keydown', onKey);
+      UI.toast('已入灵感罐 · 专注不中断');
+    }
+  }
+
   function bindCard(card, inFloat){
     card.onclick = function(e){
       try {
         var floatBtn = e.target.closest('[data-pomo="float"]');
         if(floatBtn){ toggleFloat(); return; }
+
+        var ideaBtn = e.target.closest('[data-pomo="idea"]');
+        if(ideaBtn){ openQuickIdea(); return; }
 
       var collapseBtn = e.target.closest('[data-pomo="collapse"]');
       if(collapseBtn){ pomoCompact = !pomoCompact; persistCompact(); render(); return; }
@@ -241,16 +343,42 @@
         var cid = QZD.state.pomodoro.companionId;
         var cc = cid ? QZD.harem.consortById(cid) : null;
         if(cc){
+          /* 满 25 分：领奖 + 弹出一段相处剧情（不打断专注计时） */
+          if(QZD.pomodoro.companionRewardReady()){
+            var r = QZD.pomodoro.claimCompanionReward();
+            if(r.ok){
+              var lines = CFG.COMPANION_REWARD_LINES || [];
+              var text = lines.length ? lines[Math.floor(Date.now()/60000) % lines.length] : '';
+              var body = '<p style="font-size:14px;line-height:1.9">' + UI.fmt.escape(text) + '</p>' +
+                '<p class="card-note">本场第 ' + r.count + ' 次相处 · 免费 · 喜爱 +' +
+                  r.favorGain + ' · 宠爱 +' + r.doteGain + '</p>' +
+                '<p class="card-note">每再专注满 ' + (CFG.POMODORO.COMPANION_REWARD_MIN||25) +
+                  ' 分可再领一次；计时照常进行，收起后继续专注。</p>';
+              UI.modal({ title: '与「' + UI.fmt.escape(cc.name) + '」相处', body: body,
+                         ok:false, cancelText:'继续专注' });
+              if(card.ownerDocument === document) UI.toast('与 ' + cc.name + ' 相处 · 喜爱 +' + r.favorGain + ' 宠爱 +' + r.doteGain);
+              render();
+              return;
+            }
+          }
+          /* 未满：旧问候 + 她此刻在做什么，轻互动 */
+          var doing = QZD.harem.companionDoing ? QZD.harem.companionDoing(cc) : '';
           var line = cc.name + '：' + QZD.harem.companionGreeting(cc);
           var tag = card.ownerDocument.getElementById('pomo-comp-tag');
           if(tag){
             tag.textContent = line;               /* 问候语在名字条内浮现 */
             if(tag._revertT) clearTimeout(tag._revertT);
             tag._revertT = setTimeout(function(){
-              tag.textContent = '轻点问候';
+              var count = QZD.pomodoro.companionRewardCount ? QZD.pomodoro.companionRewardCount() : 0;
+              var remain = QZD.pomodoro.companionRewardRemaining ? QZD.pomodoro.companionRewardRemaining() : 25;
+              tag.textContent = QZD.pomodoro.companionRewardReady()
+                ? ('可领 · 与她相处（第 ' + (count + 1) + ' 次）')
+                : ('距下次相处还差 ' + remain + ' 分' + (count ? ' · 已领 ' + count + ' 次' : ''));
             }, 5000);
           }
-          /* 浮窗内问候已在名字条浮现，不再往主窗口弹 toast，避免重复 */
+          /* 把「她在做什么」也显示到 doing 行 */
+          var dl = card.ownerDocument.getElementById('pomo-comp-doing');
+          if(dl) dl.textContent = doing;
           if(card.ownerDocument === document) UI.toast(line);
         }
         return;
@@ -259,6 +387,12 @@
       var btn = e.target.closest('[data-pomo]');
       if(!btn) return;
       var act = btn.getAttribute('data-pomo');
+
+      /* 沉浸全屏：只读计时，不碰任何结算逻辑；收工/暂离时自动退出 */
+      if(act === 'zen'){
+        openZen();
+        return;
+      }
 
       /* 在独立浮窗里：直接完成/暂离，不必切回主窗口点确认 */
       var inFloatHost = (card.ownerDocument !== document);
@@ -293,6 +427,7 @@
           var r2 = QZD.pomodoro.abandon();
           UI.toast(r2.type === 'abandoned' ? '已退出 · 按五成计入（独立窗）' : '专注已结束');
           render();   /* 关闭独立窗 + 清空页面浮层 */
+          if(r2 && r2.type === 'abandoned') setTimeout(function(){ promptAbandonReason(r2); }, 80);
           return;
         }
         UI.confirm(
@@ -363,8 +498,10 @@
      宽高比保持 320:440；300px 是卡片内容能完整放下下限 */
   function floatSize(){
     var sh = (window.screen && window.screen.availHeight) ? window.screen.availHeight : 1080;
-    var h = Math.max(300, Math.round(sh / 3.6));
-    var w = Math.round(h * 320 / 440);
+    /* 固定合理尺寸：宽 320px 够显示完整卡片（companion + 时钟 + gains + 按钮），
+       高 460px 留出边距 + 不遮挡太多屏幕内容；小屏自适应缩小 */
+    var w = 320, h = 460;
+    if(sh < 600){ h = Math.max(320, Math.round(sh * 0.7)); w = Math.round(h * 320 / 460); }
     return { w: w, h: h };
   }
 
@@ -407,11 +544,31 @@
           pip.document.body.style.justifyContent = 'center';
           pip.document.body.style.padding = '14px';
           copyStyles(pip);
+          /* 回退守卫：Electron / 画中画部分支持的环境里，
+             copyStyles + render 可能静默失败 → 500ms 后如果 pip body 还是空的，
+             主动关 pip 窗口，走 enterPop 独立窗 */
+          pip._fallbackTimer = pip.setTimeout(function(){
+            try {
+              var b = pip.document && pip.document.body;
+              if(b && (b.children.length === 0 || !b.querySelector('#pomo-card, .pomo-card'))){
+                pip.clearTimeout(pip._fallbackTimer);
+                pip._fallbackTimer = null;
+                try { pip.close(); } catch(_){}
+                pipWin = null;
+                pipOpening = false;
+                UI.toast('画中画环境空白，自动改用独立窗口');
+                enterPop();
+                return;
+              }
+            } catch(e){ /* pip 已关闭 */ }
+          }, 600);
+
           pip._timer = pip.setInterval(function(){
             if(pipWin === pip) updateLive(pip.document);
           }, 1000);
           pip.addEventListener('pagehide', function(){
             if(pip._timer) pip.clearInterval(pip._timer);
+            if(pip._fallbackTimer) pip.clearTimeout(pip._fallbackTimer);
             pipWin = null;
             structSig = '';
             render();
@@ -453,7 +610,11 @@
         try { popWin.close(); } catch(e){}
         popWin = null; structSig = '';
       }
-      if(pipWin && !pipWin.closed){ exitPip(); return; }
+      /* 修复：exitPip() 不再 return，避免 pipWin 僵尸状态阻塞 open
+         （浏览器可能已关画中画但 JS 变量没清） */
+      if(pipWin){
+        try { exitPip(); } catch(_){}
+      }
       var s = floatSize(), w = s.w, h = s.h;
       /* 打开时自动贴到屏幕右下角（dock 感） */
       var dockLeft = Math.max(0, (window.screen && window.screen.availWidth ? window.screen.availWidth : 1920) - w - 12);
@@ -464,7 +625,7 @@
       window.__qzdFloatToken = token;
       var wn = null;
       try {
-        wn = window.open('float.html?t=' + token, 'qzd_pomo_float',
+        wn = window.open('', 'qzd_pomo_float',
           'width=' + w + ',height=' + h + ',left=' + dockLeft + ',top=' + dockTop + ',' +
           'menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=no');
       } catch(oe){
@@ -477,34 +638,89 @@
       }
       popWin = wn;
       structSig = '';
-      /* 轮询等待独立窗 body 就绪后再挂载卡片（float.html 自带 CSS，无需 document.write） */
-      var tries = 0;
-      (function mount(){
-        if(popWin !== wn) return;
-        tries++;
+      /* 立刻 document.write 一个自包含 HTML，彻底绕开 float.html 的自杀脚本和跨 document 限制 */
+      try {
+        var pomoState = QZD.state.pomodoro || {};
+        var cardHTML = buildCard(pomoState, !!pomoState.paused);
+        wn.document.open();
+        wn.document.write(
+          '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+          '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+          '<title>勤政殿·专注</title>' +
+          '<style>' +
+          '*{box-sizing:border-box}html,body{margin:0;padding:10px;background:#f4efe6;color:#3d3a34;font-family:"STKaiti","楷体",serif}' +
+          '#pomo-card{width:100%;max-width:300px;margin:0 auto;border:1px solid #d8d2c4;border-radius:10px;padding:14px;background:#faf7f0;box-shadow:0 2px 12px rgba(0,0,0,0.08)}' +
+          '#pomo-card.paused{opacity:0.75}#pomo-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}' +
+          '#pomo-card .pomo-title{font-size:15px;color:#5a574f;font-weight:500}' +
+          '#pomo-card .badge{font-size:9px;padding:1px 6px;border-radius:3px;background:#e8ddd0;color:#6b6558}' +
+          '#pomo-card .badge.ok{background:#c3d4c0;color:#3d5a3a}' +
+          '#pomo-card .pomo-head-btns{display:flex;gap:2px}' +
+          '#pomo-card .pomo-ico{background:none;border:1px solid transparent;color:#8a8574;font-size:13px;cursor:pointer;padding:2px 4px;border-radius:3px}' +
+          '#pomo-card .pomo-ico:hover{background:#efe8d6;border-color:#d8d2c4}' +
+          '#pomo-card .pomo-mem{margin:4px 0;text-align:center;font-size:13px;color:#5a574f;line-height:1.4}' +
+          '#pomo-card .pomo-clock{text-align:center;font-size:34px;font-weight:200;color:#2f3328;letter-spacing:2px;font-variant-numeric:tabular-nums;margin:8px 0 4px}' +
+          '#pomo-card .pomo-sub{text-align:center;font-size:10px;color:#9a9790;margin:2px 0}' +
+          '#pomo-card .pomo-companion{display:flex;align-items:center;gap:8px;margin-top:8px;padding:6px;background:#f4efe6;border-radius:6px}' +
+          '#pomo-card .pomo-comp-avatar{position:relative}' +
+          '#pomo-card .pomo-comp-avatar img, #pomo-card .pomo-comp-avatar svg{width:40px;height:48px;border-radius:50%;object-fit:cover}' +
+          '#pomo-card .pomo-comp-info{flex:1;display:flex;flex-direction:column;gap:1px}' +
+          '#pomo-card .pomo-comp-name{font-size:12px;color:#3d3a34;font-weight:500}' +
+          '#pomo-card .pomo-comp-doing{font-size:10px;color:#8a8574}' +
+          '#pomo-card .pomo-comp-tag{font-size:9px;color:#9a9790}' +
+          '#pomo-card .pomo-gains{display:flex;justify-content:center;gap:10px;margin-top:10px;font-size:10px;color:#8a8574}' +
+          '#pomo-card .pomo-gains span{padding:1px 4px;background:#f4efe6;border-radius:3px}' +
+          '#pomo-card .pomo-cum{text-align:center;font-size:9px;color:#aaa599;margin-top:4px}' +
+          '#pomo-card .pomo-btns{display:flex;justify-content:center;gap:6px;margin-top:10px}' +
+          '#pomo-card .btn{padding:5px 12px;font-size:11px;border-radius:4px;cursor:pointer;border:1px solid #d8d2c4;background:#faf7f0;color:#3d3a34;font-family:inherit}' +
+          '#pomo-card .btn.primary{background:#2f3328;color:#f4efe6;border-color:#2f3328}' +
+          '#pomo-card .btn.primary:hover{background:#4a4f42}' +
+          '#pomo-card .btn.ghost{background:transparent}' +
+          '#pomo-card .btn.ghost:hover{background:#efe8d6}' +
+          '#pomo-card .pomo-note{text-align:center;font-size:9px;color:#bbb5a8;margin-top:6px}' +
+          '#pomo-card img.portrait{width:40px;height:48px;border-radius:50%;object-fit:cover}' +
+          '</style></head><body>' +
+          cardHTML +
+          '</body></html>'
+        );
+        wn.document.close();
+        UI.toast('已开独立悬浮窗');
+      } catch(re){
+        /* 如果 document.write 也失败（极端情况），至少写个静态占位 */
         try {
-          var root = wn.document && wn.document.body;
-          if(!root){
-            if(tries < 80){ setTimeout(mount, 30); }
-            else { UI.toast('悬浮窗加载超时，已留在页面内'); try{ wn.close(); }catch(_){} popWin=null; render(); }
-            return;
-          }
-          render();   /* 卡片挂进独立窗（render 会以 popWin.document 为宿主） */
-          wn._timer = wn.setInterval(function(){
-            if(popWin === wn) updateLive(wn.document);
-          }, 1000);
-          wn.addEventListener('beforeunload', function(){
-            if(wn._timer) wn.clearInterval(wn._timer);
-            popWin = null; structSig = ''; render();
-          });
-          UI.toast('已开独立悬浮窗 · 缩小主窗口也跟着你');
-        } catch(re){
-          UI.toast('悬浮窗挂载失败（' + ((re && re.message) || re) + '），已留在页面内');
+          wn.document.open();
+          wn.document.write('<html><head><meta charset="utf-8"><title>专注</title>' +
+            '<style>body{font-family:serif;background:#f4efe6;padding:20px;text-align:center;color:#3d3a34}' +
+            '.t{font-size:36px;font-weight:300;font-variant-numeric:tabular-nums;margin:20px 0}</style></head><body>' +
+            '<div class="companion">专注中…</div><div class="t" id="pomo-time">00:00</div>' +
+            '</body></html>');
+          wn.document.close();
+          UI.toast('已开独立悬浮窗（基础模式）');
+        } catch(_){
+          UI.toast('完全无法打开悬浮窗，已留在页面内');
           try { wn.close(); } catch(_){}
           popWin = null;
-          render();
+          return;
         }
-      })();
+      }
+      /* 每秒更新时间显示 */
+      wn._timer = wn.setInterval(function(){
+        if(popWin !== wn || wn.closed){ wn.clearInterval(wn._timer); return; }
+        var p = QZD.state.pomodoro;
+        if(!p) return;
+        try {
+          var el = wn.document.querySelector('#pomo-card .pomo-time');
+          if(el) el.textContent = formatMMSS(p.elapsed);
+          /* companion text 也更新 */
+          var el2 = wn.document.querySelector('#pomo-card .pomo-title');
+          if(el2) el2.textContent = p.boundTitle || '';
+        } catch(_){}
+      }, 1000);
+      wn.addEventListener('beforeunload', function(){
+        if(wn._timer) wn.clearInterval(wn._timer);
+        popWin = null; structSig = ''; render();
+      });
+      render();  /* 主页面自己也要显示卡片 */
+      return;    /* 后续代码都不执行（旧的 mount 逻辑废弃） */
     } catch(err){
       popWin = null;
       UI.toast('悬浮窗开启异常：' + ((err && err.message) ? err.message : err) +
@@ -591,6 +807,51 @@
     }
     updateLive(host);
   }
+
+  /* ---------- 沉浸全屏（P3）：暗底 + 大字计时 + 缓慢呼吸环，无闪烁 ----------
+     自己挂 interval 每秒只改 #zen-clock 的文本，不重建 DOM；
+     Esc / 点退出按钮 / 收工或暂离（isActive 变 false）都会自动关闭。 */
+  var zenTimer = null;
+  function ensureZenNode(){
+    var el = document.getElementById('zen-overlay');
+    if(el) return el;
+    el = document.createElement('div');
+    el.id = 'zen-overlay';
+    el.className = 'zen-overlay';
+    el.style.display = 'none';
+    el.innerHTML =
+      '<div class="zen-ring"></div>' +
+      '<div class="zen-clock" id="zen-clock">00:00</div>' +
+      '<div class="zen-title" id="zen-title"></div>' +
+      '<button type="button" class="zen-exit" data-zen-exit>退出沉浸（Esc）</button>';
+    document.body.appendChild(el);
+    el.addEventListener('click', function(e){
+      if(e.target.closest('[data-zen-exit]')) closeZen();
+    });
+    return el;
+  }
+  function openZen(){
+    if(!QZD.pomodoro.isActive()){ UI.toast('先开始一场专注，再进入沉浸'); return; }
+    var el = ensureZenNode();
+    var t = document.getElementById('zen-title');
+    if(t) t.textContent = boundTitle() || '专注中';
+    el.style.display = 'flex';
+    var c = document.getElementById('zen-clock');
+    if(c) c.textContent = clock(QZD.pomodoro.elapsedSec(Date.now()));
+    if(zenTimer) clearInterval(zenTimer);
+    zenTimer = setInterval(function(){
+      if(!document.getElementById('zen-clock') || !QZD.pomodoro.isActive()){ closeZen(); return; }
+      document.getElementById('zen-clock').textContent = clock(QZD.pomodoro.elapsedSec(Date.now()));
+    }, 1000);
+  }
+  function closeZen(){
+    var el = document.getElementById('zen-overlay');
+    if(el) el.style.display = 'none';
+    if(zenTimer){ clearInterval(zenTimer); zenTimer = null; }
+  }
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') closeZen();
+  });
 
   /* 系统通知：番茄收工（桌面版走原生通知，浏览器版退化为页面通知） */
   function notifyFinish(res){
@@ -711,6 +972,24 @@
     if(!btn) return;
     var parts = String(btn.getAttribute('data-focus-sub')).split('|');
     openMemorial(parts[0], parts[1]);
+  });
+
+  /* 专注台页面：开始新专注（先新建奏折）*/
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('[data-focus-new]');
+    if(!btn) return;
+    if(QZD.pomodoro.isActive()){ UI.toast('已有专注正在进行'); return; }
+    /* 新建一个批阅中的奏折 */
+    var m = QZD.memorials.add({ title: '专注', tag: 'hanlin' });
+    QZD.memorials.setStatus(m.id, 'pizhong');
+    openMemorial(m.id, null);
+  });
+
+  /* 专注台页面：继续某个奏折的专注 */
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('[data-focus-continue]');
+    if(!btn) return;
+    openMemorial(btn.getAttribute('data-focus-continue'), null);
   });
 
   UI.pomo = { render: render, openMemorial: openMemorial, toggleFloat: toggleFloat,

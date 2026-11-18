@@ -109,8 +109,10 @@
       var c = QZD.harem.consortById(targetId);
       if(!c) return { ok: false, error: '妃嫔不在后宫' };
       var hi;
-      if(item.attr === 'favor') hi = (CFG.FAVOR && CFG.FAVOR.MAX) || 100;
-      else if(item.attr === 'dote') hi = (CFG.DOTE && CFG.DOTE.MAX) || 100;
+      if(item.attr === 'favor') hi = (QZD.harem && QZD.harem.favorMaxOf)
+        ? QZD.harem.favorMaxOf(c) : ((CFG.FAVOR && CFG.FAVOR.MAX) || 100);
+      else if(item.attr === 'dote') hi = (QZD.harem && QZD.harem.doteMaxOf)
+        ? QZD.harem.doteMaxOf(c) : ((CFG.DOTE && CFG.DOTE.MAX) || 100);
       else hi = (CFG.XUANXIU && CFG.XUANXIU.ATTR_MAX) || 120;
       before = c[item.attr] || 0;
       c[item.attr] = clamp(before + amt, 0, hi);

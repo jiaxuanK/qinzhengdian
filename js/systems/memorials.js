@@ -42,6 +42,23 @@
   }
 
   function subsOf(m){ return (m && Array.isArray(m.subtasks)) ? m.subtasks : []; }
+  function subParentOf(sb){ return (sb && typeof sb.parentId === 'string' && sb.parentId) ? sb.parentId : ''; }
+
+  /* 直接子小目标（同一奏折下，parentId 匹配） */
+  function subChildrenOf(m, parentId){
+    var pid = parentId || '';
+    return subsOf(m).filter(function(sb){ return subParentOf(sb) === pid; });
+  }
+  /* 小目标层级深度：沿 parentId 上溯，带环保护 */
+  function subDepth(m, sb){
+    var d = 0, seen = {}, cur = sb;
+    while(cur && subParentOf(cur) && d < 20){
+      var p = subParentOf(cur);
+      if(seen[p]) break;
+      seen[p] = true; cur = findSub(m, p); d++;
+    }
+    return d;
+  }
 
   function findSub(m, subId){
     var subs = subsOf(m);
@@ -92,15 +109,31 @@
     };
   }
 
+  /* 旧档兼容：旧官署一律按「一般」；旧急奏→紧急、常奏/缓奏→不紧急。只读映射，不改存档 */
+  var OLD_TAG_MAP = { hanlin: 'normal', gongbu: 'normal', libu: 'normal', bingbu: 'normal' };
+  var OLD_PRIO_MAP = { jizou: 'urgent', changzou: 'normal', huanzou: 'normal' };
+  function normTag(t){ return metaOf(C.TAGS, t) ? t : (OLD_TAG_MAP[t] || 'normal'); }
+  function normPrio(p){ return metaOf(C.PRIORITIES, p) ? p : (OLD_PRIO_MAP[p] || 'normal'); }
+
+  /* 四象限归类：重要(important) × 紧急(urgent) → q1/q2/q3/q4 */
+  function quadrantOf(m){
+    var t = normTag(m && m.tag), u = normPrio(m && m.priority);
+    if(t === 'important') return u === 'urgent' ? 'q1' : 'q2';
+    return u === 'urgent' ? 'q3' : 'q4';
+  }
+
   QZD.memorials = {
     flash: { id: null, until: 0 },
 
     find: find,
+    findSub: findSub,
     findSubById: findSubById,
+    subsOf: subsOf, subChildrenOf: subChildrenOf, subDepth: subDepth,
     progress: progress,
-    tagName: function(key){ var m = metaOf(C.TAGS, key); return m ? m.name : key; },
-    priorityName: function(key){ var m = metaOf(C.PRIORITIES, key); return m ? m.name : key; },
-    priorityCls: function(key){ var m = metaOf(C.PRIORITIES, key); return m ? m.cls : ''; },
+    normTag: normTag, normPrio: normPrio, quadrantOf: quadrantOf,
+    tagName: function(key){ key = normTag(key); var m = metaOf(C.TAGS, key); return m ? m.name : key; },
+    priorityName: function(key){ key = normPrio(key); var m = metaOf(C.PRIORITIES, key); return m ? m.name : key; },
+    priorityCls: function(key){ key = normPrio(key); var m = metaOf(C.PRIORITIES, key); return m ? m.cls : ''; },
     statusName: function(key){ var m = metaOf(C.STATUS, key); return m ? m.name : key; },
 
     /* 御案列表：归档奏折不显示；刚办结的奏折保留到闪光结束 */
@@ -125,8 +158,8 @@
       var title = String(draft.title || '').trim();
       if(!title) return '奏折标题不可为空';
       if(title.length > C.TITLE_MAX) return '标题不得超过 ' + C.TITLE_MAX + ' 字';
-      if(!metaOf(C.TAGS, draft.tag)) return '请选择所属官署';
-      if(!metaOf(C.PRIORITIES, draft.priority)) return '请选择奏折优先级';
+      if(!metaOf(C.TAGS, draft.tag)) return '请选择重要性';
+      if(!metaOf(C.PRIORITIES, draft.priority)) return '请选择紧急性';
       return null;
     },
 
@@ -156,6 +189,37 @@
       QZD.stateIO.pushLog('memorial', '御案新落一折：' + m.title);
       QZD.stateIO.save();
       return { ok: true, memorial: m };
+    },
+
+    /* 编辑奏折：改标题/重要性/紧急性/课题/截止日/备注。
+       不动专注统计；课题若变，复用迁移把该折已记分钟搬到新课题，保证各视图同步。 */
+    update: function(id, draft){
+      var m = find(id);
+      if(!m) return { ok: false, error: '奏折不存在' };
+      draft = draft || {};
+      var title = String(draft.title == null ? m.title : draft.title).trim();
+      if(!title) return { ok: false, error: '奏折标题不可为空' };
+      if(title.length > C.TITLE_MAX) return { ok: false, error: '标题不得超过 ' + C.TITLE_MAX + ' 字' };
+      if(draft.tag != null && !metaOf(C.TAGS, draft.tag)) return { ok: false, error: '重要性无效' };
+      if(draft.priority != null && !metaOf(C.PRIORITIES, draft.priority)) return { ok: false, error: '紧急性无效' };
+
+      var oldSubject = m.subjectId || null;
+      m.title = title;
+      if(draft.tag != null) m.tag = draft.tag;
+      if(draft.priority != null) m.priority = draft.priority;
+      if(draft.note != null) m.note = String(draft.note).trim().slice(0, 200);
+      if(draft.dueAt !== undefined) m.dueAt = parseDue(draft.dueAt);
+      var newSubject = (draft.subjectId !== undefined) ? (draft.subjectId || null) : oldSubject;
+      m.subjectId = newSubject;
+      m.updatedAt = Date.now();
+
+      var moved = 0;
+      if(newSubject !== oldSubject && QZD.study && QZD.study.moveMemorialMinutes){
+        moved = QZD.study.moveMemorialMinutes(id, newSubject) || 0;
+      }
+      QZD.stateIO.pushLog('memorial', '修订奏折 · ' + m.title);
+      QZD.stateIO.save();
+      return { ok: true, memorial: m, movedMin: moved };
     },
 
     remove: function(id){
@@ -230,11 +294,24 @@
       var now = Date.now();
       var out = { overdue: [], soon: [], all: [] };
       (state().memorials || []).forEach(function(m){
-        if(m.status === 'banjie' || !m.dueAt) return;
-        var item = { id: m.id, title: m.title, dueAt: m.dueAt, days: Math.ceil((m.dueAt - now) / 86400000) };
-        out.all.push(item);
-        if(m.dueAt < now) out.overdue.push(item);
-        else if(m.dueAt - now <= n * 86400000) out.soon.push(item);
+        /* 奏折本身截止日 */
+        if(m.status !== 'banjie' && m.dueAt){
+          var item = { id: m.id, title: m.title, dueAt: m.dueAt,
+                       days: Math.ceil((m.dueAt - now) / 86400000) };
+          out.all.push(item);
+          if(m.dueAt < now) out.overdue.push(item);
+          else if(m.dueAt - now <= n * 86400000) out.soon.push(item);
+        }
+        /* 未办结小目标的独立截止日（旧档无 dueAt 自动跳过） */
+        (m.subtasks || []).forEach(function(sb){
+          if(sb.done || !sb.dueAt) return;
+          var sitem = { id: m.id, subId: sb.id,
+                        title: m.title + ' · ' + sb.title, dueAt: sb.dueAt,
+                        days: Math.ceil((sb.dueAt - now) / 86400000) };
+          out.all.push(sitem);
+          if(sb.dueAt < now) out.overdue.push(sitem);
+          else if(sb.dueAt - now <= n * 86400000) out.soon.push(sitem);
+        });
       });
       out.overdue.sort(function(a, b){ return a.dueAt - b.dueAt; });
       out.soon.sort(function(a, b){ return a.dueAt - b.dueAt; });
@@ -242,18 +319,21 @@
       return out;
     },
 
-    /* ---------- 小目标 ---------- */
-    addSub: function(id, title){
+    /* ---------- 小目标（支持无限层级：parentId 指向同一奏折下的父小目标） ---------- */
+    addSub: function(id, title, dueAt, parentId){
       var m = find(id);
       if(!m) return { ok: false, error: '奏折不存在' };
       if(m.status === 'banjie') return { ok: false, error: '奏折已办结' };
       var name = String(title || '').trim().slice(0, F.SUB_TITLE_MAX || 24);
       if(!name) return { ok: false, error: '请填写小目标' };
       if(!Array.isArray(m.subtasks)) m.subtasks = [];
+      var pid = parentId ? String(parentId) : '';
+      if(pid && !findSub(m, pid)) return { ok: false, error: '上级小目标不存在' };
       if(m.subtasks.length >= (F.MAX_SUBS || 12)){
         return { ok: false, error: '小目标已达上限（' + (F.MAX_SUBS || 12) + '）' };
       }
-      var sub = { id: uid('s'), title: name, done: false, doneAt: null, focusMin: 0 };
+      var sub = { id: uid('s'), title: name, done: false, doneAt: null, focusMin: 0,
+                  dueAt: parseDue(dueAt), parentId: pid };
       m.subtasks.push(sub);
       m.updatedAt = Date.now();
       QZD.stateIO.pushLog('memorial', '拆出小目标 · ' + name);
@@ -261,20 +341,49 @@
       return { ok: true, sub: sub, memorial: m };
     },
 
+    /* 改小目标的独立截止日（null = 取消） */
+    setSubDue: function(id, subId, v){
+      var hit = findSubById(subId);
+      if(!hit || hit.memorial.id !== id) return { ok: false, error: '小目标不存在' };
+      hit.sub.dueAt = parseDue(v);
+      hit.memorial.updatedAt = Date.now();
+      QZD.stateIO.save();
+      return { ok: true, sub: hit.sub };
+    },
+
+    /* 重命名小目标 */
+    renameSub: function(id, subId, title){
+      var hit = findSubById(subId);
+      if(!hit || hit.memorial.id !== id) return { ok: false, error: '小目标不存在' };
+      var name = String(title || '').trim().slice(0, F.SUB_TITLE_MAX || 24);
+      if(!name) return { ok: false, error: '标题不能为空' };
+      hit.sub.title = name;
+      hit.memorial.updatedAt = Date.now();
+      QZD.stateIO.save();
+      return { ok: true, sub: hit.sub };
+    },
+
+    /* 删除小目标：连其所有子小目标一起删（多级） */
     removeSub: function(id, subId){
       var m = find(id);
       if(!m) return { ok: false, error: '奏折不存在' };
-      var subs = subsOf(m);
-      for(var i = 0; i < subs.length; i++){
-        if(subs[i].id !== subId) continue;
-        var s = subs[i];
-        subs.splice(i, 1);
-        m.updatedAt = Date.now();
-        QZD.stateIO.pushLog('memorial', '删除小目标 · ' + s.title);
-        QZD.stateIO.save();
-        return { ok: true };
+      var subs = subsOf(m), hit = findSub(m, subId);
+      if(!hit) return { ok: false, error: '小目标不存在' };
+      var gone = [subId], changed = true;
+      while(changed){
+        changed = false;
+        subs.forEach(function(sb){
+          if(gone.indexOf(sb.parentId || '') >= 0 && gone.indexOf(sb.id) < 0){
+            gone.push(sb.id); changed = true;
+          }
+        });
       }
-      return { ok: false, error: '小目标不存在' };
+      m.subtasks = subs.filter(function(sb){ return gone.indexOf(sb.id) < 0; });
+      m.updatedAt = Date.now();
+      QZD.stateIO.pushLog('memorial', '删除小目标 · ' + hit.title +
+        (gone.length > 1 ? '（含 ' + (gone.length - 1) + ' 个子项）' : ''));
+      QZD.stateIO.save();
+      return { ok: true, removed: gone.length };
     },
 
     setSubDone: function(id, subId, done){
@@ -297,14 +406,20 @@
       return hit;
     },
 
-    /* 改挂课题（null = 未分类）；只改归属，不动已有统计 */
+    /* 改挂课题（null = 未分类）；同时把该奏折已记的专注分钟迁到新课题，
+       让饼图 / 网格 / 周报立刻同步（用户明确要「搬历史」）。 */
     setSubject: function(id, subjectId){
       var m = find(id);
       if(!m) return { ok: false, error: '奏折不存在' };
+      var old = m.subjectId || null;
       m.subjectId = subjectId || null;
       m.updatedAt = Date.now();
+      var moved = 0;
+      if(old !== m.subjectId && QZD.study && QZD.study.moveMemorialMinutes){
+        moved = QZD.study.moveMemorialMinutes(id, m.subjectId) || 0;
+      }
       QZD.stateIO.save();
-      return { ok: true, memorial: m };
+      return { ok: true, memorial: m, movedMin: moved };
     },
 
     /* 手动办结（不再按目标时长自动办结） */

@@ -16,7 +16,13 @@
   var pendingSec = 0;   /* 不足一秒的零头，攒够再结算 */
   var lastAt = Date.now();
 
-  function po(){ return QZD.state.pomodoro; }
+  function po(){
+    if(!QZD.state.pomodoro || typeof QZD.state.pomodoro !== 'object'){
+      QZD.state.pomodoro = { status:'idle', gained:{ qinZheng:0, jinQian:0, guoJin:0 },
+                             morningBoost:false, signBonus:null };
+    }
+    return QZD.state.pomodoro;
+  }
   function active(){
     return po().status === 'running' || po().status === 'paused';
   }
@@ -50,7 +56,15 @@
     if(!(min > 0)) return out;
 
     var gain = F.gainForMinutes(min);
+    /* 晨课本场：只把金钱乘倍率，勤政/国力照常。
+       倍率绑在 p.morningBoost（本场标记），不按钟点，跨过 7:30 仍生效。 */
+    if(po().morningBoost && gain.jinQian){
+      var mr = (QZD.config.MORNING || {}).MONEY_RATE;
+      gain.jinQian = gain.jinQian * (typeof mr === 'number' && mr > 0 ? mr : 1.5);
+    }
     QZD.resources.add(gain);
+    /* P0：在线勤政的金钱产出按比例计提为「可拨内帑」（只记账，不动钱包） */
+    if(QZD.privy) QZD.privy.capture(gain.jinQian);
     var g = gainedOf();
     g.qinZheng += gain.qinZheng;
     g.jinQian += gain.jinQian;
@@ -86,6 +100,9 @@
     p.pausedTotalSec = 0;
     p.pauseStartedAt = null;
     p.gained = { qinZheng: 0, jinQian: 0, guoJin: 0 };
+    p.morningBoost = false;    /* 本场结束即清，下一场回归正常 1× */
+    p.signBonus = null;
+    p.companionRewardCount = 0;   /* 陪伴奖励每场重置 */
     pendingSec = 0;
     lastAt = Date.now();
   }
@@ -97,13 +114,60 @@
     return m ? m.title : '';
   }
 
+  /* 专注流水：每场结束记一条，供日程时间轴显示「在做什么任务」与连贯性。
+     在 resetIdle 之前调用，此时 p.title/startedAt/memorialId 都还在。 */
+  /* 从 [起, 止] 里挖掉所有暂停区间，得到「真正在专注」的片段。
+     时间轴据此区分实心段（专注）与淡段（停摆），条长＝实际专注时间。 */
+  function focusSpans(start, end, pauseSpans){
+    var out = [], cur = start;
+    (Array.isArray(pauseSpans) ? pauseSpans : []).forEach(function(ps){
+      if(!ps) return;
+      var a = Math.max(ps[0] || start, start);
+      var b = Math.min(ps[1] == null ? end : ps[1], end);
+      if(b <= a) return;
+      if(a > cur) out.push([cur, a]);
+      cur = Math.max(cur, b);
+    });
+    if(end > cur) out.push([cur, end]);
+    return out;
+  }
+
+  function recordFocusLog(result, full, realMinutes, startAt){
+    var p = po();
+    var st = QZD.state.study;
+    if(!st) return;
+    if(!Array.isArray(st.focusLog)) st.focusLog = [];
+    var now = Date.now();
+    var mins = (typeof realMinutes === 'number' ? realMinutes : (result.minutes || 0));
+    var bm = p.boundMemorialId ? QZD.memorials.find(p.boundMemorialId) : null;
+    var s0 = startAt || p.startedAt || (now - mins * 60000);
+    st.focusLog.push({
+      date: IO.todayStr(new Date(now)),
+      start: s0,
+      end: now,
+      minutes: Math.round(mins * 10) / 10,
+      /* 专注片段（已挖掉暂停）：旧档没有此字段，绘制时会按 minutes 压缩 */
+      spans: focusSpans(s0, now, p.pauseSpans),
+      title: result.title || boundTitle() || '未命名专注',
+      memorialId: p.boundMemorialId || null,
+      subjectId: bm ? (bm.subjectId || null) : null,
+      morning: !!p.morningBoost,
+      full: !!full
+    });
+    var cap = (CFG.FOCUS && CFG.FOCUS.LOG_CAP) || 400;
+    while(st.focusLog.length > cap) st.focusLog.shift();
+  }
+
   function startCommon(){
     var now = Date.now();
     var p = po();
     p.pauseCount = 0;
     p.pausedTotalSec = 0;
     p.pauseStartedAt = null;
+    p.pauseSpans = [];        /* 本场每次暂停的 [起, 止]（未恢复时止为 null） */
     p.gained = { qinZheng: 0, jinQian: 0, guoJin: 0 };
+    p.morningBoost = false;    /* 新一场默认无晨课倍率，开场回调命中才置位 */
+    p.signBonus = null;
     p.startedAt = now;
     p.lastTickAt = now;
     p.status = 'running';
@@ -134,10 +198,14 @@
       minutes: minutes,
       title: title,
       sessions: 1,
+      companionId: p.companionId || null,
       subtaskDone: !!subId,
       memorialId: memId || null,
       subtaskId: subId || null
     };
+    /* 晨课收工：仅记一笔，标记与签约金随 resetIdle 清零（倍率只作用本场） */
+    if(QZD.morning) QZD.morning.onFocusEnd({ minutes: minutes, companionId: p.companionId });
+    recordFocusLog(result, true);   /* 日程时间轴：任务名 + 起止时间 + 连贯性 */
     resetIdle();
     IO.save();
     return result;
@@ -164,6 +232,7 @@
     IO.pushLog('pomodoro', '放弃 · ' + title + ' · 已专注 ' +
       (Math.round(earnedMin * 10) / 10) + ' 分钟，按五成计入' +
       (auto ? '（暂停超时）' : ''));
+    var abandonStartAt = p.startedAt;   /* resetIdle 前留档，流水要记真实开场时间 */
     var result = {
       type: 'abandoned',
       full: false,
@@ -172,8 +241,10 @@
       lastMinutes: earnedMin,
       title: title,
       sessions: 1,
+      companionId: p.companionId || null,
       memorialId: memId || null
     };
+    recordFocusLog(result, false, earnedMin, abandonStartAt);  /* 流水记实际时长（非五折后） */
     resetIdle();
     IO.save();
     return result;
@@ -184,10 +255,49 @@
     boundId: function(){ return po().boundMemorialId; },
     boundSubtaskId: function(){ return po().boundSubtaskId; },
     gained: gainedOf,
+    /* 开场命中晨课时置位：本场金钱 ×1.5，直到本场结束（resetIdle 清理） */
+    markMorning: function(signBonus){
+      var p = po();
+      p.morningBoost = true;
+      p.signBonus = signBonus || null;
+    },
+    isMorning: function(){ return !!po().morningBoost; },
     realizedMinutes: realizedMinutes,
     activeSeconds: function(){ return activeSec(Date.now()); },
     elapsedSec: function(now){ return Math.floor(activeSec(now || Date.now())); },
     title: boundTitle,
+
+    /* 专注陪伴奖励：每满 25 分钟可领一次免费相处（50分可领2次、75分领3次…）。
+       用「已领次数」记账：下次门槛 = 25 × (已领次数+1)。 */
+    companionRewardCount: function(){ return po().companionRewardCount || 0; },
+    companionRewardReady: function(){
+      var p = po();
+      if(!p.companionId || !active()) return false;
+      var step = P.COMPANION_REWARD_MIN || 25;
+      var claimed = p.companionRewardCount || 0;
+      return realizedMinutes() >= step * (claimed + 1);
+    },
+    /* 距离下一次可领还差几分钟（UI 显示用） */
+    companionRewardRemaining: function(){
+      var p = po();
+      if(!p.companionId) return 0;
+      var step = P.COMPANION_REWARD_MIN || 25;
+      var claimed = p.companionRewardCount || 0;
+      return Math.max(0, Math.ceil(step * (claimed + 1) - realizedMinutes()));
+    },
+    claimCompanionReward: function(){
+      var p = po();
+      if(!this.companionRewardReady()){
+        return { ok:false, error:'再专注 ' + this.companionRewardRemaining() + ' 分钟才可相处' };
+      }
+      var c = QZD.harem.consortById(p.companionId);
+      if(!c) return { ok:false, error:'陪妃不在后宫' };
+      var g = QZD.harem.grantAffection(c.id, P.COMPANION_REWARD.favor, P.COMPANION_REWARD.dote);
+      p.companionRewardCount = (p.companionRewardCount || 0) + 1;
+      IO.save();
+      return { ok:true, consort:c, favorGain:g.favorGain, doteGain:g.doteGain,
+               count:p.companionRewardCount };
+    },
 
     pauseRemainingSec: function(now){
       now = now || Date.now();
@@ -223,6 +333,7 @@
       p.boundSubtaskId = sub ? sub.sub.id : null;
       p.title = sub ? (m.title + ' · ' + sub.sub.title) : m.title;
       p.companionId = companionId || null;
+      p.companionRewardCount = 0;
       p.durationMin = 0;
       p.endsAt = null;
 
@@ -243,6 +354,8 @@
       p.pauseCount += 1;
       p.pauseStartedAt = Date.now();
       p.status = 'paused';
+      if(!Array.isArray(p.pauseSpans)) p.pauseSpans = [];
+      p.pauseSpans.push([p.pauseStartedAt, null]);   /* 恢复时补上止点 */
       pendingSec = 0;
       lastAt = p.pauseStartedAt;
       IO.pushLog('pomodoro', '专注暂歇 · 第 ' + p.pauseCount + ' 次暂停');
@@ -259,6 +372,12 @@
         return { ok: false, abandoned: true, result: settleAbandon(true) };
       }
       p.pausedTotalSec = (p.pausedTotalSec || 0) + deltaSec;
+      /* 补齐最近一次未闭合的暂停区间，供时间轴区分「专注」与「停摆」 */
+      if(Array.isArray(p.pauseSpans) && p.pauseSpans.length){
+        for(var si = p.pauseSpans.length - 1; si >= 0; si--){
+          if(p.pauseSpans[si][1] == null){ p.pauseSpans[si][1] = now; break; }
+        }
+      }
       p.pauseStartedAt = null;
       p.status = 'running';
       lastAt = now;

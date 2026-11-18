@@ -137,23 +137,28 @@
 <body>
   <div id="pomo-root"></div>
   <script>
-  /* 自杀开关（带令牌校验）：每秒检查
-     ① 主窗口是否仍在专注；
-     ② 本窗是否是主窗口当前认可的悬浮窗（URL 令牌 === opener.__qzdFloatToken）。
-     专注结束 / 主页面关闭或刷新（令牌失配）/ 状态异常 → 窗口自己 close()。 */
+  /* 自杀开关（宽容模式） */
   (function(){
+    console.log('[FLOAT] script start, URL=' + location.href + ', name=' + window.name);
     var my = null;
     try { my = new URLSearchParams(location.search).get('t') || location.search.replace(/^\?t=/, ''); }
     catch(e){ my = location.search.replace(/^\?t=/, ''); }
+    console.log('[FLOAT] token=' + my);
+    try { window.name = 'QZD-FLOAT-OK'; } catch(_){}
+    var ticks = 0;
     setInterval(function(){
+      ticks++;
       try {
         var op = window.opener;
-        if(!op || op.closed){ window.close(); return; }
+        var opInfo = op ? ('open closed=' + op.closed + ' hasQZD=' + !!op.QZD) : 'null';
+        if(ticks <= 5) console.log('[FLOAT] tick#' + ticks + ' opener=' + opInfo + ' myToken=' + my);
+        if(!op || op.closed){ console.log('[FLOAT] opener null/closed,宽容跳过'); return; }
+        if(!my || op.__qzdFloatToken !== my){ console.log('[FLOAT] token MISMATCH, 自杀'); window.close(); return; }
         var st = op.QZD && op.QZD.state && op.QZD.state.pomodoro;
-        if(!my || op.__qzdFloatToken !== my) { window.close(); return; }   /* 孤儿窗：主页面已刷新 */
-        if(!st || (st.status !== 'running' && st.status !== 'paused')) window.close();
-      } catch(e){ /* 读不到 opener（如 file:// 跨源）：退回由父窗口主动关闭 */ }
-    }, 1000);
+        if(!st || (st.status !== 'running' && st.status !== 'paused')){ console.log('[FLOAT] pomodoro not running (' + (st && st.status) + '), 自杀'); window.close(); }
+      } catch(e){ console.log('[FLOAT] tick#' + ticks + ' opener read FAIL: ' + e.message); }
+    }, 2000);
+    console.log('[FLOAT] script done, interval started');
   })();
   </script>
 </body>

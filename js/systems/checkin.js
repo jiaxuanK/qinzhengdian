@@ -47,7 +47,7 @@
     return 'g' + Date.now().toString(36) + Math.floor(Math.random() * 1000).toString(36);
   }
 
-  function addGoal(title){
+  function addGoal(title, startDate, endDate){
     var t = String(title || '').trim().slice(0, C.TITLE_MAX || 16);
     if(!t) return { ok: false, error: '请填写目标名称' };
     var list = goals();
@@ -56,11 +56,25 @@
     for(var i = 0; i < list.length; i++){
       if(String(list[i].title).toLowerCase() === lower) return { ok: false, error: '已有同名目标' };
     }
-    var g = { id: uid(), title: t, level: 0, granted: 0, createdAt: Date.now() };
+    var g = {
+      id: uid(), title: t, level: 0, granted: 0, createdAt: Date.now(),
+      startDate: startDate || todayStr(),
+      endDate: endDate || startDate || todayStr()
+    };
     list.push(g);
-    QZD.stateIO.pushLog('checkin', '立下今日目标 · ' + t);
+    QZD.stateIO.pushLog('checkin', '立下目标 · ' + t + (g.startDate !== g.endDate ? '（' + g.startDate + ' 至 ' + g.endDate + '）' : ''));
     QZD.stateIO.save();
     return { ok: true, goal: g };
+  }
+
+  /* 目标是否在今天生效（含边界） */
+  function isActiveToday(g){
+    var today = todayStr();
+    if(g.startDate && g.endDate){
+      return today >= g.startDate && today <= g.endDate;
+    }
+    /* 旧档兼容：无日期字段视为今日目标 */
+    return true;
   }
 
   function removeGoal(id){
@@ -117,6 +131,8 @@
       }else{
         QZD.stateIO.pushLog('checkin', g.title + ' · 完成，论功行赏');
       }
+      /* F1：当日目标全部完成 → 回补国势安定度（每日一次， dynasty 内部去重） */
+      if(QZD.dynasty && todayStat().allDone) QZD.dynasty.onCheckinDone();
       QZD.stateIO.save();
       return { ok: true, goal: g, delta: delta };
     }
@@ -164,13 +180,22 @@
     return Object.keys(ck().history).sort();
   }
 
-  /* 今日目标未全部完成 → 消费 ×2（无目标不罚） */
+  /* 消费倍率按今日打卡得分分档（无目标不罚）：
+     score <50 → ×2；50≤score<100 → ×1.5；score=100 → ×1。
+     score 由 scoreOf 算出（level2=100%、level1=50%、未完成=0%）。 */
   function multiplier(){
     var st = todayStat();
     if(!st.total) return 1;
-    if(st.allDone) return 1;
     var ST = CFG.STUDY || {};
-    return ST.PENALTY_MULT || 2;
+    var tiers = ST.PENALTY_TIERS;
+    if(Array.isArray(tiers) && tiers.length){
+      for(var i = 0; i < tiers.length; i++){
+        if(st.score < tiers[i].max) return tiers[i].mult;
+      }
+      return tiers[tiers.length - 1].mult;
+    }
+    /* 旧档/配置缺失时退回二元判定 */
+    return st.allDone ? 1 : (ST.PENALTY_MULT || 2);
   }
 
   /* 今日目标全部完成 → 当日征伐战力加成 */
@@ -189,6 +214,7 @@
     levelMeta: levelMeta,
     rewardOf: rewardOf,
     addGoal: addGoal,
+    isActiveToday: isActiveToday,
     removeGoal: removeGoal,
     setLevel: setLevel,
     scoreOf: scoreOf,

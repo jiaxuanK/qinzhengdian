@@ -55,6 +55,11 @@
     if(!st.hourStats || typeof st.hourStats !== 'object') st.hourStats = {};
     var h = new Date().getHours();
     st.hourStats[h] = (st.hourStats[h] || 0) + min;
+    /* 按「日期 × 小时」分桶（供钦天监日程网格 / 今日时间轴） */
+    if(!st.dayHour || typeof st.dayHour !== 'object') st.dayHour = {};
+    var dh = st.date;
+    if(!st.dayHour[dh] || typeof st.dayHour[dh] !== 'object') st.dayHour[dh] = {};
+    st.dayHour[dh][h] = (st.dayHour[dh][h] || 0) + min;
     /* 按课题分桶（供钦天监看科研投入结构） */
     if(!st.subjectStats || typeof st.subjectStats !== 'object') st.subjectStats = {};
     var key = subjectId || 'none';
@@ -201,9 +206,100 @@
         min: Math.round(v)
       });
     });
-    rows.forEach(function(r){ r.pct = total > 0 ? Math.round(r.min / total * 100) : 0; });
+    /* 用取整后的显示值算占比，保证「分钟合计」与百分比自洽
+       （否则 0.68分→显示1分、total=0.68，会算出 147%） */
+    var shownTotal = rows.reduce(function(a, r){ return a + r.min; }, 0);
+    rows.forEach(function(r){ r.pct = shownTotal > 0 ? Math.round(r.min / shownTotal * 100) : 0; });
     rows.sort(function(a, b){ return b.min - a.min; });
-    return { total: Math.round(total), rows: rows };
+    /* 把舍入误差归到最小的一项，保证合计正好 100% */
+    if(rows.length > 1){
+      var sum = rows.reduce(function(a, r){ return a + r.pct; }, 0);
+      rows[rows.length - 1].pct = Math.max(0, rows[rows.length - 1].pct + (100 - sum));
+    }
+    return { total: shownTotal, rows: rows };
+  }
+
+  /* 课题稳定配色：按 id 逐字符哈希取色，增删课题不串色。
+     未分类(none)、空 id、已解散课题统一用中性灰，避免为「幽灵课题」占用专色。 */
+  function subjectColor(id){
+    var pal = CFG.SUBJECT_COLORS || [];
+    var none = CFG.SUBJECT_COLOR_NONE || '#9a9790';
+    if(!id || id === 'none' || !pal.length) return none;
+    /* 已解散的课题 id 不在现有列表里 → 中性灰 */
+    var known = false, list = subjects();
+    for(var i = 0; i < list.length; i++) if(list[i].id === id){ known = true; break; }
+    if(!known) return none;
+    var h = 0;
+    for(var j = 0; j < id.length; j++) h = (h * 31 + id.charCodeAt(j)) >>> 0;
+    return pal[h % pal.length];
+  }
+  /* id → 展示名（含 none / 已解散）；图例与进度条共用，避免各视图各写一份 */
+  function subjectName(id){
+    if(!id || id === 'none') return '未分类';
+    var list = subjects();
+    for(var i = 0; i < list.length; i++) if(list[i].id === id) return list[i].name;
+    return '已解散课题';
+  }
+
+  /* 迁移某奏折已记的专注分钟：从旧课题挪到新课题。
+     focusLog 每一条带 memorialId + 当时的 subjectId + date + minutes，
+     据此把 subjectStats / subjectDaily 里属于该奏折的分钟精确搬移。
+     聚合表本身没有 memorialId 维度，只能靠流水定位——这是唯一可靠来源。
+     返回本次迁移的分钟数（供 UI 提示）。 */
+  function moveMemorialMinutes(memorialId, newSubjectId){
+    var st = ensure();
+    var logs = Array.isArray(st.focusLog) ? st.focusLog : [];
+    var newKey = newSubjectId || 'none';
+    var moved = 0;
+    if(!st.subjectStats || typeof st.subjectStats !== 'object') st.subjectStats = {};
+    if(!st.subjectDaily || typeof st.subjectDaily !== 'object') st.subjectDaily = {};
+
+    logs.forEach(function(x){
+      if(!x || x.memorialId !== memorialId) return;
+      var min = Number(x.minutes) || 0;
+      if(min <= 0) return;
+      var oldKey = x.subjectId || 'none';
+      var day = x.date || QZD.stateIO.todayStr(new Date(x.end || Date.now()));
+      /* 流水本身也更新归属，避免下次重复迁移时仍指向旧课题 */
+      x.subjectId = newSubjectId || null;
+      if(oldKey === newKey) return;   /* 同课题无需搬 */
+      st.subjectStats[oldKey] = Math.max(0, (st.subjectStats[oldKey] || 0) - min);
+      st.subjectStats[newKey] = (st.subjectStats[newKey] || 0) + min;
+      if(st.subjectDaily[day]){
+        st.subjectDaily[day][oldKey] = Math.max(0, (st.subjectDaily[day][oldKey] || 0) - min);
+        st.subjectDaily[day][newKey] = (st.subjectDaily[day][newKey] || 0) + min;
+      }
+      moved += min;
+    });
+    return Math.round(moved * 10) / 10;
+  }
+
+  /* 改单条专注流水的课题归属（时间轴条目改课题用）。
+     用 start 时间戳定位该条，把它的分钟从旧课题搬到新课题，同步 subjectStats/subjectDaily。
+     start 相同视为同一场（focusLog 里 start 唯一）。返回迁移分钟数。 */
+  function setFocusSubject(startTs, newSubjectId){
+    var st = ensure();
+    var logs = Array.isArray(st.focusLog) ? st.focusLog : [];
+    var newKey = newSubjectId || 'none';
+    var moved = 0;
+    if(!st.subjectStats || typeof st.subjectStats !== 'object') st.subjectStats = {};
+    if(!st.subjectDaily || typeof st.subjectDaily !== 'object') st.subjectDaily = {};
+    logs.forEach(function(x){
+      if(!x || x.start !== startTs) return;
+      var min = Number(x.minutes) || 0;
+      var oldKey = x.subjectId || 'none';
+      var day = x.date;
+      x.subjectId = newSubjectId || null;
+      if(oldKey === newKey) return;
+      st.subjectStats[oldKey] = Math.max(0, (st.subjectStats[oldKey] || 0) - min);
+      st.subjectStats[newKey] = (st.subjectStats[newKey] || 0) + min;
+      if(day && st.subjectDaily[day]){
+        st.subjectDaily[day][oldKey] = Math.max(0, (st.subjectDaily[day][oldKey] || 0) - min);
+        st.subjectDaily[day][newKey] = (st.subjectDaily[day][newKey] || 0) + min;
+      }
+      moved += min;
+    });
+    return Math.round(moved * 10) / 10;
   }
 
   function shouldBreak(){
@@ -244,6 +340,10 @@
     subjects: subjects,
     addSubject: addSubject,
     removeSubject: removeSubject,
+    subjectColor: subjectColor,
+    subjectName: subjectName,
+    moveMemorialMinutes: moveMemorialMinutes,
+    setFocusSubject: setFocusSubject,
     subjectBreakdown: subjectBreakdown
   };
 })();

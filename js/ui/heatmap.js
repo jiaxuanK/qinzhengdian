@@ -88,7 +88,7 @@
     var html = '<div class="hm-month-head">';
     WEEK_CN.forEach(function(w){ html += '<span>' + w + '</span>'; });
     html += '</div><div class="hm-month">';
-    for(var i = 0; i < lead; i++) html += '<div class="hm-cell blank"></div>';
+    for(var i = 0; i < lead; i++) html += '<div class="hm-day blank"></div>';
     for(var d = 1; d <= days; d++){
       var date = new Date(now.getFullYear(), now.getMonth(), d);
       var key = ds(date);
@@ -131,24 +131,26 @@
 
       var mid = addDays(start, w * 7 + 3);
       if(mid.getMonth() !== lastMonth){
-        lastMonth = mid.getMonth();
-        monthLabels.push({ col: w, name: (mid.getMonth() + 1) + '月' });
+        var prev = monthLabels[monthLabels.length - 1];
+        /* 月份切换时放标签，但相邻标签至少隔 3 列，避免文字重叠 */
+        if(!prev || w - prev.col >= 3){
+          lastMonth = mid.getMonth();
+          monthLabels.push({ col: w, name: (mid.getMonth() + 1) + '月' });
+        }
       }
     }
 
-    var labelRow = '<div class="hm-year-months">';
-    var cursor = 0;
+    /* 绝对定位：每个标签落在对应列的 11px 起点，不跨列、不参与 grid 重叠 */
+    var labelRow = '';
     monthLabels.forEach(function(m){
-      labelRow += '<span style="grid-column:' + (m.col + 1) + ' / span 4">' + m.name + '</span>';
+      labelRow += '<span style="position:absolute;left:' + (m.col * 13) +
+        'px;top:0">' + m.name + '</span>';
     });
-    labelRow += '</div>';
 
     return '<div class="hm-year-wrap">' +
       '<div class="hm-year-wd"><span>一</span><span>三</span><span>五</span></div>' +
       '<div class="hm-year">' +
-        '<div class="hm-year-grid" style="grid-template-columns:repeat(53,1fr)">' +
-          labelRow +
-        '</div>' +
+        '<div class="hm-year-months">' + labelRow + '</div>' +
         '<div class="hm-year-cols">' + cols.join('') + '</div>' +
       '</div>' +
     '</div>' +

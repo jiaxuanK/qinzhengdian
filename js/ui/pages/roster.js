@@ -38,7 +38,7 @@
     var list = QZD.ministers.list();
     var fielded = QZD.ministers.fieldedCount();
     var war = QZD.ministers.warBonus();
-    var idle = list.filter(function(m){ return !m.fielded && !m.fromPrince; }).length;
+    var idle = list.filter(function(m){ return !m.fielded; }).length;
     return '<section class="card">' +
       '<div class="card-head"><span class="card-title">名 册</span>' +
       '<span class="card-note">上阵最多 ' + M.FIELD_SLOTS + ' 人</span></div>' +
@@ -111,6 +111,7 @@
       '<div class="portrait-wrap">' + QZD.portrait.svg(m.id, m.name) + '</div>' +
       '<div class="talent-main">' +
         '<div class="talent-name">' + UI.fmt.escape(m.name) +
+          (m.fromPrince ? ' <span class="badge rank">皇子</span>' : '') +
           (m.fielded ? ' <span class="badge ok">上阵中</span>' : '') + '</div>' +
         '<div class="attr-row">' +
           attrItem('用兵', m.war, 'war') +
@@ -122,7 +123,8 @@
       '</div>' +
       '<div class="talent-action">' + action +
         '<button class="btn ghost" data-gift="minister:' + m.id + '">赏 赐</button>' +
-        '<button class="btn ghost danger" data-dismiss="' + m.id + '">致 仕</button></div>' +
+        '<button class="btn ghost danger" data-dismiss="' + m.id + '">' +
+          (m.fromPrince ? '致仕归宗' : '致 仕') + '</button></div>' +
     '</div>';
   }
 
@@ -198,6 +200,57 @@
     '</section>';
   }
 
+  /* ---------- 侍寝统一入口（用户决策：只从「相 处」进） ----------
+     名册不再有独立「召 幸」按钮。相处弹窗里的「侍寝」项点选后，
+     先补原来那层确认（受孕率 / 耗勤政 / 增量 / 临盆），确认才真正召幸。
+     受孕链路（单次判孕 / 有孕禁召 / 喜讯 / 两屏过场）一条不删。 */
+  function doSummon(c, mid, mode){
+    var res = QZD.harem.summon(c.id, mid);
+    if(!res.ok){ UI.toast(res.error); return; }
+    if(res.isSleep){
+      /* 榻前描写直接叠在昭幸大屏的立绘上（取代台词气泡），过场不再重复。
+         双轨：以现成整段为主，按比例混入一段六频道组合叙事（story.pickBedScenes）。 */
+      var scenes = [];
+      if(QZD.story && QZD.story.pickBedScenes){
+        var hourNow = new Date().getHours();
+        var isMorning = hourNow >= 6 && hourNow < 7.5;
+        scenes = QZD.story.pickBedScenes(res.consort, hourNow, {
+          count: 3, returning: false, personalityBoost: 3,
+          hiddenBoost: isMorning ? 4 : 2   /* 早上隐藏剧情权重更高 */
+        }).scenes;
+      }
+      /* 合并一屏：次晨/隔日/喜讯作为幕后内容交给大屏演完，不再另弹过场窗 */
+      var curtains = (QZD.story && QZD.story.sleepCurtains)
+        ? QZD.story.sleepCurtains(res) : { morning:'', after:'', goodNews:'' };
+      UI.favorScreen(res.consort, res.dialogue, {
+        scenes: scenes, morning: curtains.morning,
+        after: curtains.after, goodNews: curtains.goodNews,
+        labels: curtains.labels
+      });
+      /* 喜讯 toast 保留（大屏里也有喜讯幕，双重反馈无妨） */
+      if(res.success) UI.toast('喜讯 · 「' + res.consort.name + '」有孕');
+    }else if(QZD.story){
+      QZD.story.presentMode(res.consort, res, mode);
+    }
+    UI.onStateChanged();
+  }
+  function confirmSleep(c, mid, mode){
+    var rate = Math.round(QZD.harem.rateOf(c) * 100);
+    var costQin = QZD.harem.summonCostOf(c, mode);   /* 侍寝按 costMult 计价 */
+    UI.confirm(
+      '<p>寝宫召幸「<b>' + UI.fmt.escape(c.name) + '</b>」 · ' +
+        UI.fmt.escape(QZD.harem.rankTitle(c)) + '</p>' +
+      '<p class="card-note">耗勤政值 ' + costQin + ' · 受孕率 ' + rate + '%</p>' +
+      '<p class="card-note">昭幸后「' + UI.fmt.escape(c.name) + '」宠爱 +' +
+        QZD.config.DOTE.PER_SUMMON + '、喜爱按性格 +' +
+        Math.round(QZD.config.FAVOR.PER_SUMMON * QZD.harem.personalityCoef(c.personality)) +
+        '，对话将更亲昵</p>' +
+      '<p class="card-note">有孕后约 ' + H.PREGNANCY_MIN + ' 分钟临盆，诞下皇子。</p>',
+      function(){ doSummon(c, mid, mode); },
+      { title: '寝 宫', okText: '召 幸' }
+    );
+  }
+
   /* 抽卡结果弹窗：每人带立绘缩略图 + 档位 + 三维，可勾选入宫 */
   var lastGacha = null;
 
@@ -211,7 +264,8 @@
       '<div class="gacha-pic">' + pic + '</div>' +
       '<div class="gacha-info">' +
         '<span class="pick-name">' + UI.fmt.escape(c.name) +
-          ' <span class="badge ' + tagCls + '">' + tagName + '</span></span>' +
+          ' <span class="badge ' + tagCls + '">' + tagName + '</span>' +
+          bloodChip(c) + '</span>' +
         '<span class="pick-sub">容貌 ' + c.yan + ' · 体质 ' + c.ti + ' · 才情 ' + c.cai +
           ' · ' + QZD.harem.personalityName(c.personality) +
           (c.trait ? ' · ' + UI.fmt.escape(c.trait) : '') + '</span>' +
@@ -330,10 +384,63 @@
     return '<div class="persona-meta">' + UI.fmt.escape(bits.join(' · ')) + '</div>';
   }
 
+  /* 血脉可见性：默认显示（用户 21:06 定）。
+     若想恢复「身份只在事件里自然带出」，把 config.BLOOD.SHOW_IN_ROSTER 设为 false。
+     凡俗不显示，避免满屏「凡俗」；已识破与未识破用不同标记区分。 */
+  function bloodChip(c){
+    var B = QZD.config.BLOOD;
+    if(!B || B.SHOW_IN_ROSTER === false) return '';
+    var key = c.blood || 'ren';
+    if(key === 'ren') return '';
+    var entry = (B.LIST || []).filter(function(x){ return x.key === key; })[0];
+    var name = entry ? entry.name : key;
+    var tip = entry && entry.sign ? entry.sign : '';
+    return ' <span class="badge" style="background:rgba(168,132,44,.16);' +
+      'color:var(--daiqing);border:1px solid rgba(168,132,44,.35)" ' +
+      'title="' + UI.fmt.escape(tip) + '">' + UI.fmt.escape(name) +
+      (c.veil ? ' · 已识破' : ' · 未明') + '</span>';
+  }
+
+  /* L2 可见性：她自己的日子（爱好 / 私房钱 / 自购 / 心愿） */
+  function lifeLine(c){
+    if(!QZD.life) return '';
+    var d = QZD.life.of(c), bits = [];
+    bits.push('习 ' + d.hobby + ' · ' + d.level + ' 级');
+    bits.push('私房钱 ' + d.purse);
+    if(d.last){
+      bits.push('自购 ' + d.last.name + (d.last.byEmperor ? '（陛下所添）' : ''));
+    }
+    var tail = '';
+    if(d.wish) tail = '　<span style="color:var(--teng)">心愿 · ' + UI.fmt.escape(d.wish) + '</span>';
+    if(d.rustiness > 0) tail += '　<span style="opacity:.6">久未见，略生疏</span>';
+    return '<div class="persona-meta">' + UI.fmt.escape(bits.join(' · ')) + tail + '</div>';
+  }
+
+  /* S1 可见性：她认领的专属故事线（换个人就没有） */
+  function storyLine(c){
+    if(!QZD.story) return '';
+    var d = QZD.story.of(c), inti = d.intimacy;
+    var head = '<div class="persona-meta">情感 <b style="color:var(--daiqing)">' +
+      UI.fmt.escape(inti.name) + '</b>（' + inti.score + '）' +
+      (d.address ? ' · 唤「' + UI.fmt.escape(d.address) + '」' : '') +
+      (d.phrase ? ' · 只她会说「' + UI.fmt.escape(d.phrase) + '」' : '') +
+      '</div>';
+    if(!d.lines.length) return head;
+    var names = d.lines.map(function(x){
+      return UI.fmt.escape(x.name) + ' <small style="opacity:.6">第 ' + x.stage + '/' + x.total + ' 章</small>';
+    }).join(' · ');
+    return head + '<div class="persona-meta" style="color:var(--daiqing)">' +
+      '故事 ' + names +
+      (d.milestones ? '　<small style="opacity:.6">共 ' + d.milestones + ' 段记忆</small>' : '') +
+      '</div>';
+  }
+
   /* 宠爱 / 喜爱 双迷你条（候选 / 在宫妃嫔共用） */
   function personaLine(c){
-    var fmax = (QZD.config.FAVOR && QZD.config.FAVOR.MAX) || 100;
-    var dmax = (QZD.config.DOTE && QZD.config.DOTE.MAX) || 100;
+    var fmax = (QZD.harem && QZD.harem.favorMaxOf)
+      ? QZD.harem.favorMaxOf(c) : ((QZD.config.FAVOR && QZD.config.FAVOR.MAX) || 100);
+    var dmax = (QZD.harem && QZD.harem.doteMaxOf)
+      ? QZD.harem.doteMaxOf(c) : ((QZD.config.DOTE && QZD.config.DOTE.MAX) || 100);
     var f = c.favor || 0;
     var d = c.dote || 0;
     var fp = Math.max(0, Math.min(100, Math.round(f / fmax * 100)));
@@ -341,39 +448,66 @@
     return '<div class="persona-row">' +
       '<span class="mini-pair">' +
         '<span class="mini-item"><span class="mini-tag dote">宠</span>' +
-          '<span class="favor-mini"><span class="favor-mini-fill dote" style="width:' + dp + '%"></span></span>' +
-          '<span class="favor-mini-val">' + d + '</span></span>' +
+          '<span class="favor-mini" title="宠爱 ' + d + ' / 上限 ' + dmax + '"><span class="favor-mini-fill dote" style="width:' + dp + '%"></span></span>' +
+          '<span class="favor-mini-val">' + d + '<i>/' + dmax + '</i></span></span>' +
         '<span class="mini-item"><span class="mini-tag">爱</span>' +
-          '<span class="favor-mini"><span class="favor-mini-fill" style="width:' + fp + '%"></span></span>' +
-          '<span class="favor-mini-val">' + f + '</span></span>' +
+          '<span class="favor-mini" title="喜爱 ' + f + ' / 上限 ' + fmax + '"><span class="favor-mini-fill" style="width:' + fp + '%"></span></span>' +
+          '<span class="favor-mini-val">' + f + '<i>/' + fmax + '</i></span></span>' +
       '</span>' +
     '</div>';
   }
 
+  /* 妃子生育的皇子数（含已致仕/归宗的，按 motherId 计） */
+  function childCountOf(c){
+    var list = QZD.state.princes || [];
+    var n = 0;
+    for(var i = 0; i < list.length; i++){
+      if(list[i] && list[i].motherId === c.id) n++;
+    }
+    return n;
+  }
+
   function consortCard(c){
     var rate = Math.round(QZD.harem.rateOf(c) * 100);
-    var costQin = QZD.harem.summonCostOf(c);
+    var costQin = QZD.harem.summonCostOf(c, { costMult: 2 });   /* 侍寝价（残留展示计算） */
     var jin = QZD.state.resources.qinZheng;
     var title = QZD.harem.rankTitle(c);
-    var action;
-    if(c.pregnant){
-      action = '<span class="badge buff">有孕在身</span>';
-    }else if(jin + 1e-9 < costQin){
-      action = '<button class="btn primary" disabled>召 幸</button>';
-    }else{
-      action = '<button class="btn primary" data-summon="' + c.id + '">召 幸</button>';
-    }
+    /* 侍寝统一从「相 处」进入（用户决策）：名册不再放独立「召 幸」按钮，
+       避免两个入口通往同一件事、也避免绕过确认弹窗误点直接判一次喜讯。 */
+    var action = c.pregnant ? '<span class="badge buff">有孕在身</span>' : '';
 
     var rankBtn;
     if(QZD.harem.isMaxRank(c)){
       rankBtn = '<button class="btn ghost" disabled>已至贵妃</button>';
     }else{
       var rc = QZD.harem.ennobleCost(c);
-      rankBtn = '<button class="btn ghost" data-ennoble="' + c.id + '">册 封 · ' +
-        rc.jin + '金/' + rc.sw + '望</button>';
+      var need = QZD.harem.promoteNeed ? QZD.harem.promoteNeed(c) : null;
+      var ready = QZD.harem.promoteReady ? QZD.harem.promoteReady(c) : true;
+      var cap = QZD.harem.doteMaxOf ? QZD.harem.doteMaxOf(c) : 100;
+      var needTxt = need ? ('晋 ' + need.title + '：宠爱需达 ' + need.dote +
+        ' / 上限 ' + cap + '（现 ' + Math.round(c.dote || 0) +
+        '）· 喜爱不计入') : '';
+      rankBtn = '<button class="btn ghost" data-ennoble="' + c.id + '"' +
+        (ready ? '' : ' disabled') + ' title="' + UI.fmt.escape(needTxt) + '">' +
+        (ready ? ('册 封 · ' + rc.jin + '金/' + rc.sw + '望') : '宠爱未满') + '</button>';
     }
 
     var multiPose = (Array.isArray(c.poses) && c.poses.length > 1);
+    var wishBtn = '';
+    if(QZD.life){
+      var lv = QZD.life.of(c);
+      if(lv.wish){
+        var enough = (QZD.state.resources.jinQian + 1e-9 >= lv.wishCost);
+        wishBtn = '<button class="btn ghost" data-grant-wish="' + c.id + '"' +
+          (enough ? '' : ' disabled') + '>偿心愿 · ' + lv.wishCost + ' 金</button>';
+      }
+    }
+    var storyBtn = QZD.story
+      ? '<button class="btn ghost" data-story="' + c.id + '">她的故事</button>' : '';
+    /* 唯一主入口：12 种相处方式（含侍寝）都从这里进 */
+    var modeBtn = (QZD.story && QZD.config.SUMMON_MODES)
+      ? '<button class="btn primary" data-modes="' + c.id + '" ' +
+        'title="侍寝亦在此处，点选后会先确认">相 处</button>' : '';
     return '<div class="talent-card consort' + (c.pregnant ? ' pregnant' : '') + '">' +
       '<div class="portrait-wrap fem consort-pic' + (multiPose ? ' multi' : '') + '"' +
         (multiPose ? ' data-cycle-pose="' + c.id + '" title="点击更换立绘（' +
@@ -384,6 +518,7 @@
       '<div class="talent-main">' +
         '<div class="talent-name">' + UI.fmt.escape(c.name) + ' ' + personaChip(c) +
           (c.rare ? ' <span class="badge rare">绝色</span>' : '') +
+          bloodChip(c) +
           ' <span class="badge rank">' + UI.fmt.escape(title) + '</span>' +
           (c.pregnant ? ' <span class="badge buff">有孕</span>' : '') + '</div>' +
         '<div class="attr-row">' +
@@ -392,15 +527,20 @@
           attrItem('才情', c.cai, 'war') +
         '</div>' +
         personaMeta(c) +
+        lifeLine(c) +
+        storyLine(c) +
         personaLine(c) +
-        '<div class="talent-foot">受孕率 ' + rate + '% · 召幸耗勤政 ' + costQin +
+        '<div class="talent-foot">' +
+          (childCountOf(c) ? '<b class="child-count">诞皇子 ' + childCountOf(c) + ' 人</b> · ' : '') +
+          '受孕率 ' + rate + '% · 召幸耗勤政 ' + costQin +
           (jin + 1e-9 < costQin && !c.pregnant ? '（勤政不足）' : '') +
           (multiPose ? ' · 姿态 <span data-pose-label="' + c.id + '">' +
             ((c.poseIndex || 0) + 1) + '/' + c.poses.length + '</span>（点立绘换）' : '') + '</div>' +
         pregnancyLine(c) +
       '</div>' +
-      '<div class="talent-action consort-actions">' + action + rankBtn +
-        '<button class="btn ghost" data-gift="consort:' + c.id + '">赏 赐</button></div>' +
+      '<div class="talent-action consort-actions">' + modeBtn + action + rankBtn +
+        '<button class="btn ghost" data-gift="consort:' + c.id + '">赏 赐</button>' +
+        wishBtn + storyBtn + '</div>' +
     '</div>';
   }
 
@@ -442,6 +582,7 @@
       if(!list.length){ rankFilter = 'all'; list = all; }  /* 该位分无人时自动回到全部 */
     }
     var note = '共 ' + all.length + ' 人 · 有孕 ' + QZD.harem.pregnantCount() +
+      (QZD.story ? ' · 已生故事 ' + QZD.story.state().history.length + ' 段' : '') +
       (rankFilter === 'all' ? '' : ' · 当前 ' + list.length);
     return '<section class="card">' +
       '<div class="card-head"><span class="card-title">在宫妃嫔</span>' +
@@ -471,6 +612,9 @@
     var minBtn = '<button class="btn primary" data-prince-minister="' + p.id + '"' +
       (sw + 1e-9 < (R.MINISTER_COST_SW || 0) ? ' disabled' : '') + '>入朝 · ' +
       (R.MINISTER_COST_SW || 0) + ' 望</button>';
+    /* 致仕按钮：醒目的独立入口，资质不合意时一眼能找到 */
+    var retireBtn = '<button class="btn danger sm" data-prince-retire="' + p.id +
+      '" title="资质不合意可致仕归宗，按已投入培养金返还五成，之后可复起">致仕归宗</button>';
 
     return '<div class="talent-card">' +
       '<div class="portrait-wrap">' + QZD.portrait.svg(p.id, p.name, { kind: 'prince' }) + '</div>' +
@@ -485,13 +629,34 @@
         '<div class="talent-foot">生母 ' + UI.fmt.escape(p.motherName) +
           ' · 诞于 ' + UI.fmt.time(p.bornAt) + ' · 已培养 ' + n + ' 次</div>' +
       '</div>' +
-      '<div class="talent-action prince-actions">' + trainBtn + minBtn + '</div>' +
+      '<div class="talent-action prince-actions">' + trainBtn + minBtn + retireBtn + '</div>' +
     '</div>';
   }
 
+  /* 致仕折叠区：显示已致仕皇子的资质，可复起 */
+  function retiredPrincesPanel(){
+    var list = QZD.harem.retiredPrinces();
+    if(!list.length) return '';
+    var rows = list.map(function(p){
+      return '<div class="retired-prince-row">' +
+        '<span class="rp-name">' + UI.fmt.escape(p.name) + '</span>' +
+        '<span class="rp-attr">兵 ' + (p.war || 0) + ' · 政 ' + (p.gov || 0) +
+          ' · 文 ' + (p.lit || 0) + '</span>' +
+        '<button class="btn ghost sm" data-prince-restore="' + p.id + '">复起</button>' +
+      '</div>';
+    }).join('');
+    return '<section class="card retired-princes">' +
+      '<div class="card-head"><span class="card-title">已致仕宗室</span>' +
+        '<span class="card-note">' + list.length + ' 人 · 归宗闲居，可复起入册</span></div>' +
+      '<div class="rp-list">' + rows + '</div>' +
+      '<p class="page-foot" style="margin-top:8px">致仕返还已投入培养金的五成；复起免费，' +
+        '但不会二次补发已领过的返还。</p>' +
+    '</section>';
+  }
+
   function princesPanel(){
-    var list = QZD.harem.princes();
-    if(!list.length){
+    var list = QZD.harem.activePrinces();
+    if(!list.length && !QZD.harem.retiredPrinces().length){
       return '<section class="card">' +
         '<div class="card-head"><span class="card-title">皇 子</span>' +
         '<span class="card-note">尚无皇子</span></div>' +
@@ -501,11 +666,16 @@
           '</div></div>' +
       '</section>';
     }
-    return '<section class="card">' +
-      '<div class="card-head"><span class="card-title">皇 子</span>' +
-      '<span class="card-note">共 ' + list.length + ' 人 · 资质量于帝父与生母</span></div>' +
-      '<div class="talent-list">' + list.map(princeCard).join('') + '</div>' +
-    '</section>';
+    var main = list.length
+      ? '<section class="card">' +
+          '<div class="card-head"><span class="card-title">皇 子</span>' +
+          '<span class="card-note">在册 ' + list.length + ' 人 · 资质量于帝父与生母</span></div>' +
+          '<div class="talent-list">' + list.map(princeCard).join('') + '</div>' +
+        '</section>'
+      : '<section class="card"><div class="card-head"><span class="card-title">皇 子</span>' +
+          '<span class="card-note">在册 0 人 · 已致仕者见下方</span></div>' +
+          '<div class="empty">目前无在册皇子</div></section>';
+    return main + retiredPrincesPanel();
   }
 
   function render(){
@@ -538,8 +708,12 @@
     for(var i = 0; i < TABS.length; i++){
       if(TABS[i].id === id){ activeTab = id; break; }
     }
-    var cur = QZD.ui.currentTab ? QZD.ui.currentTab() : QZD.ui.current();
-    if(cur === 'roster') QZD.ui.renderPage();
+    /* 名册是 court 群组的子页：UI.current() 返回一级页 court，
+       UI.currentTab() 才返回子页 roster。用错前者会导致点了标签不重绘（卡住）。
+       两个都认，兼容名册作为独立一级页的旧入口。 */
+    var top = QZD.ui.current ? QZD.ui.current() : '';
+    var sub = QZD.ui.currentTab ? QZD.ui.currentTab() : '';
+    if(top === 'roster' || sub === 'roster') QZD.ui.renderPage();
   }
 
   QZD.roster = {
@@ -565,7 +739,7 @@
     var rf = e.target.closest('[data-rfilter]');
     if(rf){
       rankFilter = rf.getAttribute('data-rfilter') || 'all';
-      var curTab = QZD.ui.currentTab ? QZD.ui.currentTab() : QZD.ui.current();
+      var curTab = QZD.ui.current ? QZD.ui.current() : '';
       if(curTab === 'roster') QZD.ui.renderPage();
       return;
     }
@@ -605,16 +779,20 @@
       var sum = (m0.war || 0) + (m0.gov || 0) + (m0.lit || 0);
       var est = Math.round(sum * 1.2), estSw = Math.round(sum * 0.15);
       UI.confirm(
-        '<p>「' + m0.name + '」致仕归乡？</p>' +
+        '<p>「' + m0.name + '」致仕' + (m0.fromPrince ? '归宗' : '归乡') + '？</p>' +
         '<p class="card-note">三维合计 ' + sum + ' · 可返还金钱约 ' + est + ' · 声望约 ' + estSw +
-        (m0.fielded ? ' · 当前上阵中，将自动撤下' : '') + '</p>',
+        (m0.fielded ? ' · 当前上阵中，将自动撤下' : '') + '</p>' +
+        (m0.fromPrince
+          ? '<p class="card-note">他是皇子出身，致仕后回到「已致仕宗室」，日后可复起，不会消失。</p>'
+          : ''),
         function(){
           var r = QZD.ministers.dismiss(m0.id);
           if(!r.ok){ UI.toast(r.error); return; }
-          UI.toast('「' + r.name + '」致仕 · 金钱 +' + r.gain.jinQian + ' · 声望 +' + r.gain.shengWang);
+          UI.toast('「' + r.name + '」致仕' + (r.prince ? '归宗' : '') +
+            ' · 金钱 +' + r.gain.jinQian + ' · 声望 +' + r.gain.shengWang);
           UI.onStateChanged();
         },
-        { title: '致仕', okText: '准其归乡' }
+        { title: '致仕', okText: m0.fromPrince ? '准其归宗' : '准其归乡' }
       );
       return;
     }
@@ -622,24 +800,56 @@
     /* 批量遣散闲置大臣（未上阵的） */
     var dismissIdleBtn = e.target.closest('[data-dismiss-idle]');
     if(dismissIdleBtn){
-      var idleCount = QZD.ministers.list().filter(function(m){
-        return !m.fielded && !m.fromPrince;
-      }).length;
+      var idleCount = QZD.ministers.list().filter(function(m){ return !m.fielded; }).length;
       if(!idleCount){
         UI.toast('没有可遣散的闲置大臣');
         return;
       }
       UI.confirm(
         '<p>遣散全部 <b>' + idleCount + '</b> 位闲置大臣（未上阵者）？</p>' +
-        '<p class="card-note">按各自三维返还金钱与声望；上阵中的大臣保留；皇子出身的不遣散。</p>',
+        '<p class="card-note">按各自三维返还金钱与声望；上阵中的大臣保留；皇子出身者归宗入已致仕名册，不消失。</p>',
         function(){
           var r = QZD.ministers.dismissIdle();
           if(!r.ok){ UI.toast(r.error); return; }
-          UI.toast('遣散 ' + r.count + ' 人 · 金钱 +' + r.gain.jinQian + ' · 声望 +' + r.gain.shengWang);
+          UI.toast('遣散 ' + r.count + ' 人' + (r.backToPrince ? '（皇子 ' + r.backToPrince + ' 归宗）' : '') +
+            ' · 金钱 +' + r.gain.jinQian + ' · 声望 +' + r.gain.shengWang);
           UI.onStateChanged();
         },
         { title: '遣散闲置', okText: '全部遣散' }
       );
+      return;
+    }
+
+    /* L2：陛下替她偿心愿 —— 由国库代付，关键节点玩家在场 */
+    var grantBtn = e.target.closest('[data-grant-wish]');
+    if(grantBtn){
+      if(grantBtn.disabled || !QZD.life) return;
+      var wid = grantBtn.getAttribute('data-grant-wish');
+      var wc = QZD.harem.consortById(wid);
+      if(!wc) return;
+      var wd = QZD.life.of(wc);
+      var gf = (QZD.config.LIFE && QZD.config.LIFE.GRANT_FAVOR) || 3;
+      UI.confirm(
+        '<p>「' + UI.fmt.escape(wc.name) + '」攒着钱想买 <b>' + UI.fmt.escape(wd.wish) +
+          '</b>，眼下私房钱 ' + wd.purse + ' 尚不够。</p>' +
+        '<p class="card-note">由国库代付 ' + wd.wishCost + ' 金钱 · ' +
+          UI.fmt.escape(wd.hobby) + ' 另有进益 · 喜爱 +' + gf +
+          '。日常小物她自己买，这一件由陛下添，才算你在场。</p>',
+        function(){
+          var r = QZD.life.grantWish(wid);
+          if(!r.ok){ UI.toast(r.error); return; }
+          UI.toast('已替「' + r.name + '」添了' + r.item + ' · 国库 −' + r.cost + ' 金');
+          UI.onStateChanged();
+        },
+        { title: '偿其心愿', okText: '准 · 由国库支 ' + wd.wishCost + ' 金' }
+      );
+      return;
+    }
+
+    /* S1：她的故事 —— 已认领的独占线 + 共同记忆 */
+    var storyBtnEl = e.target.closest('[data-story]');
+    if(storyBtnEl){
+      if(QZD.story) QZD.story.show(storyBtnEl.getAttribute('data-story'));
       return;
     }
 
@@ -773,31 +983,132 @@
       return;
     }
 
-    var summonBtn = e.target.closest('[data-summon]');
-    if(summonBtn){
-      var c = QZD.harem.consortById(summonBtn.getAttribute('data-summon'));
-      if(!c) return;
-      var rate = Math.round(QZD.harem.rateOf(c) * 100);
-      var costQin = QZD.harem.summonCostOf(c);
-      UI.confirm(
-        '<p>寝宫召幸「<b>' + UI.fmt.escape(c.name) + '</b>」 · ' +
-          UI.fmt.escape(QZD.harem.rankTitle(c)) + '</p>' +
-        '<p class="card-note">耗勤政值 ' + costQin + ' · 受孕率 ' + rate + '%</p>' +
-        '<p class="card-note">昭幸后「' + UI.fmt.escape(c.name) + '」宠爱 +' +
-          QZD.config.DOTE.PER_SUMMON + '、喜爱按性格 +' + Math.round(QZD.config.FAVOR.PER_SUMMON * QZD.harem.personalityCoef(c.personality)) +
-          '，对话将更亲昵</p>' +
-        '<p class="card-note">有孕后约 ' + H.PREGNANCY_MIN + ' 分钟临盆，诞下皇子。</p>',
-        function(){
-          var res = QZD.harem.summon(c.id);
-          if(!res.ok){ UI.toast(res.error); return; }
-          UI.favorScreen(res.consort, res.dialogue);   /* 昭幸大屏：立绘 + 性格对话 + 喜爱 */
-          if(res.success) UI.toast('喜讯 · 「' + res.consort.name + '」有孕');
-          UI.onStateChanged();
-        },
-        { title: '寝 宫', okText: '召 幸' }
-      );
+    /* S2：相处方式 —— 12 种，按才艺与情感浓度筛选，每种都是剧情入口 */
+    var modesBtn = e.target.closest('[data-modes]');
+    if(modesBtn){
+      var mc = QZD.harem.consortById(modesBtn.getAttribute('data-modes'));
+      if(!mc || !QZD.story) return;
+      var inti = QZD.formulas.intimacyOf(mc);
+      var IT = QZD.config.INTIMACY || {};
+      var allModes = QZD.config.SUMMON_MODES || [];
+      /* 入口收拢（默认）：只给「侍寝」与「才艺（随机一样）」两项。
+         数据仍是 12 种、文案一条没少；SUMMON_UI.COMPACT=false 可恢复原列表。 */
+      var COMPACT = !(QZD.config.SUMMON_UI && QZD.config.SUMMON_UI.COMPACT === false);
+      function lockOf(m){
+        var traitOK = !m.trait || m.trait === '-' ||
+          (Array.isArray(m.trait) ? m.trait.indexOf(mc.trait) >= 0 : m.trait === mc.trait);
+        var tierOK = inti.index >= (m.minTier || 0);
+        /* 有孕禁侍寝，但其它相处方式照常可用 */
+        var pregBlock = !!(m.sleep && mc.pregnant);
+        return { locked: pregBlock || traitOK === false || tierOK === false,
+          why: pregBlock ? '有孕在身，暂不宜召幸'
+             : (traitOK === false ? '需 ' + (Array.isArray(m.trait) ? m.trait.join('/') : m.trait)
+             : (tierOK === false ? '需 ' + ((IT.TIERS && IT.TIERS[m.minTier] || {}).name || '更亲近') : '')) };
+      }
+      /* 她的才艺由选秀时定下的 trait 决定，不由玩家挑、也不随机：
+         善琴→听琴、善棋→对弈、善书→共读、善画→赏画、善舞→观舞、
+         能诗→和诗（专属）、通医→问诊、精绣→缝衣。
+         若该模式因情感浓度未解锁，只如实提示，不替换成她会做之外的事。 */
+      function herArt(){
+        var arts = allModes.filter(function(m){
+          return !m.sleep && m.trait && m.trait !== '-';
+        });
+        var own = arts.filter(function(m){
+          return Array.isArray(m.trait) ? m.trait.indexOf(mc.trait) >= 0 : m.trait === mc.trait;
+        });
+        if(!own.length) return null;
+        /* 专属优先：模式的 trait 只此一项（如「和诗」只属能诗），
+           避免「能诗」被共享的「共读」抢走 */
+        var exclusive = own.filter(function(m){
+          return !Array.isArray(m.trait) || m.trait.length === 1;
+        });
+        return exclusive[0] || own[0];
+      }
+      /* 旧档无 trait / 特质无对应技艺时，退到通用相处（奉茶） */
+      function generalArt(){
+        return allModes.filter(function(m){
+          return !m.sleep && (!m.trait || m.trait === '-');
+        })[0] || null;
+      }
+      var rows;
+      if(COMPACT){
+        var sm = allModes.filter(function(m){ return m.sleep; })[0];
+        var sl = sm ? lockOf(sm) : { locked: true, why: '缺配置' };
+        var art = herArt() || generalArt();
+        var al = art ? lockOf(art) : { locked: true, why: '缺配置' };
+        rows = '';
+        if(sm){
+          rows += '<button class="pick-row" data-mode="sleep"' + (sl.locked ? ' disabled' : '') + '>' +
+            '<span class="pick-name">侍 寝 <small class="card-note">（判喜讯）</small></span>' +
+            '<span class="pick-sub">屏退左右，罗帐落下 · 耗勤政 ' +
+              QZD.harem.summonCostOf(mc, sm) +
+              (sl.locked ? ' · 未解锁：' + UI.fmt.escape(sl.why) : '') + '</span></button>';
+        }
+        rows += '<button class="pick-row" data-mode="arts"' + (al.locked ? ' disabled' : '') + '>' +
+          '<span class="pick-name">' +
+            (art ? (art.trait && art.trait !== '-' ? '才 艺 · ' + UI.fmt.escape(art.name)
+                                                   : '相 处 · ' + UI.fmt.escape(art.name))
+                 : '相 处') +
+            ' <small class="card-note">（按她的特质）</small></span>' +
+          '<span class="pick-sub">' +
+            (art ? UI.fmt.escape(art.desc) + ' · 耗勤政 ' + QZD.harem.summonCostOf(mc, art) +
+                   (al.locked ? ' · 未解锁：' + UI.fmt.escape(al.why) : '')
+                 : '暂无可用') +
+          '</span></button>';
+      }else{
+        rows = allModes.map(function(m){
+          var L = lockOf(m);
+          return '<button class="pick-row" data-mode="' + UI.fmt.escape(m.id) + '"' +
+            (L.locked ? ' disabled' : '') + '>' +
+            '<span class="pick-name">' + UI.fmt.escape(m.name) +
+              (m.sleep ? ' <small class="card-note">（侍寝 · 判喜讯）</small>' : '') + '</span>' +
+            '<span class="pick-sub">' + UI.fmt.escape(m.desc) +
+              ' · 耗勤政 ' + QZD.harem.summonCostOf(mc, m) +
+              (L.locked ? ' · 未解锁：' + UI.fmt.escape(L.why) : '') + '</span></button>';
+        }).join('');
+      }
+      var mm = QZD.ui.modal({
+        title: '与「' + UI.fmt.escape(mc.name) + '」相处',
+        body: '<p class="card-note" style="margin:0 0 8px">情感浓度 <b>' +
+          UI.fmt.escape(inti.name) + '</b>（' + inti.score + '）· ' +
+          UI.fmt.escape(inti.label) + '　侍寝耗勤政 ' +
+          QZD.harem.summonCostOf(mc, allModes.filter(function(x){ return x.sleep; })[0]) +
+          '（×2），日常陪伴更省。' +
+          (COMPACT
+            ? '侍寝会先确认再行；才艺按她的特质自动选（选秀时已定）。'
+            : '侍寝在末项，点选后会先确认再行。') + '</p>' +
+          '<div style="max-height:320px;overflow:auto">' + rows + '</div>',
+        ok: false, cancelText: '改日'
+      });
+      mm.root.addEventListener('click', function(ev){
+        var b = ev.target.closest && ev.target.closest('[data-mode]');
+        if(!b || b.disabled) return;
+        var mid = b.getAttribute('data-mode');
+        /* 才艺入口：按她的特质直接执行，不再随机、不再让玩家挑 */
+        if(mid === 'arts'){
+          var pickArt = herArt() || generalArt();
+          if(!pickArt){ UI.toast('暂无可用的相处方式'); return; }
+          var pl = lockOf(pickArt);
+          if(pl.locked){ UI.toast('该项未解锁：' + pl.why); return; }
+          mm.close();
+          doSummon(mc, pickArt.id, pickArt);
+          return;
+        }
+        var mode = allModes.filter(function(x){ return x.id === mid; })[0];
+        if(!mode) return;
+        mm.close();
+        if(mode.sleep){
+          /* 侍寝：补一层确认，确认后才判喜讯，避免误点直接扣勤政 */
+          confirmSleep(mc, mid, mode);
+        }else{
+          doSummon(mc, mid, mode);
+        }
+      });
       return;
     }
+
+    /* 原独立「召 幸」按钮的分支已移除：侍寝统一走上方「相 处」弹窗里的
+       侍寝项（confirmSleep → doSummon），受孕链路与两屏过场原样保留。 */
 
     var ennobleBtn = e.target.closest('[data-ennoble]');
     if(ennobleBtn){
@@ -848,6 +1159,41 @@
         },
         { title: '入 朝', okText: '耗 ' + pcost + ' 声望入朝' }
       );
+      return;
+    }
+
+    var retBtn = e.target.closest('[data-prince-retire]');
+    if(retBtn){
+      var rid = retBtn.getAttribute('data-prince-retire');
+      var rp = QZD.harem.activePrinces().filter(function(x){ return x.id === rid; })[0];
+      if(!rp) return;
+      var refund = QZD.formulas.princeTrainInvested(rp.trainCount) *
+        (CFG.PRINCE.RETIRE_REFUND_RATIO || 0);
+      var already = Math.floor(Number(rp.retireRefunded) || 0);
+      var willGet = Math.max(0, Math.floor(refund) - already);
+      UI.confirm(
+        '<p>令皇子「' + UI.fmt.escape(rp.name) + '」致仕归宗？</p>' +
+        '<p class="card-note">他将退出在册名册，移入「已致仕宗室」；日后可复起。' +
+          '按已投入培养金返还 <b>' + willGet + '</b> 金' +
+          (willGet === 0 ? '（尚未培养或已领过返还）' : '') + '。</p>',
+        function(){
+          var r = QZD.harem.retirePrince(rid);
+          if(!r.ok){ UI.toast(r.error); return false; }
+          UI.toast('皇子「' + r.prince.name + '」致仕 · 返还 ' + r.refund + ' 金');
+          UI.onStateChanged();
+        },
+        { title: '致 仕', okText: '令其致仕' }
+      );
+      return;
+    }
+
+    var restBtn = e.target.closest('[data-prince-restore]');
+    if(restBtn){
+      var restoreId = restBtn.getAttribute('data-prince-restore');
+      var rr = QZD.harem.restorePrince(restoreId);
+      if(!rr.ok){ UI.toast(rr.error); return; }
+      UI.toast('皇子「' + rr.prince.name + '」复起入册');
+      UI.onStateChanged();
       return;
     }
   });

@@ -13,6 +13,25 @@
   }
 
   QZD.formulas = {
+    /* S2 情感浓度：喜爱 / 宠爱 / 里程碑 / 重逢 合成 0~100，四档。
+       只驱动文风与相处方式解锁，不影响任何资源产出。 */
+    intimacyOf: function(c){
+      var I = QZD.config.INTIMACY || {}, tiers = I.TIERS || [];
+      var clamp = function(v){ return Math.max(0, Math.min(100, Number(v) || 0)); };
+      var milestone = Math.min(5, Math.max(0, (c && c.milestones) || 0)) / 5 * 100;
+      var reunion   = Math.min(5, Math.max(0, (c && c.reunions)   || 0)) / 5 * 100;
+      var score = Math.round((I.W_FAVOR || 0.40) * clamp(c && c.favor) +
+                            (I.W_DOTE  || 0.30) * clamp(c && c.dote) +
+                            (I.W_MILESTONE || 0.20) * milestone +
+                            (I.W_REUNION   || 0.10) * reunion);
+      score = Math.max(0, Math.min(100, score));
+      var idx = 0, t = tiers[0] || { key: 'sheng', name: '生疏', label: '' };
+      for(var i = 0; i < tiers.length; i++){
+        if(score >= tiers[i].min){ idx = i; t = tiers[i]; }
+      }
+      return { score: score, index: idx, key: t.key, name: t.name, label: t.label || '' };
+    },
+
     /* 专注产出倍率：凝神每级 +2%（原 3%），作用于全部三资源 */
     focusRate: function(){
       return 1 + 0.02 * (QZD.state.emperor.ningShen || 0);
@@ -79,6 +98,16 @@
       var base = ((emperorLevel || 0) * 10 + (motherStat || 0)) / 2;
       var roll = base + (Math.random() * 2 - 1) * P.VARIANCE;
       return Math.max(P.ATTR_MIN, Math.min(P.ATTR_MAX, Math.round(roll)));
+    },
+
+    /* 皇子累计培养投入：第 i 次（从 0 起）花费 TRAIN_COST + i×TRAIN_STEP。
+       培养 n 次的总投入 = n×TRAIN_COST + TRAIN_STEP×n×(n-1)/2。
+       致仕返还按此投入 × RETIRE_REFUND_RATIO，避免只看次数的失真。 */
+    princeTrainInvested: function(trainCount){
+      var P = QZD.config.PRINCE;
+      var n = Math.max(0, Math.floor(Number(trainCount) || 0));
+      var step = Number(P.TRAIN_STEP) || 0;
+      return n * (Number(P.TRAIN_COST) || 0) + step * n * (n - 1) / 2;
     },
 
     /* 战力 = (国力 + 名臣战力加成) × (1 + 营造战力加成) × (1 + 当日征伐 BUFF) */

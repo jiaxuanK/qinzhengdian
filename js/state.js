@@ -66,7 +66,9 @@
         pauseCount: 0,
         pausedTotalSec: 0,
         pauseStartedAt: null,
-        gained: { qinZheng: 0, jinQian: 0, guoJin: 0 }
+        gained: { qinZheng: 0, jinQian: 0, guoJin: 0 },
+        morningBoost: false,   /* 本场是否为晨课倍率场（金钱 ×1.5），结束即清 */
+        signBonus: null        /* 本场晨课签约金（单独记账，不进 gained，避免污染分钟反推） */
       },
       /* 每日打卡：goals 为今日自建小目标，history 为历史得分（热力图数据源） */
       checkin: { date: todayStr(), goals: [], history: {}, buff: null },
@@ -79,7 +81,7 @@
       consorts: [], xuanxiu: { candidates: [] }, princes: [], sleep: {},
       items: {},              /* 珍宝阁背包：itemId -> 数量 */
       /* 学习目标与偏好：把游戏节奏绑回真实专注 */
-      settings: { focusQuiet: true, zen: false },
+      settings: { focusQuiet: true, zen: false, chronosView: 'hour' },
       study: {
         date: todayStr(),
         targetMin: (CFG.STUDY ? CFG.STUDY.DAILY_TARGET_MIN : 120),
@@ -91,11 +93,15 @@
         subject: '',
         history: {},
         hourStats: {},       /* 专注分钟按「小时(0–23)」累计，供热力图式时段分析 */
+        dayHour: {},         /* 专注分钟按「日期×小时」累计：{ 'YYYY-MM-DD': { h: min } }，供日程网格 */
+        focusLog: [],        /* 专注流水：每场一条 { date,start,end,minutes,title,memorialId,subjectId,morning,full }，供时间轴显示任务名与连贯性 */
         subjects: [],        /* 课题（科研项目）列表：{ id, name } */
         subjectStats: {},    /* 专注分钟按课题累计：{ subjectId | 'none': minutes } */
         subjectDaily: {},    /* 按日期×课题：{ 'YYYY-MM-DD': { subjectId: min } } */
         abandonLog: [],      /* 中断记录：{ at, reason, minutes, title } */
-        imperialDate: ''     /* 最近一次「御批」日期，保证每天只批一次 */
+        imperialDate: '',    /* 最近一次「御批」日期，保证每天只批一次 */
+        morningDone: '',     /* 晨课日期戳：当日已收工领过奖励则为今天日期 */
+        morningStarted: ''   /* 晨课开场日期戳：当日开始专注时已弹过剧情则为今天日期 */
       },
       /* M5 内政营造：levels 为各工程等级，lastAt 为产出补算时间戳 */
       works: { levels: {}, lastAt: now },
@@ -108,12 +114,54 @@
       /* M8 科研办公：本周三事 + 专注进展流水 / 组会纪要 / 精读队列 */
       plan: { weekKey: '', goals: [], progress: [] },
       meetings: [],
-      reading: { queue: [], pickDate: '', pickId: null }
+      reading: { queue: [], pickDate: '', pickId: null },
+
+      /* P0 开殿分配：内帑记账（主账户 resources.jinQian 即国库） */
+      privy: {
+        balance: 0, pendingDays: 0, tierId: (CFG.PRIVY && CFG.PRIVY.DEFAULT_TIER) || 'usual',
+        totalCaptured: 0, totalAllocated: 0,
+        lastSettledDate: '', lastShownDate: '', lastCountedDate: ''
+      },
+      /* L2：妃子自主生活的全局周结算 / 回归小结 */
+      life: { lastSeenDate: '', lastSettledWeek: '', lastSummary: '' },
+      /* S1/S2 剧情：已认领线 / 保底计数 / 旧档追认 / 片段冷却 / 起居注索引 */
+      story: {
+        version: 1, lines: {}, history: [], attempts: {}, retroDone: false,
+        lastRollDate: '', lastNodeDate: '', lastSeenDate: '', lastReunionDate: '',
+        forceUsedDate: '', recentFragments: [], fragmentOwner: {}, lastSummon: null
+      },
+      /* F1/F2/F3 温和版国势：安定度槽 + 分级事件 + 拨乱反正 */
+      dynasty: {
+        stability: (CFG.DYNASTY && CFG.DYNASTY.INITIAL) || 80,
+        level: 'calm', lastSettledDate: '', fired: [],
+        crisisDays: 0, wasCrisis: false, restoredAt: 0,
+        deepestLevel: 'calm'   /* 本次危机周期到达过的最深级别，用于 F3 奖励门槛 */
+      },
+      /* 快捷栏：{ id, label, url, color, category, hideUrl }。
+         点标签用系统浏览器/系统协议打开，不占游戏内存。category: ai/study/work/notes。 */
+      quickLinks: (CFG.QUICK_LINKS || []).map(function(x, i){
+        return { id: x.id || ('ql' + i), label: x.label, url: x.url,
+                 color: x.color || '', category: x.category || 'study',
+                 hideUrl: x.hideUrl !== false };
+      }),
+      /* 快捷栏分类：{ id, name, parentId }，parentId 为父分类 id、空串表示顶层。
+         可无限层级嵌套；首项恒为 all（虚拟"全部"，不作归属）。 */
+      quickCategories: (CFG.QUICK_CATEGORIES || [{id:'all',name:'全部'}]).map(function(c){
+        return { id: c.id, name: c.name, parentId: c.parentId || '' };
+      })
     };
   }
 
   /* 旧档补齐 M2/M3/M4/M5 字段，避免读档后某些模块拿到 undefined */
   function normalize(obj){
+    /* meta 兜底：旧档可能缺字段 */
+    if(!obj.meta || typeof obj.meta !== 'object') obj.meta = {};
+    if(typeof obj.meta.schemaVersion !== 'number') obj.meta.schemaVersion = CFG.SCHEMA_VERSION;
+    if(typeof obj.meta.createdAt !== 'number') obj.meta.createdAt = Date.now();
+    if(typeof obj.meta.lastSavedAt !== 'number') obj.meta.lastSavedAt = obj.meta.createdAt;
+    if(!obj.meta.lastDailyReset) obj.meta.lastDailyReset = todayStr();
+    if(!obj.meta.emperorName) obj.meta.emperorName = '朕';
+
     if(!Array.isArray(obj.cities)) obj.cities = [];
     if(!Array.isArray(obj.territories)) obj.territories = [];
     if(!Array.isArray(obj.ministers)) obj.ministers = [];
@@ -225,7 +273,11 @@
     if(!ST.date) ST.date = todayStr();
     if(!Array.isArray(obj.princes)) obj.princes = [];
     obj.princes.forEach(function(p){
-      if(p && typeof p === 'object' && typeof p.trainCount !== 'number') p.trainCount = 0;
+      if(!p || typeof p !== 'object') return;
+      if(typeof p.trainCount !== 'number') p.trainCount = 0;
+      /* M4 致仕：旧档皇子默认在册、未领过返还 */
+      if(typeof p.retired !== 'boolean') p.retired = false;
+      if(typeof p.retireRefunded !== 'number') p.retireRefunded = 0;
     });
     if(!obj.xuanxiu || !Array.isArray(obj.xuanxiu.candidates)) obj.xuanxiu = { candidates: [] };
     if(!obj.sleep || typeof obj.sleep !== 'object') obj.sleep = {};
@@ -239,14 +291,22 @@
     if(!Array.isArray(obj.ideas)) obj.ideas = [];
     if(!Array.isArray(obj.theses)) obj.theses = [];
     if(!Array.isArray(obj.goalTree)) obj.goalTree = [];
+    /* 旧档 goal 可能缺 links 字段 */
+    obj.goalTree.forEach(function(g){ if(!Array.isArray(g.links)) g.links = []; });
     if(!obj.study.hourStats || typeof obj.study.hourStats !== 'object') obj.study.hourStats = {};
+    if(!obj.study.dayHour || typeof obj.study.dayHour !== 'object' || Array.isArray(obj.study.dayHour)) obj.study.dayHour = {};
+    if(!Array.isArray(obj.study.focusLog)) obj.study.focusLog = [];
     if(!Array.isArray(obj.study.subjects)) obj.study.subjects = [];
     if(!obj.study.subjectStats || typeof obj.study.subjectStats !== 'object') obj.study.subjectStats = {};
     if(!obj.study.subjectDaily || typeof obj.study.subjectDaily !== 'object') obj.study.subjectDaily = {};
     if(!Array.isArray(obj.study.abandonLog)) obj.study.abandonLog = [];
     if(typeof obj.study.imperialDate !== 'string') obj.study.imperialDate = '';
+    if(typeof obj.study.morningDone !== 'string') obj.study.morningDone = '';  /* 晨课旧档兼容 */
+    if(typeof obj.study.morningStarted !== 'string') obj.study.morningStarted = '';  /* 晨课开场旧档兼容 */
     if(!obj.settings || typeof obj.settings !== 'object') obj.settings = { focusQuiet: true, zen: false };
     if(obj.settings.zen === undefined) obj.settings.zen = false;
+    /* 钦天监记住上次看的视图（旧档补默认，切页不再回到「按时辰」） */
+    if(typeof obj.settings.chronosView !== 'string') obj.settings.chronosView = 'hour';
 
     /* M8 科研办公：本周三事 / 进展流水 / 组会 / 精读 */
     if(!obj.plan || typeof obj.plan !== 'object') obj.plan = {};
@@ -259,6 +319,120 @@
     if(!Array.isArray(obj.reading.queue)) obj.reading.queue = [];
     if(typeof obj.reading.pickDate !== 'string') obj.reading.pickDate = '';
     if(obj.reading.pickId === undefined) obj.reading.pickId = null;
+
+    /* P0 开殿分配：旧档补齐小金库与妃子私房钱 */
+    if(!obj.privy || typeof obj.privy !== 'object') obj.privy = {};
+    var PV = obj.privy;
+    if(typeof PV.balance !== 'number' || !isFinite(PV.balance)) PV.balance = 0;
+    if(typeof PV.pendingDays !== 'number') PV.pendingDays = 0;
+    /* 比例时代旧档兼容：splitRatio 字段废弃，改用固定金额档位 */
+    if('splitRatio' in PV) delete PV.splitRatio;
+    if(typeof PV.tierId !== 'string' || !PV.tierId){
+      PV.tierId = (CFG.PRIVY && CFG.PRIVY.DEFAULT_TIER) || 'usual';
+    }
+    /* L2：妃子自主生活的全局状态补齐（个人 life 字段由 life.js 懒补齐） */
+    if(!obj.life || typeof obj.life !== 'object') obj.life = {};
+    if(typeof obj.life.lastSeenDate !== 'string') obj.life.lastSeenDate = '';
+    if(typeof obj.life.lastSettledWeek !== 'string') obj.life.lastSettledWeek = '';
+    if(typeof obj.life.lastSummary !== 'string') obj.life.lastSummary = '';
+    if(typeof PV.totalCaptured !== 'number') PV.totalCaptured = 0;
+    if(typeof PV.totalAllocated !== 'number') PV.totalAllocated = 0;
+    if(typeof PV.lastSettledDate !== 'string') PV.lastSettledDate = '';
+    if(typeof PV.lastShownDate !== 'string') PV.lastShownDate = '';
+    if(typeof PV.lastCountedDate !== 'string') PV.lastCountedDate = '';
+    obj.consorts.forEach(function(c){
+      if(c && typeof c === 'object' && typeof c.purse !== 'number') c.purse = 0;
+    });
+    /* S1 剧情：旧档补齐全局状态与妃子的共同记忆 / 里程碑 / 专属称呼 */
+    if(!obj.story || typeof obj.story !== 'object') obj.story = {};
+    var SY = obj.story;
+    if(typeof SY.version !== 'number') SY.version = 1;
+    if(!SY.lines || typeof SY.lines !== 'object' || Array.isArray(SY.lines)) SY.lines = {};
+    if(!Array.isArray(SY.history)) SY.history = [];
+    if(!SY.attempts || typeof SY.attempts !== 'object' || Array.isArray(SY.attempts)) SY.attempts = {};
+    if(typeof SY.retroDone !== 'boolean') SY.retroDone = false;
+    if(typeof SY.lastRollDate !== 'string') SY.lastRollDate = '';
+    if(typeof SY.lastNodeDate !== 'string') SY.lastNodeDate = '';
+    if(typeof SY.lastSeenDate !== 'string') SY.lastSeenDate = '';
+    if(typeof SY.lastReunionDate !== 'string') SY.lastReunionDate = '';
+    if(typeof SY.forceUsedDate !== 'string') SY.forceUsedDate = '';
+    if(!Array.isArray(SY.recentFragments)) SY.recentFragments = [];
+    if(!SY.fragmentOwner || typeof SY.fragmentOwner !== 'object' || Array.isArray(SY.fragmentOwner)){
+      SY.fragmentOwner = {};
+    }
+    if(!SY.lastSummon || typeof SY.lastSummon !== 'object') SY.lastSummon = null;
+    /* F1/F2/F3 温和版国势：旧档补齐安定度状态（默认海晏河清，不追溯惩罚旧档） */
+    if(!obj.dynasty || typeof obj.dynasty !== 'object') obj.dynasty = {};
+    var DY = obj.dynasty;
+    var DYI = (CFG.DYNASTY && CFG.DYNASTY.INITIAL) || 80;
+    if(typeof DY.stability !== 'number' || !isFinite(DY.stability)) DY.stability = DYI;
+    DY.stability = Math.max(0, Math.min((CFG.DYNASTY && CFG.DYNASTY.MAX) || 100, DY.stability));
+    if(typeof DY.level !== 'string' || !DY.level) DY.level = 'calm';
+    if(typeof DY.lastSettledDate !== 'string') DY.lastSettledDate = '';
+    if(!Array.isArray(DY.fired)) DY.fired = [];
+    if(typeof DY.crisisDays !== 'number') DY.crisisDays = 0;
+    if(typeof DY.wasCrisis !== 'boolean') DY.wasCrisis = false;
+    if(typeof DY.restoredAt !== 'number') DY.restoredAt = 0;
+    if(typeof DY.deepestLevel !== 'string' || !DY.deepestLevel) DY.deepestLevel = 'calm';
+    /* 网页快捷栏：旧档没有则从预置补；有则清洗字段 */
+    if(!Array.isArray(obj.quickLinks)){
+      obj.quickLinks = (CFG.QUICK_LINKS || []).map(function(x, i){
+        return { id: x.id || ('ql' + i), label: x.label, url: x.url,
+                 color: x.color || '', category: x.category || 'study',
+                 hideUrl: x.hideUrl !== false };
+      });
+    }else{
+      obj.quickLinks = obj.quickLinks.filter(function(l){
+        return l && typeof l === 'object' && typeof l.label === 'string' && typeof l.url === 'string';
+      }).map(function(l, i){
+        return { id: l.id || ('ql' + i), label: l.label.slice(0, 16), url: l.url,
+                 color: typeof l.color === 'string' ? l.color : '',
+                 category: ['ai','study','work','notes'].indexOf(l.category) >= 0 ? l.category : 'study',
+                 hideUrl: l.hideUrl !== false };
+      });
+    }
+    /* 快捷栏分类：旧档补预置；保证 all 存在且首位 */
+    var PRESET_CATS = (CFG.QUICK_CATEGORIES || [{id:'all',name:'全部'}]);
+    if(!Array.isArray(obj.quickCategories) || !obj.quickCategories.length){
+      obj.quickCategories = PRESET_CATS.map(function(c){
+        return { id:c.id, name:c.name, parentId:c.parentId || '' };
+      });
+    }else{
+      obj.quickCategories = obj.quickCategories.filter(function(c){
+        return c && typeof c === 'object' && typeof c.id === 'string' && typeof c.name === 'string';
+      }).map(function(c){ return { id:c.id, name:c.name.slice(0, 10),
+        parentId: typeof c.parentId === 'string' ? c.parentId : '' }; });
+      if(!obj.quickCategories.some(function(c){ return c.id === 'all'; })){
+        obj.quickCategories.unshift({ id:'all', name:'全部', parentId:'' });
+      }
+    }
+    obj.consorts.forEach(function(c){
+      if(!c || typeof c !== 'object') return;
+      if(!Array.isArray(c.memory)) c.memory = [];
+      if(typeof c.milestones !== 'number') c.milestones = 0;
+      if(typeof c.reunions !== 'number') c.reunions = 0;
+      if(typeof c.address !== 'string') c.address = '';
+      if(typeof c.phrase !== 'string') c.phrase = '';
+      if(typeof c.storyPose !== 'string') c.storyPose = '';
+      /* 志怪血脉：旧档一律凡俗且未识破，不追溯、不凭空给旧妃子加身份 */
+      var VALID_BLOOD = (CFG.BLOOD && CFG.BLOOD.LIST) || [];
+      var bloodOK = false;
+      for(var bi = 0; bi < VALID_BLOOD.length; bi++){
+        if(VALID_BLOOD[bi].key === c.blood){ bloodOK = true; break; }
+      }
+      if(!bloodOK) c.blood = 'ren';
+      if(typeof c.veil !== 'boolean') c.veil = false;
+      if(c.blood === 'ren') c.veil = false;
+    });
+    /* 第十八轮：旧版独立「国库存银」一次性并回主账户，消除两个钱袋 */
+    if(obj.treasury && typeof obj.treasury === 'object'){
+      var legacyT = Number(obj.treasury.balance) || 0;
+      if(legacyT > 0){
+        if(!obj.resources || typeof obj.resources !== 'object') obj.resources = {};
+        obj.resources.jinQian = (Number(obj.resources.jinQian) || 0) + legacyT;
+      }
+      delete obj.treasury;
+    }
 
     /* 每日打卡：旧档没有该结构则新建；有 goals 时补齐字段 */
     if(!obj.checkin || typeof obj.checkin !== 'object') obj.checkin = {};
@@ -279,6 +453,13 @@
     if(!Array.isArray(obj.memorials)) obj.memorials = [];
     obj.memorials = obj.memorials.filter(function(m){ return m && typeof m === 'object'; });
     obj.memorials.forEach(function(m, i){
+      /* 旧档官署/优先级 → 重要性/紧急性（一次性迁移，改存档） */
+      var OLD_TAGS = { hanlin: 1, gongbu: 1, libu: 1, bingbu: 1 };
+      var OLD_PRIO = { jizou: 'urgent', changzou: 'normal', huanzou: 'normal' };
+      var NEW_TAGS = { important: 1, normal: 1 }, NEW_PRIO = { urgent: 1, normal: 1 };
+      if(OLD_TAGS[m.tag] || !NEW_TAGS[m.tag]) m.tag = 'normal';
+      if(OLD_PRIO[m.priority]) m.priority = OLD_PRIO[m.priority];
+      else if(!NEW_PRIO[m.priority]) m.priority = 'normal';
       if(typeof m.focusMin !== 'number') m.focusMin = 0;
       /* 旧档只有 doneMin（按目标时长累计），迁移为累计专注分钟 */
       if(!m.focusMin && typeof m.doneMin === 'number' && m.doneMin > 0) m.focusMin = m.doneMin;
@@ -338,6 +519,10 @@
       PO.endsAt = null;       /* 正计时没有结束时刻 */
       PO.durationMin = 0;
       if('boundTaskId' in PO) delete PO.boundTaskId;
+      /* 晨课本场倍率/签约金旧档兼容：非进行中的场次不该带倍率 */
+      if(typeof PO.morningBoost !== 'boolean') PO.morningBoost = false;
+      if(PO.status !== 'running' && PO.status !== 'paused') PO.morningBoost = false;
+      if(!('signBonus' in PO)) PO.signBonus = null;
     }
 
     /* 旧「每日勤政任务」字段已废弃 */
@@ -345,9 +530,39 @@
     return obj;
   }
 
-  /* ---------- 存储适配：localStorage 不可用时退回内存 ---------- */
+  /* ---------- 存储适配：IndexedDB 优先 → localStorage → memory ----------
+     IndexedDB 在手机端无 5MB 限制，是 PWA 最优存档方案。
+     但游戏启动是同步的，所以用 localStorage 做"快速首载"兜底，
+     同时把存档异步镜像到 IndexedDB 做大数据量安全网。*/
   var memory = {};
-  var backend = 'memory';
+  var backend = 'memory';         /* 'idb' | 'local' | 'memory' */
+  var idbReady = false;
+  var IDB_NAME = 'qzd-save';
+  var IDB_STORE = 'saves';
+
+  function openIDB(){
+    return new Promise(function(resolve){
+      if(!('indexedDB' in window)){ resolve(null); return; }
+      var req = indexedDB.open(IDB_NAME, 1);
+      req.onupgradeneeded = function(e){
+        var db = e.target.result;
+        if(!db.objectStoreNames.contains(IDB_STORE)){
+          db.createObjectStore(IDB_STORE, { keyPath: 'key' });
+        }
+      };
+      req.onsuccess = function(e){ resolve(e.target.result); };
+      req.onerror = function(){ resolve(null); };
+    });
+  }
+
+  function idbWrite(str){
+    openIDB().then(function(db){
+      if(!db) return;
+      var tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).put({ key: SAVE_KEY, val: str });
+      idbReady = true;
+    });
+  }
 
   function readRaw(){
     try{
@@ -361,9 +576,15 @@
     try{
       if(backend === 'local') localStorage.setItem(SAVE_KEY, str);
       else memory[SAVE_KEY] = str;
+      /* 同步写 localStorage，同时异步镜像到 IndexedDB（不阻塞主线程）*/
+      idbWrite(str);
       return true;
     }catch(e){
-      return false;
+      /* localStorage 爆 5MB 时的兜底 */
+      memory[SAVE_KEY] = str;
+      backend = 'memory';
+      idbWrite(str);
+      return true;
     }
   }
 
@@ -489,6 +710,8 @@
     backend: function(){ return backend; },
     createState: createState,
     todayStr: todayStr,
+    /* 供回归测试精确验证旧档字段兼容（纯内存归一化，不写盘） */
+    normalize: normalize,
     load: load,
     save: save,
     pushLog: pushLog,

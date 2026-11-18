@@ -7,6 +7,7 @@
   --card:#FCFAF3;     /* 卡片底 */
   --ink:#363A32;      /* 主文字（墨） */
   --ink2:#7C7869;     /* 次要文字 */
+  --ink3:#9A9790;     /* 三级文字 / 轴标签（此前全靠 fallback 苟活） */
   --daiqing:#3E6B5C;  /* 主操作 / 勤政值 */
   --zhuqian:#A8573F;  /* 强调 / 急奏 / 警示 */
   --teng:#A8842C;     /* 金钱 / BUFF */
@@ -14,6 +15,26 @@
   --xuanzi:#7C6B94;   /* 声望 */
   --line:#DAD3C0;     /* 边框 / 分割 */
   --soft:#EFEBDD;     /* 淡底 */
+  /* 辅助色：故宫色谱，成对给出「淡底 / 主色」，供卡片色条、chip、进度条用。
+     与五个语义色同为一套，克制使用、不堆彩虹。 */
+  --gong-red:#8C3B32;   /* 宫墙红 */
+  --gong-red-soft:#F6E7E3;
+  --shi-qing:#2F6B78;   /* 石青 */
+  --shi-qing-soft:#E1EEF0;
+  --zhu-green:#5E7A4A;  /* 竹绿 */
+  --zhu-green-soft:#EAF0E3;
+  --ou-he:#94678A;      /* 藕荷 */
+  --ou-he-soft:#F2E9F1;
+  --yue-bai:#B9B2A0;    /* 月白（中性淡） */
+  --yue-bai-soft:#F0EEE6;
+  /* 小卡左边条专用：莫兰迪 6 色（低饱和度柔和灰调，与大卡顶带的故宫色明显区分）
+     顺序：陶土粉 → 灰蓝 → 米黄 → 灰绿 → 淡紫 → 中性灰 */
+  --morandi-1:#C9A7A0;   /* 陶土粉 */
+  --morandi-2:#93A8B8;   /* 灰蓝 */
+  --morandi-3:#D3C3A8;   /* 米黄 */
+  --morandi-4:#A8B59E;   /* 灰绿 */
+  --morandi-5:#A994B8;   /* 淡紫 */
+  --morandi-6:#B5B0A5;   /* 中性灰 */
   --skin-1:#F3DAC3;   /* 立绘肤色 · 浅 */
   --skin-2:#E9C8A8;   /* 立绘肤色 · 中 */
   --skin-3:#DCB590;   /* 立绘肤色 · 深 */
@@ -44,9 +65,52 @@
   --radius:10px;
   --shadow:0 1px 3px rgba(54,58,50,.06);
   --serif:"Noto Serif SC","Songti SC","STSong","SimSun",serif;
+
+  /* ---------- 数据可视化语义层 ----------
+     图表用色全部收口在这里；SVG 与 JS 里一律引用变量，不写死 hex。
+     序列色取古风五色 + 故宫辅色的相邻色相，明度与饱和度拉开距离，
+     同屏多序列可分辨；且颜色从不单独承载信息（图例 + 直接标注同时给出）。
+     内存约束：不使用 backdrop-filter / 大面积 blur / 重阴影；
+     渐变一律走 SVG linearGradient（GPU 合成），动画只动 transform 与 opacity。 */
+  --viz-1:#3E6B5C;   /* 代青 */
+  --viz-2:#A8573F;   /* 朱砂 */
+  --viz-3:#A8842C;   /* 藤黄 */
+  --viz-4:#4C6E8C;   /* 黛蓝 */
+  --viz-5:#7C6B94;   /* 玄紫 */
+  --viz-6:#5E7A4A;   /* 竹绿 */
+  --viz-7:#94678A;   /* 藕荷 */
+  --viz-8:#2F6B78;   /* 石青 */
+  --viz-good:#4E8A5C;
+  --viz-warn:#C98A2B;
+  --viz-bad:#C0392B;
+  --viz-info:#4C6E8C;
+  --viz-grid:rgba(54,58,50,.10);   /* 网格线 */
+  --viz-axis:#DAD3C0;              /* 基线 / 轴 */
+  --viz-axis-text:#9A9790;         /* 轴标签 */
+  --viz-muted:#B8B5AE;             /* 次要序列（上周、对比项） */
+  --viz-surface:rgba(54,58,50,.05); /* 图内底槽 */
+  --viz-focus:#3E6B5C;             /* 焦点环 */
+
+  /* ============================================================
+     Card 分层色板（同一 token 改全局，分层明显）
+     ============================================================
+     L1 大卡：顶色带（已有 --accent 自动轮换 6 故宫色，不改）
+     L2 小卡：左边色带 + 淡底，独立一套 token
+     状态态：hot(金)/danger(红)/ok(青) 只改左边色，边框/底仍走主色系
+  */
+  --card-sub-bg:rgba(62,107,92,.05);       /* 小卡淡底 */
+  --card-sub-border:var(--daiqing);        /* 小卡边框 */
+  --card-sub-accent:var(--daiqing);        /* 小卡左边色带 */
+  --card-sub-accent-w:3px;                 /* 左边色带宽度 */
+  --card-state-hot:var(--teng);             /* 金：金钱/高亮 */
+  --card-state-danger:var(--zhuqian);      /* 红：警示/急奏 */
+  --card-state-ok:var(--daiqing);           /* 青：正常/成就 */
 }
 
 *,*::before,*::after{box-sizing:border-box}
+/* 防止横向溢出：只给 html 设 overflow-x，绝不能给 body 设——
+   body 设 overflow 会使其成为滚动容器，导致侧栏 position:sticky 失效（滚动时不跟随）。 */
+html{max-width:100%;overflow-x:hidden}
 html,body{margin:0;padding:0}
 body{
   background:var(--paper);
@@ -61,18 +125,114 @@ p{margin:0}
 button{font-family:inherit;font-size:inherit;cursor:pointer}
 input,select,textarea{font-family:inherit;font-size:inherit;color:var(--ink)}
 
+/* ---------- 交互与排版基线 ---------- */
+/* 统计数字统一等宽：数值跳动时不抖动（表格/卡内对齐也靠它） */
+.kpi-val,.realm-stat b,.pill-val,.num,.zen-clock,.stat-num{font-variant-numeric:tabular-nums}
+/* 键盘可达：焦点环统一，鼠标点击不显示 */
+:focus-visible{outline:2px solid var(--viz-focus);outline-offset:2px;border-radius:4px}
+/* 交互反馈：只改颜色/边框/位移，不做模糊与重阴影（省内存、不闪） */
+.card,.pill,.btn,.chip,.kpi-card,.pick-row{transition:background-color .18s ease,
+  border-color .18s ease,color .18s ease,transform .18s ease}
+.card:hover{border-color:color-mix(in srgb, var(--ink2) 42%, var(--line))}
+/* 系统开启「减少动态效果」时，全部过渡与动画收敛到近乎静止 */
+@media (prefers-reduced-motion: reduce){
+  *,*:before,*:after{transition-duration:.01ms !important;animation-duration:.01ms !important;
+    animation-iteration-count:1 !important}
+}
+
 /* ---------- 卡片 ---------- */
 .card{
+  position:relative;overflow:hidden;
   background:var(--card);
   border:1px solid var(--line);
   border-radius:var(--radius);
   box-shadow:var(--shadow);
   padding:16px 20px;
   margin-bottom:16px;
+  --accent:var(--daiqing);   /* 默认主色；下方按卡序轮换，tint 类可再覆盖 */
 }
+/* 自动轮换：页面根下每张卡按序给一个故宫色，所有页面无需改 JS 就有色彩层次。
+   顺序：黛青→石青→宫墙红→竹绿→藤黄→藕荷，循环。 */
+#page-root > .card:nth-child(6n+1){--accent:var(--daiqing)}
+#page-root > .card:nth-child(6n+2){--accent:var(--shi-qing)}
+#page-root > .card:nth-child(6n+3){--accent:var(--gong-red)}
+#page-root > .card:nth-child(6n+4){--accent:var(--zhu-green)}
+#page-root > .card:nth-child(6n+5){--accent:var(--teng)}
+#page-root > .card:nth-child(6n+6){--accent:var(--ou-he)}
+/* 顶部色条：所有页面统一泛化渐变，从 --accent 左到右淡出 15%。
+   总览页的 action-card / emperor-card 有更特殊的渐变（见 pages.css override）。 */
+.card:before{content:'';position:absolute;left:0;right:0;top:0;height:3px;
+  border-radius:var(--radius) var(--radius) 0 0;
+  background:linear-gradient(90deg,var(--accent),
+    color-mix(in srgb, var(--accent) 15%, transparent));
+  display:none}  /* 全局隐藏顶带：顶栏已有帝王面板，避免视觉重复 */
 .card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
-.card-title{font-size:15px;font-weight:700}
+.card-title{font-size:15px;font-weight:700;display:inline-flex;align-items:center;gap:8px}
+/* 标题前竖标与顶条同源，但更实一点，作为卡内第一层锚点 */
+/* 标题前竖标加粗到 5×18，与顶条同色 */
+.card-title:before{content:'';width:5px;height:18px;border-radius:2px;
+  background:var(--accent);flex:none}
 .card-note{font-size:12px;color:var(--ink2)}
+/* 语义色标类：显式指定时覆盖自动轮换色（今日勤政页各卡用） */
+.tint-red{--accent:var(--gong-red)}
+.tint-qing{--accent:var(--shi-qing)}
+.tint-green{--accent:var(--zhu-green)}
+.tint-he{--accent:var(--ou-he)}
+.tint-gold{--accent:var(--teng)}
+
+/* ============================================================
+   L2 嵌套小卡（大卡内部的子区块）
+   
+   .card-row    网格容器（默认 4 列，自适应 2 列）
+   .card-sub    小卡：左边色带 + 淡底 + 主色边框
+   .card-sub.hot    金色带（金钱/高亮）
+   .card-sub.danger 红色带（警示/急奏）
+   .card-sub.ok     青色带（正常/成就）
+   
+   用法：<div class="card-row"><div class="card-sub hot">...
+   改一处 token 可全局调优（--card-sub-accent / --card-state-hot / danger / ok）
+   ============================================================ */
+.card-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.card-sub{
+  background:var(--card-sub-bg);
+  border:1px solid var(--card-sub-border);
+  border-left:var(--card-sub-accent-w) solid var(--card-sub-accent);
+  border-radius:var(--radius);
+  padding:10px 12px;
+  transition:background .15s ease,transform .15s ease,border-color .15s ease;
+}
+.card-sub:hover{background:rgba(62,107,92,.10);transform:translateY(-1px)}
+
+/* 状态色带变体——只改 accent 色，底/边框仍走主色系保证整体和谐 */
+.card-sub.hot{
+  border-left-color:var(--card-state-hot);
+  border-color:var(--card-state-hot);
+  background:rgba(168,132,44,.06);
+}
+.card-sub.danger{
+  border-left-color:var(--card-state-danger);
+  border-color:var(--card-state-danger);
+  background:rgba(168,87,63,.06);
+}
+.card-sub.ok{
+  border-left-color:var(--card-state-ok);
+  border-color:var(--card-state-ok);
+  background:rgba(62,107,92,.06);
+}
+
+/* 小卡内的文字层级 */
+.card-sub .sub-label{display:block;font-size:11px;color:var(--ink2);margin-bottom:2px}
+.card-sub .sub-val{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* 注意：pages.css L1540-1578 已有 .work-card / .city-card / .mem-card 等
+   的 6 故宫色自动轮换（按 :nth-child 循环 daiqing→shi-qing→gong-red→...），
+   不要再在 base.css 里覆盖它们的 border-left，让 pages.css 的轮换生效。
+   新增小卡请走 .card-sub / .card-row，或加入 pages.css 的轮换列表。 */
+
+/* 响应式：窄屏降 2 列 */
+@media(max-width:860px){
+  .card-row{grid-template-columns:repeat(2,1fr)}
+}
 
 /* ---------- 药丸 / 徽章 ---------- */
 .pill{
@@ -133,15 +293,22 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:var(--ink)}
   display:flex;align-items:center;justify-content:center;
 }
 .dialog{
-  width:min(460px,100%);padding:20px 22px;
+  width:min(460px,100%);
+  max-height:calc(100vh - 40px);
+  display:flex;flex-direction:column;
+  padding:20px 22px;
   background:var(--card);border:1px solid var(--line);border-radius:16px;
   box-shadow:0 8px 28px rgba(54,58,50,.16);
   animation:dialog-in .18s ease;
 }
+/* 宽弹窗：文献卡等长内容用，视野更舒展 */
+.dialog.wide{width:min(760px,100%)}
 @keyframes dialog-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.dialog-title{font-size:16px;margin-bottom:10px}
-.dialog-body{font-size:14px;color:var(--ink2);line-height:1.8}
-.dialog-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.dialog-title{font-size:16px;margin-bottom:10px;flex:none}
+/* 内容区独占剩余高度并可滚动；min-height:0 是 flex 子项能收缩的关键，缺了就不滚 */
+.dialog-body{font-size:14px;color:var(--ink2);line-height:1.8;
+  flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.dialog-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;flex:none}
 
 /* ---------- toast ---------- */
 #toast-root{
@@ -154,3 +321,29 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:var(--ink)}
 }
 .toast.out{opacity:0;transition:opacity .3s ease}
 @keyframes toast-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ============================================================
+   PWA / 移动端适配
+   ============================================================ */
+html, body{
+  padding-top: env(safe-area-inset-top, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
+}
+/* 禁止双击缩放（iOS Safari 省得误触放大）*/
+body{ touch-action: manipulation; }
+/* 点击高亮去色（iOS 默认灰底）*/
+* { -webkit-tap-highlight-color: transparent; }
+/* 按钮/卡片加 active 态（手机触摸反馈）*/
+.chip:active, button:active, .card:active { opacity: 0.75; }
+
+/* 小屏手机（<= 390px）响应式 */
+@media (max-width: 390px){
+  body{ font-size: 14px; }
+  .card{ padding: 10px; }
+  .side{ font-size: 12px; }
+  .topbar .nav-btn{ padding: 4px 6px; font-size: 12px; }
+  /* 侧栏隐藏：给手机一个汉堡菜单更好，但先简化 */
+  .side{ display: none; }
+}
