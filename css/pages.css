@@ -277,8 +277,8 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 .pomo-card.compact .pomo-clock{ font-size:28px;margin:2px 0 0 }
 .pomo-card.compact .pomo-sub{ margin-bottom:0 }
 .pomo-card.paused{border-color:var(--teng)}
-.pomo-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;cursor:move;user-select:none}
-.pomo-title{font-size:15px;font-weight:700;letter-spacing:1px}
+.pomo-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;cursor:move;user-select:none;flex-wrap:wrap}
+.pomo-title{font-size:15px;font-weight:700;letter-spacing:1px;white-space:nowrap}
 .pomo-mem{font-size:12px;color:var(--ink2);word-break:break-word}
 .pomo-clock{
   text-align:center;font-size:42px;font-weight:700;letter-spacing:2px;

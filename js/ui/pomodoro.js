@@ -176,6 +176,7 @@
     var floatBtnIcon = floating ? '▣' : '⧉';
     var headBtns =
       '<span class="pomo-head-btns">' +
+        '<button type="button" class="pomo-ico" data-pomo="reset-size" title="恢复卡片默认大小（拖小后可点此还原）">⤢</button>' +
         '<button type="button" class="pomo-ico" data-pomo="zen" title="沉浸全屏（Esc 退出）">◉</button>' +
         '<button type="button" class="pomo-ico" data-pomo="idea" title="记下此刻灵感（不中断专注）">💡</button>' +
         '<button type="button" class="pomo-ico" data-pomo="float" title="' + floatBtnTitle + '">' +
@@ -337,6 +338,17 @@
 
       var collapseBtn = e.target.closest('[data-pomo="collapse"]');
       if(collapseBtn){ pomoCompact = !pomoCompact; persistCompact(); render(); return; }
+
+      /* 恢复默认大小：清掉用户 resize 拖出来的 inline 宽高，并退出紧凑模式 */
+      var resetBtn = e.target.closest('[data-pomo="reset-size"]');
+      if(resetBtn){
+        var resetCard = document.getElementById('pomo-card');
+        if(resetCard){ resetCard.style.width = ''; resetCard.style.height = ''; }
+        if(pomoCompact){ pomoCompact = false; persistCompact(); }
+        render();
+        UI.toast('已恢复专注卡默认大小');
+        return;
+      }
 
       var compEl = e.target.closest('[data-pomo-companion]');
       if(compEl){
@@ -638,10 +650,19 @@
       }
       popWin = wn;
       structSig = '';
-      /* 立刻 document.write 一个自包含 HTML，彻底绕开 float.html 的自杀脚本和跨 document 限制 */
+      /* 立刻 document.write 一个自包含 HTML */
       try {
         var pomoState = QZD.state.pomodoro || {};
         var cardHTML = buildCard(pomoState, !!pomoState.paused);
+        /* 浮窗 document.write 出的页面基址是 about:blank，相对图片路径
+           会解析成 about:blank/assets/... 加载失败、只剩 alt 文字。
+           写入前把所有相对 src 转成基于主页面的绝对 URL。 */
+        var baseHref = (location && location.href) ? location.href : '';
+        cardHTML = cardHTML.replace(/\ssrc="([^"]+)"/g, function(m, src){
+          if(/^(https?:|data:|blob:|\/\/)/i.test(src)) return m;
+          try { return ' src="' + new URL(src, baseHref).href + '"'; }
+          catch(e){ return m; }
+        });
         wn.document.open();
         wn.document.write(
           '<!DOCTYPE html><html><head><meta charset="utf-8">' +
