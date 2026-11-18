@@ -279,7 +279,8 @@
 
   /* 四象限：重要×紧急，按 q1~q4 分格 */
   function quadPanel(list){
-    return '<div class="kb-quad">' + C.QUADRANTS.map(function(q){
+    return '<p class="quad-swipe-hint">← 左右滑动查看四个象限 →</p>' +
+      '<div class="kb-quad">' + C.QUADRANTS.map(function(q){
       var set = list.filter(function(m){ return M.quadrantOf(m) === q.key; });
       return '<div class="kb-qcell kb-' + q.cls + '"><div class="kb-qhead">' +
         '<b>' + q.name + '</b><span class="card-note">' + q.desc + ' · ' + set.length + '</span></div>' +

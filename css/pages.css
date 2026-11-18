@@ -1216,6 +1216,25 @@ body.zen .sidebar{display:none}
 .kb-foot{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap}
 .kb-empty{font-size:12px;color:var(--ink3,#b0ada5);text-align:center;padding:14px 0}
 .kb-quad{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.quad-swipe-hint{display:none}
+/* 手机：四象限改左右滑动的 carousel——2×2 网格在窄屏会把列撑成
+   364px/45px 严重不均、内容挤没。每格独占约一屏宽，scroll-snap 对齐。 */
+@media(max-width:640px){
+  .quad-swipe-hint{display:block;text-align:center;font-size:11px;color:var(--ink3);
+    margin:0 0 8px}
+  .kb-quad{
+    display:flex;overflow-x:auto;scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;gap:10px;
+    padding-bottom:10px;margin-bottom:4px;
+    scrollbar-width:thin;scrollbar-color:var(--daiqing) transparent;
+  }
+  .kb-quad .kb-qcell{
+    flex:0 0 88%;min-width:0;scroll-snap-align:center;align-self:stretch;
+  }
+  .kb-quad::-webkit-scrollbar{height:5px}
+  .kb-quad::-webkit-scrollbar-thumb{background:var(--daiqing);border-radius:3px}
+  .kb-quad::-webkit-scrollbar-track{background:transparent}
+}
 .kb-qcell.kb-q1{background:rgba(192,57,43,.05)}.kb-qcell.kb-q2{background:rgba(44,122,75,.05)}
 .kb-qcell.kb-q3{background:rgba(184,134,11,.05)}.kb-qcell.kb-q4{background:rgba(136,135,128,.05)}
 .imp-important{color:#c0392b}.imp-normal{color:#6b6862}
