@@ -1220,20 +1220,23 @@ body.zen .sidebar{display:none}
 .kb-empty{font-size:12px;color:var(--ink3,#b0ada5);text-align:center;padding:14px 0}
 .kb-quad{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .quad-swipe-hint{display:none}
-/* 手机：四象限改左右滑动的 carousel——2×2 网格在窄屏会把列撑成
-   364px/45px 严重不均、内容挤没。每格独占约一屏宽，scroll-snap 对齐。 */
+/* 手机：四象限保持「两行」田字格结构，但按列左右滑动——
+   每列＝上下两个象限（q1上/q2下、q3上/q4下），滑一次换一列。
+   此前 flex 单列横滑把四格排成一行，丢了象限的上下关系。 */
 @media(max-width:640px){
   .quad-swipe-hint{display:block;text-align:center;font-size:11px;color:var(--ink3);
     margin:0 0 8px}
   .kb-quad{
-    display:flex;overflow-x:auto;scroll-snap-type:x mandatory;
-    -webkit-overflow-scrolling:touch;gap:10px;
+    display:grid;grid-template-rows:repeat(2,auto);grid-auto-flow:column;
+    /* 列宽必须用不压缩的固定值（88% 会被 grid 挤进容器导致无法滑动）：
+       取容器宽的 ~86%，两列合计超出容器 → 产生横向滚动 */
+    grid-auto-columns:86vw;gap:10px;width:100%;max-width:100%;
+    overflow-x:auto;scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;
     padding-bottom:10px;margin-bottom:4px;
     scrollbar-width:thin;scrollbar-color:var(--daiqing) transparent;
   }
-  .kb-quad .kb-qcell{
-    flex:0 0 88%;min-width:0;scroll-snap-align:center;align-self:stretch;
-  }
+  .kb-quad .kb-qcell{min-width:86vw;scroll-snap-align:start}
   .kb-quad::-webkit-scrollbar{height:5px}
   .kb-quad::-webkit-scrollbar-thumb{background:var(--daiqing);border-radius:3px}
   .kb-quad::-webkit-scrollbar-track{background:transparent}
