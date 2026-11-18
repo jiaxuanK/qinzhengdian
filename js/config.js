@@ -55,8 +55,6 @@ QZD.config = {
         { id: 'checkin',   name: '常课' },
         { id: 'library',   name: '文渊' },
         { id: 'meetings',  name: '议事' },
-        { id: 'chronos',   name: '钦天监' },
-        { id: 'idea',      name: '灵感罐' },
         { id: 'thesis',    name: '修书' },
         { id: 'archive',   name: '档册' }
       ]
