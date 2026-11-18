@@ -30,7 +30,12 @@
 .task-progress .bar{flex:1}
 .task-progress span{font-size:12px;color:var(--ink2);white-space:nowrap}
 .task-reward{font-size:12px;color:var(--ink2);margin-top:8px}
-.page-foot{font-size:12px;color:var(--ink2);margin:0 4px}
+.page-foot{font-size:11px;color:var(--ink2);margin:0 4px;line-height:1.55}
+
+/* 手机端说明文字再收一档（用户偏好：信息密度高、说明不抢正文） */
+@media(max-width:640px){
+  .card-note,.page-foot{font-size:10.5px}
+}
 
 /* ---------- 归档起居注 ---------- */
 .log-list{list-style:none;margin:0;padding:0}
@@ -921,7 +926,13 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
   border-bottom-width:2px;border-radius:6px;background:var(--paper);font-size:12px;font-family:inherit}
 
 /* ---------- 钦天监 · 课题视角 ---------- */
-.chronos-switch{display:flex;gap:8px;margin:0 0 12px}
+.chronos-switch{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 12px}
+/* chip 文字禁止竖排：flex 子项被挤压时 white-space:normal 才会一字一行 */
+.chronos-switch .chip{white-space:nowrap;flex:none}
+@media(max-width:640px){
+  .chronos-switch{gap:6px}
+  .chronos-switch .chip{padding:4px 11px;font-size:12px}
+}
 .sub-list{display:flex;flex-direction:column;gap:9px}
 .sub-row{display:flex;align-items:center;gap:10px}
 .sub-name{flex:none;width:104px;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

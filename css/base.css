@@ -172,7 +172,8 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:var(--ink)}
 /* 标题前竖标加粗到 5×18，与顶条同色 */
 .card-title:before{content:'';width:5px;height:18px;border-radius:2px;
   background:var(--accent);flex:none}
-.card-note{font-size:12px;color:var(--ink2)}
+/* 说明性文字：弱于标题/正文，手机端再收一档提高信息密度 */
+.card-note{font-size:11px;color:var(--ink2);line-height:1.5}
 /* 语义色标类：显式指定时覆盖自动轮换色（今日勤政页各卡用） */
 .tint-red{--accent:var(--gong-red)}
 .tint-qing{--accent:var(--shi-qing)}

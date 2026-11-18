@@ -1540,8 +1540,8 @@
 
     return '' +
       '<section class="card">' +
-        '<div class="card-head"><span class="card-title">钦 天 监 · 效率时段分析</span>' +
-          '<span class="card-note">按专注发生的时辰统计，找准你的一日高峰</span></div>' +
+        '<div class="card-head"><span class="card-title">效率时段分析</span>' +
+          '<span class="card-note">按专注时辰统计高峰</span></div>' +
         switchBar() + focusCard() +
         (d.total > 0 ? chart(d) : '<div class="empty">钦天监尚无星象<span class="card-note">专注几次后，这里会显示你一天里最高效的时辰</span></div>') +
       '</section>' +
