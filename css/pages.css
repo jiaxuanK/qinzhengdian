@@ -1213,6 +1213,9 @@ body.zen .sidebar{display:none}
 .kb-card.kb-q3{border-left-color:#b8860b}.kb-card.kb-q4{border-left-color:#888780}
 .kb-title{font-size:13px;color:var(--ink,#2c2a26);line-height:1.4;word-break:break-all}
 .kb-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+/* 灵感 chip 行在看板/四象限复用（与列表共享同一份数据） */
+.kb-idea-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;align-items:center}
+.kb-idea-row .idea-chip{cursor:pointer}
 .kb-foot{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap}
 .kb-empty{font-size:12px;color:var(--ink3,#b0ada5);text-align:center;padding:14px 0}
 .kb-quad{display:grid;grid-template-columns:1fr 1fr;gap:12px}

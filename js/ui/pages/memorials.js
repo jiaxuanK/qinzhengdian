@@ -216,13 +216,16 @@
     function miniSubRow(sb, depth){
       var kids = M.subChildrenOf(m, sb.id);
       var d = depth || 0;
+      var focusing = boundNow(m) && QZD.state.pomodoro.boundSubtaskId === sb.id;
       var html = '<div class="kb-sub' + (sb.done ? ' done' : '') + '"' +
           (d ? ' style="margin-left:' + (d * 12) + 'px"' : '') + '>' +
         '<button class="kb-sub-check" data-sub-toggle="' + m.id + '|' + sb.id + '" title="切换完成">' +
           (sb.done ? '✓' : '') + '</button>' +
         '<span class="kb-sub-title" title="' + UI.fmt.escape(sb.title) + '">' + UI.fmt.escape(sb.title) + '</span>' +
         (sb.focusMin ? '<span class="kb-sub-min">' + sb.focusMin + '分</span>' : '') +
+        (focusing ? '<span class="kb-sub-min" style="color:var(--teng)">专注中</span>' : '') +
         (m.status === 'banjie' ? '' :
+          (!focusing ? '<button class="ci-add-sub" data-focus-sub="' + m.id + '|' + sb.id + '" title="专注这一项">▶</button>' : '') +
           '<button class="ci-add-sub" data-sub-addchild="' + m.id + '|' + sb.id + '" title="加子项">＋</button>') +
         '<button class="ci-del" data-sub-del="' + m.id + '|' + sb.id + '" title="删除（含子项）">×</button>' +
       '</div>';
@@ -247,6 +250,18 @@
       : '';
     var mTagCls = (C.TAGS.filter(function(t){ return t.key === m.tag; })[0] || {}).cls || '';
     var mPriCls = M.priorityCls(m.priority);
+    /* 11-18：灵感块在列表/看板/四象限共享（此前只有列表有） */
+    var kbIdeas = QZD.idea.list().filter(function(i){
+      return i.hatchedType === 'memorial' && i.hatchedRef === m.id;
+    });
+    var kbIdeaChips = kbIdeas.map(function(i){
+      return '<span class="chip sm idea-chip" data-idea-edit="' + UI.fmt.escape(i.id) +
+        '" title="点击看灵感">' + '🧠 ' + UI.fmt.escape(i.tag || (i.text || '').slice(0, 8)) + '</span>';
+    }).join('');
+    var kbIdeaBlock = '<div class="kb-idea-row">' + kbIdeaChips +
+      (m.status === 'banjie' ? '' :
+        '<button class="chip sm" data-mem-idea-add="' + UI.fmt.escape(m.id) + '" title="关联灵感">＋灵感</button>') +
+      '</div>';
     return '<div class="kb-card kb-' + q + '">' +
       '<div class="kb-title" title="' + UI.fmt.escape(m.title) + '">' + UI.fmt.escape(m.title) + '</div>' +
       '<div class="kb-badges">' +
@@ -254,6 +269,7 @@
         '<span class="badge ' + mPriCls + '">' + M.priorityName(m.priority) + '</span>' +
         '<span class="badge status-' + m.status + ' sm">' + M.statusName(m.status) + '</span>' +
       '</div>' +
+      kbIdeaBlock +
       (p.total ? '<div class="bar sm" style="margin:6px 0"><i style="width:' + p.pct + '%"></i></div>' : '') +
       (subs || '') + addRow +
       '<div class="kb-foot"><span class="card-note">' + qn + (p.total ? ' · 小目标 ' + p.done + '/' + p.total : '') + '</span>' +
