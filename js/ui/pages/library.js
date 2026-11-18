@@ -235,8 +235,8 @@
     return '<section class="card">' +
       '<div class="card-head"><span class="card-title">文 渊 阁</span>' +
         '<span class="card-note">文献统一由 Zotero 管理</span></div>' +
-      '<div class="btn-row">' +
-        '<a class="btn primary" href="zotero://select/library">打开 Zotero 桌面端</a>' +
+      '<div class="btn-row zotero-actions">' +
+        '<a class="btn primary" href="zotero://select/library">Zotero 桌面端</a>' +
         '<a class="btn ghost" href="https://www.zotero.org/my/library" target="_blank" rel="noopener">Zotero 网页版 ↗</a>' +
         '<a class="btn ghost" href="' + ESC((QZD.config && QZD.config.DEEPSEEK_URL) || 'https://chat.deepseek.com/') +
           '" target="_blank" rel="noopener">DeepSeek 网页版 ↗</a>' +
