@@ -2115,6 +2115,9 @@ body.zen .sidebar{display:none}
   padding:4px 10px;font-size:11.5px;line-height:1.4;
   border-color:var(--line);background:var(--card);
 }
+/* primary 按钮保持深底浅字——上面统一 background:var(--card) 会把
+   primary 盖成浅底，配上 .btn.primary 的浅色字就看不见了（文渊阁首个按钮空白） */
+.btn-row.zotero-actions .btn.primary{background:var(--daiqing);color:var(--card);border-color:var(--daiqing)}
 @media(max-width:640px){
   .btn-row.debug-tools,.btn-row.zotero-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}
   .btn-row.debug-tools .btn,.btn-row.zotero-actions .btn{
