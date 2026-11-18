@@ -2108,3 +2108,14 @@ body.zen .sidebar{display:none}
 .log-group .log-list{margin-top:2px}
 .log-group .log-item{padding:6px 0;border-bottom:1px dashed #eee7d8}
 .log-group .log-text{flex:1;line-height:1.6}
+
+/* ---------- 设置·测试工具：小按钮紧凑排布（11-18） ---------- */
+.btn-row.debug-tools{gap:6px}
+.btn-row.debug-tools .btn{
+  padding:4px 10px;font-size:11.5px;line-height:1.4;
+  border-color:var(--line);background:var(--card);
+}
+@media(max-width:640px){
+  .btn-row.debug-tools{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .btn-row.debug-tools .btn{padding:6px 4px;text-align:center;white-space:nowrap}
+}

@@ -64,9 +64,8 @@
 
     return '<section class="card">' +
       '<div class="card-head"><span class="card-title">科 举</span>' +
-      '<span class="card-note">金钱 ' + K.COST_JIN + ' / 次 · 榜下 ' + K.CANDIDATES + ' 人</span></div>' +
-      '<p class="today-line">开科一次耗 <b>' + K.COST_JIN + '</b> 金钱，取 ' + K.CANDIDATES +
-        ' 人入榜，钦点其一入朝，余者归乡。文采每 ' + M.LIT_PER_SHENGWANG + ' 点，入朝声望 +1。</p>' +
+      '<span class="card-note">金钱 ' + K.COST_JIN + ' / 次 · 榜下 ' + K.CANDIDATES +
+        ' 人 · 文采每 ' + M.LIT_PER_SHENGWANG + ' 点声望 +1</span></div>' +
       (reason ? '<p class="page-foot" style="margin-bottom:10px">' + reason + '</p>' : '') +
       '<div class="btn-row">' +
         '<button class="btn primary" data-keju' + (reason ? ' disabled' : '') + '>开 科</button>' +
@@ -180,9 +179,9 @@
       '<div class="card-head"><span class="card-title">选秀</span>' +
       '<span class="card-note">单抽 ' + single + ' 金 · 十连 ' + ten + ' 金（9 折）' +
         (single !== (G.PULL_COST || 120) ? ' · 未达标 ×2' : '') + '</span></div>' +
-      '<p class="today-line">单抽 <b>' + single + '</b> 金钱抽一位候选秀女；十连 <b>' + ten +
-        '</b> 金钱（单抽 9 折）连抽十位候选。<b>抽出后自行勾选入宫</b>，一人不选即放弃本次选秀。' +
-        '名字、三维、性格、人设均随机；后宫不限人数，无需扩建。</p>' +
+      /* 11-18：card-note 已含价格/次数，删去重复长说明；
+         只保留「勾选入宫」这一条操作要点 */
+      '<p class="card-note" style="margin:2px 0 6px">抽出后勾选入宫，一人不选即放弃</p>' +
       '<div class="realm-stats">' +
         '<div class="realm-stat"><span>绝色</span><b>' + pRare + '%</b></div>' +
         '<div class="realm-stat"><span>稀有</span><b>' + pUnc + '%</b></div>' +

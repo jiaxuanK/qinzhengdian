@@ -235,8 +235,6 @@
     return '<section class="card">' +
       '<div class="card-head"><span class="card-title">文 渊 阁</span>' +
         '<span class="card-note">文献统一由 Zotero 管理</span></div>' +
-      '<p class="today-line">为避免重复录入，本阁不手写书目——文献一律在 <b>Zotero</b> 里管理，' +
-        '这里只做一键跳转与「今日精读」打卡。</p>' +
       '<div class="btn-row">' +
         '<a class="btn primary" href="zotero://select/library">打开 Zotero 桌面端</a>' +
         '<a class="btn ghost" href="https://www.zotero.org/my/library" target="_blank" rel="noopener">Zotero 网页版 ↗</a>' +
@@ -245,9 +243,7 @@
         '<button class="btn ghost" data-card-import>导入文献卡</button>' +
       '</div>' +
       '<input type="file" id="card-file" accept=".json,application/json" style="display:none">' +
-      '<p class="card-note" style="margin-top:8px">读完文献后让 AI 调用 qzd-paper-import skill 生成 .json 卡，' +
-        '点「导入文献卡」选它即可——核心结论、关键数字、与你课题的关联都会带进来，' +
-        '同时生成的 .bib 可拖进 Zotero。</p>' +
+      '<p class="card-note" style="margin-top:8px">导入流程：AI 用 qzd-paper-import skill 生成 .json 卡 → 点「导入文献卡」选取（含结论/数字/课题关联）；.bib 可拖进 Zotero。</p>' +
     '</section>';
   }
 

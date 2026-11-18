@@ -95,13 +95,11 @@
       /* ===== 测试工具 ===== */
       '<section class="card">' +
         '<div class="card-head"><span class="card-title">测 试 工 具</span></div>' +
-        '<p style="margin:0 0 12px;font-size:12px;color:var(--ink2)">仅供调试 / 体验，正式游玩请勿使用。</p>' +
-        '<div class="btn-row">' +
+        '<p class="card-note" style="margin:0 0 8px">仅供调试 / 体验，正式游玩请勿使用。</p>' +
+        '<div class="btn-row debug-tools">' +
           '<button class="btn ghost" data-act="debug-money">＋500 金钱</button>' +
           '<button class="btn ghost" data-act="debug-guo">＋200 国力</button>' +
           '<button class="btn ghost" data-act="debug-res-all">＋全套资源</button>' +
-        '</div>' +
-        '<div class="btn-row">' +
           '<button class="btn ghost" data-act="debug-dims">＋全套四维</button>' +
         '</div>' +
       '</section>'
