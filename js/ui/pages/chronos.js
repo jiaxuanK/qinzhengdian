@@ -1504,7 +1504,7 @@
 
     if(view === 'trend'){
       return '<section class="card">' +
-        '<div class="card-head"><span class="card-title">钦 天 监 · 趋势与目标</span>' +
+        '<div class="card-head"><span class="card-title">趋势与目标</span>' +
           '<span class="card-note">看走势、看目标缺口</span></div>' +
         switchBar() + focusCard() + kpiRow() +
       '</section>' + trendPanel() + managePanel();
@@ -1512,7 +1512,7 @@
 
     if(view === 'heat'){
       return '<section class="card">' +
-        '<div class="card-head"><span class="card-title">钦 天 监 · 专注热历</span>' +
+        '<div class="card-head"><span class="card-title">专注热历</span>' +
           '<span class="card-note">近一年每天一格，颜色深浅即当日的量</span></div>' +
         switchBar() + focusCard() + heatCalendar() +
       '</section>' + managePanel();
@@ -1522,7 +1522,7 @@
       var bd = QZD.study.subjectBreakdown();
       return '' +
         '<section class="card">' +
-          '<div class="card-head"><span class="card-title">钦 天 监 · 科研投入结构</span>' +
+          '<div class="card-head"><span class="card-title">科研投入结构</span>' +
             '<span class="card-note">各课题累计专注时长与占比</span></div>' +
           switchBar() + focusCard() +
         '</section>' +
@@ -1554,18 +1554,26 @@
       managePanel();
   });
 
+  /* 重绘当前视图：若 chronos 被嵌在总览「钦天」tab 内，只重绘本页，
+     不调 UI.show('chronos') 跳到独立页（否则总览两组导航消失）；
+     独立页时才走 UI.show 更新 hash。 */
+  function refreshChronos(){
+    if(document.querySelector('[data-chronos-embed]')) UI.renderPage();
+    else UI.show('chronos');
+  }
+
   /* ---------- 跨度切换：日程网格 & 倍刻环各自记住自己的跨度 ---------- */
   document.addEventListener('change', function(e){
     var gs = e.target.closest('[data-grid-span]');
     if(gs){
       _gridSpan = gs.value;
-      UI.show('chronos');
+      refreshChronos();
       return;
     }
     var rs = e.target.closest('[data-ring-span]');
     if(rs){
       _ringSpan = rs.value;
-      UI.show('chronos');
+      refreshChronos();
       return;
     }
     /* 自定义起止时间：解析 HH:MM → 小时浮点数 */
@@ -1581,7 +1589,7 @@
       var cur = gridSpanRange();
       _gridCustom = { H0: s, H1: cur.H1 };
       _gridSpan = 'custom';
-      UI.show('chronos');
+      refreshChronos();
       return;
     }
     var ge = e.target.closest('[data-grid-end]');
@@ -1590,7 +1598,7 @@
       var cur2 = gridSpanRange();
       _gridCustom = { H0: cur2.H0, H1: e2 };
       _gridSpan = 'custom';
-      UI.show('chronos');
+      refreshChronos();
       return;
     }
     var rs2 = e.target.closest('[data-ring-start]');
@@ -1599,7 +1607,7 @@
       var rcur = ringSpanRange();
       _ringCustom = { H0: s2, H1: rcur.H1 };
       _ringSpan = 'custom';
-      UI.show('chronos');
+      refreshChronos();
       return;
     }
     var re2 = e.target.closest('[data-ring-end]');
@@ -1608,7 +1616,7 @@
       var rcur2 = ringSpanRange();
       _ringCustom = { H0: rcur2.H0, H1: e3 };
       _ringSpan = 'custom';
-      UI.show('chronos');
+      refreshChronos();
       return;
     }
   });
@@ -1636,25 +1644,25 @@
         QZD.state.settings.chronosView = view;
         if(QZD.stateIO && QZD.stateIO.save) QZD.stateIO.save();
       }
-      UI.show('chronos');
+      refreshChronos();
       return;
     }
     var sc = e.target.closest('[data-subject-chart]');
     if(sc){
       subjectChartMode = sc.getAttribute('data-subject-chart') === 'bar' ? 'bar' : 'pie';
-      UI.show('chronos');
+      refreshChronos();
       return;
     }
     var tc = e.target.closest('[data-trend-chart]');
     if(tc){
       trendChartMode = tc.getAttribute('data-trend-chart') === 'bar' ? 'bar' : 'line';
-      UI.show('chronos');
+      refreshChronos();
       return;
     }
     var td = e.target.closest('[data-trend-days]');
     if(td){
       trendDays = parseInt(td.getAttribute('data-trend-days'), 10) || 14;
-      UI.show('chronos');
+      refreshChronos();
       return;
     }
 

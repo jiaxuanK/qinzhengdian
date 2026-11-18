@@ -289,7 +289,9 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:var(--ink)}
 
 /* ---------- 弹窗 ---------- */
 .modal-mask{
-  position:fixed;inset:0;z-index:50;padding:20px;
+  /* 必须高于专注卡（z-index:60）——否则奏折内点「暂离/离开」等
+     确认弹窗会被专注卡盖住，按钮点不到 */
+  position:fixed;inset:0;z-index:100;padding:20px;
   background:rgba(54,58,50,.28);
   display:flex;align-items:center;justify-content:center;
 }

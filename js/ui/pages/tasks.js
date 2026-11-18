@@ -430,7 +430,11 @@
     '</div>';
     var body;
     if(_ovTab === 'chronos'){
-      body = chronosFn ? chronosFn() : '<div class="empty">钦天监未加载</div>';
+      /* 11-18：包一层 embed 标记，让 chronos 内部的视图/跨度切换只重绘、
+         不调 UI.show('chronos') 跳走（否则总览两组导航消失、像被锁定） */
+      body = chronosFn
+        ? '<div data-chronos-embed="1">' + chronosFn() + '</div>'
+        : '<div class="empty">钦天监未加载</div>';
     }else if(_ovTab === 'week'){
       body =
         G(OV.weekProgressCard) +
