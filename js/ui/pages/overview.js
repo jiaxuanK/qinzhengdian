@@ -165,12 +165,13 @@
                    act:'goto', target:'checkin', tone:'plain' });
     }
 
-    /* 5. 本周三事未立（旧 target 'brief' 是不存在的页面，改到含 planCard 的 tasks） */
-    var goals = (QZD.plan && QZD.plan.goals) ? QZD.plan.goals() : [];
-    if(!goals.length){
-      items.push({ icon:'◇', title:'定本周三事', sub:'给这周一个方向',
-                   act:'goto', target:'tasks', tone:'plain' });
-    }
+    /* 5. 记一条灵感（11-18：替换原「定本周三事」——那个入口价值低且落点是旧兼容页。
+         灵感是科研核心资产、入口原本藏得深，放到今日行动随手记）
+       已孵化/未孵化数量做副标题，引导去灵感罐 */
+    var ideaStat = (QZD.idea && QZD.idea.stats) ? QZD.idea.stats() : { total:0, hatched:0 };
+    var pendingIdea = Math.max(0, (ideaStat.total || 0) - (ideaStat.hatched || 0));
+    items.push({ icon:'✎', title:'记一条灵感', sub: pendingIdea ? (pendingIdea + ' 条待孵化 · 点开记新的') : '闪念别丢，随手记下',
+                 act:'goto', target:'idea', tone:'plain' });
 
     /* 6. 最急的期限（3天内/逾期） */
     if(M && M.dueList){
