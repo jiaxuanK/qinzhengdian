@@ -97,12 +97,34 @@
       }
     } catch(e){ console.error('buildTopbar error:', e); }
   }
+  /* 11-19 数字滚动：值变化时用短时 rAF 滚到新值（约 420ms，播完即停、非常驻）。
+     无 rAF 或系统「减少动态效果」时直接设值。动画中被再次调用会先取消上一轮。 */
+  function animateNum(el, to){
+    var target = UI.fmt.num(to);
+    if(el.textContent === target) return;              /* 值没变：零开销 */
+    var reduce = false;
+    try { reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch(e){}
+    if(reduce || typeof requestAnimationFrame === 'undefined' || typeof performance === 'undefined'){
+      el.textContent = target; return;
+    }
+    var from = parseFloat(String(el.textContent).replace(/[^\d.-]/g, '')) || 0;
+    var end = Number(to) || 0, start = performance.now(), dur = 420;
+    if(el.__numRaf) cancelAnimationFrame(el.__numRaf);
+    function frame(t){
+      var k = Math.min(1, (t - start) / dur);
+      var eased = 1 - Math.pow(1 - k, 3);              /* easeOutCubic */
+      el.textContent = UI.fmt.num(Math.round(from + (end - from) * eased));
+      if(k < 1) el.__numRaf = requestAnimationFrame(frame);
+      else { el.textContent = target; el.__numRaf = null; }
+    }
+    el.__numRaf = requestAnimationFrame(frame);
+  }
   function refreshTopbar(){
-    /* 只更新资源数字，不重建 DOM */
+    /* 只更新资源数字，不重建 DOM；值没变则完全不触碰（省 CPU） */
     var s = QZD.state;
     CFG.RESOURCES.forEach(function(r){
       var el = document.getElementById('ov-res-' + r.key);
-      if(el) el.textContent = UI.fmt.num(s.resources[r.key]);
+      if(el) animateNum(el, s.resources[r.key]);
     });
   }
 
@@ -148,6 +170,26 @@
     if(UI.pomo) UI.pomo.render();
   };
 
+  /* 11-19 省内存：立绘呼吸动画只在进入视口时播放（合成层按需创建）。
+     单例观察器；无 IntersectionObserver 时给全部立绘补 .in-view 退化为原行为。 */
+  var portraitObserver = null;
+  function watchPortraits(root){
+    var nodes = root.querySelectorAll('.portrait-svg, .portrait-fallback');
+    if(!nodes.length) return;
+    if(typeof IntersectionObserver === 'undefined'){
+      for(var i = 0; i < nodes.length; i++) nodes[i].classList.add('in-view');
+      return;
+    }
+    if(!portraitObserver){
+      portraitObserver = new IntersectionObserver(function(entries){
+        entries.forEach(function(en){
+          en.target.classList.toggle('in-view', en.isIntersecting);
+        });
+      }, { rootMargin: '80px' });   /* 提前 80px 预热，滚动时不闪 */
+    }
+    for(var j = 0; j < nodes.length; j++) portraitObserver.observe(nodes[j]);
+  }
+
   UI.renderPage = function(){
     var root = document.getElementById('page-root');
     var fn = pages[current];
@@ -159,6 +201,7 @@
     }
     if(!root) return;
     root.innerHTML = html;
+    watchPortraits(root);
     var key = currentKey();
     if(hooks[current]) hooks[current](root);
     else if(key !== current && hooks[key]) hooks[key](root);
@@ -426,11 +469,15 @@
         '<button class="favor-close" aria-label="关闭" title="关闭">×</button>' +
       '</div>';
 
-    /* 打字机：逐字显示台词 */
+    /* 打字机：逐字显示台词。
+       11-19：系统开启「减少动态效果」时直接显示全文，不跑定时器（省 CPU）。 */
     function typeInto(el, text, speed){
       if(!el) return;
       if(el.__typer) clearInterval(el.__typer);
       el.textContent = '';
+      var reduce = false;
+      try { reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch(e){}
+      if(reduce){ el.textContent = text || ''; return; }
       var i = 0;
       el.__typer = setInterval(function(){
         i++;

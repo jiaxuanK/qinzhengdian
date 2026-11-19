@@ -4,6 +4,7 @@
 (function(){
   var UI = QZD.ui;
   var filter = 'all';
+  var lastTopTs = 0;   /* 11-19：仅最新日志变化时才淡入，避免每次渲染全表重播 */
 
   /* 类型定义：emoji + 中文名 + CSS 颜色（chip 背景 + chip 字色）*/
   var TYPES = {
@@ -60,6 +61,9 @@
 
   UI.register('logs', function(){
     var all = (QZD.state.logs || []).slice().reverse();
+    var newTs = all.length ? all[0].ts : 0;
+    var freshTop = (newTs && newTs !== lastTopTs);   /* 本页首次打开也算「新」 */
+    lastTopTs = newTs;
 
     if(!all.length){
       return '<section class="card"><div class="empty">起居注尚空<span class="card-note">做些事就会开始记录——开殿、每日重置、后宫/朝政/征战……</span></div></section>';
@@ -94,7 +98,7 @@
         var ti = typeInfo(l.type);
         var chipStyle = 'background:' + ti.bg + ';color:' + ti.fg +
           ';border:1px solid ' + ti.fg + '33;font-weight:600';
-        return '<li class="log-item">' +
+        return '<li class="log-item' + (freshTop && l === all[0] ? ' log-new' : '') + '">' +
           '<span class="log-time">' + UI.fmt.time(l.ts) + '</span>' +
           '<span class="log-type-chip" style="' + chipStyle + '">' + ti.icon + ' ' + UI.fmt.escape(ti.name) + '</span>' +
           '<span class="log-text">' + fmtLog(l) + '</span>' +

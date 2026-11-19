@@ -54,6 +54,13 @@
   overflow:hidden;position:relative;cursor:pointer;line-height:0;
 }
 .topbar .emp-avatar .emperor-photo{width:100%;height:100%;background-size:cover;background-position:center;display:block}
+/* 11-19 帝王卡天光：静态径向渐变，画上就不动（零 CPU/零动画）。
+   pointer-events:none 不挡点击换立绘；极淡不遮面容。 */
+.topbar .emp-avatar::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(120% 80% at 30% 0%,rgba(255,246,214,.28),transparent 62%);
+  mix-blend-mode:soft-light;
+}
 .topbar .emp-avatar-none{font-size:20px;display:flex;align-items:center;justify-content:center;height:100%;background:var(--daiqing);color:#fff}
 .topbar .emp-avatar:hover{border-color:var(--daiqing);box-shadow:0 2px 8px rgba(54,58,50,.15)}
 .topbar .emp-avatar-edit{

@@ -3,13 +3,33 @@
    跨天重置 / 番茄结算与实时产出 / 页面刷新 / 每 5 秒兜底存档
    ============================================================ */
 (function(){
+  /* 11-19 时辰氛围：按真实小时切 body[data-ambient]，只在跨时段时写一次 DOM，
+     不跑独立定时器（挂在 2s 主循环里比对小时），零额外开销。 */
+  var lastAmbient = '';
+  function ambientOf(h){
+    if(h >= 5 && h < 8) return 'dawn';
+    if(h >= 8 && h < 17) return 'day';
+    if(h >= 17 && h < 20) return 'dusk';
+    return 'night';
+  }
+  function updateAmbient(){
+    try {
+      var a = ambientOf(new Date().getHours());
+      if(a !== lastAmbient){ document.body.setAttribute('data-ambient', a); lastAmbient = a; }
+    } catch(e){}
+  }
+
   QZD.tick = {
     timer: null,
     lastSaveAt: Date.now(),
 
     start: function(){
+      updateAmbient();   /* 首启立即上色 */
       if(this.timer) return;
-      this.timer = setInterval(function(){ QZD.tick.step(); }, 1000);
+      /* 11-19 省 CPU：1s → 2s。pomodoro.tick 按真实经过时间(dt)累计分钟，
+         不是按调用次数，降频不丢专注分钟；暂停超时也是秒级宽限，不受影响。
+         主卡计时显示 2s 刷新一次，秒数跳动肉眼几乎无感。 */
+      this.timer = setInterval(function(){ QZD.tick.step(); }, 2000);
     },
 
     /* 番茄结算事件的播报 */
@@ -57,8 +77,12 @@
 
     step: function(){
       var now = Date.now();
+      updateAmbient();
       var changed = QZD.stateIO.checkDailyReset();
       var ev = QZD.pomodoro.tick(now);
+      /* 11-19 注：conquest/works 的 settle 非专注时虽不产钱，但会把 lastAt
+         推进到 now——跳过会导致下次专注时把整段离开时间算成产出。故保留调用。
+         省 CPU 交给 P1 的 2s 降频（已砍半），此处不做危险优化。 */
       var tribute = QZD.conquest.settle(now);
       var births = QZD.harem.settle(now);
       QZD.works.settle(now);
