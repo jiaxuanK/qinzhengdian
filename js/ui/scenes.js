@@ -174,83 +174,82 @@
     '</svg>';
   }
 
-  /* ---------- 政务 · 御书房桌面（无时辰，纯入口） ---------- */
+  /* ---------- 政务 · 御书房桌面（无时辰，纯入口；两行四列，纵向舒展） ---------- */
   function studyDesk(){
     return '' +
-    '<svg class="scene-svg scene-desk" viewBox="0 0 860 150" preserveAspectRatio="xMidYMid meet" role="img" aria-label="御书房桌面">' +
-      '<rect width="860" height="150" fill="#8E7557"/>' +
-      '<rect x="6" y="6" width="848" height="138" rx="6" fill="none" stroke="#6F5638" stroke-width="2"/>' +
-      '<rect x="12" y="12" width="836" height="126" rx="4" fill="none" stroke="#6F5638" stroke-width=".7" opacity=".5"/>' +
-      /* 奏折堆（热区） */
+    '<svg class="scene-svg scene-desk" viewBox="0 0 860 200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="御书房桌面">' +
+      '<rect width="860" height="200" fill="#8E7557"/>' +
+      '<rect x="6" y="6" width="848" height="188" rx="7" fill="none" stroke="#6F5638" stroke-width="2.5"/>' +
+      '<rect x="13" y="13" width="834" height="174" rx="5" fill="none" stroke="#6F5638" stroke-width=".8" opacity=".55"/>' +
+      /* 上排 ① 奏折堆 */
       '<g class="sc-hot" data-scene-go="memorials">' +
-        '<rect x="52" y="28" width="116" height="56" fill="transparent" pointer-events="all"/>' +
-        '<g transform="rotate(-6 108 50)"><rect x="60" y="34" width="96" height="34" rx="2" fill="#E8DCC0" stroke="#A8573F" stroke-width="1.2"/>' +
-        '<path d="M72 44 h72 M72 52 h60" stroke="#B9A98A" stroke-width="1"/></g>' +
-        '<g transform="rotate(4 108 52)"><rect x="64" y="40" width="96" height="34" rx="2" fill="#F2E8CE" stroke="#A8573F" stroke-width="1.2"/>' +
-        '<rect x="98" y="46" width="26" height="14" fill="#C0392B" opacity=".75"/>' +
-        '<path d="M74 62 h72" stroke="#B9A98A" stroke-width="1"/></g>' +
+        '<rect x="22" y="18" width="184" height="80" fill="transparent" pointer-events="all"/>' +
+        '<g transform="rotate(-6 110 54)"><rect x="48" y="26" width="100" height="54" rx="2" fill="#E8DCC0" stroke="#A8573F" stroke-width="1.4"/>' +
+        '<path d="M60 40 h76 M60 50 h66 M60 60 h74" stroke="#B9A98A" stroke-width="1"/></g>' +
+        '<g transform="rotate(5 114 66)"><rect x="64" y="38" width="100" height="54" rx="2" fill="#F2E8CE" stroke="#A8573F" stroke-width="1.4"/>' +
+        '<rect x="104" y="50" width="30" height="20" fill="#C0392B" opacity=".75"/>' +
+        '<path d="M76 80 h74" stroke="#B9A98A" stroke-width="1"/></g>' +
         '<title>奏折堆 · 奏折页</title>' +
       '</g>' +
-      /* 摊开文书（热区 · 修书） */
+      /* 上排 ② 摊开文书 */
       '<g class="sc-hot" data-scene-go="thesis">' +
-        '<rect x="220" y="22" width="196" height="72" fill="transparent" pointer-events="all"/>' +
-        '<path d="M228 34 L318 28 L318 80 L228 86 Z" fill="#F2E8CE" stroke="#B9B2A0" stroke-width="1"/>' +
-        '<path d="M318 28 L408 34 L408 86 L318 80 Z" fill="#E8DCC0" stroke="#B9B2A0" stroke-width="1"/>' +
-        '<path d="M240 44 h66 M240 52 h58 M240 60 h66 M330 44 h66 M330 52 h60 M330 60 h66" stroke="#A89B7E" stroke-width="1"/>' +
+        '<rect x="214" y="18" width="194" height="80" fill="transparent" pointer-events="all"/>' +
+        '<path d="M224 28 L310 22 L310 90 L224 96 Z" fill="#F2E8CE" stroke="#B9B2A0" stroke-width="1"/>' +
+        '<path d="M310 22 L396 28 L396 96 L310 90 Z" fill="#E8DCC0" stroke="#B9B2A0" stroke-width="1"/>' +
+        '<path d="M236 42 h58 M236 54 h52 M236 66 h58 M324 42 h58 M324 54 h52 M324 66 h58" stroke="#A89B7E" stroke-width="1"/>' +
         '<title>摊开文书 · 修书</title>' +
       '</g>' +
-      /* 玉玺（热区 · 常课/御批） */
+      /* 上排 ③ 玉玺 */
       '<g class="sc-hot" data-scene-go="checkin">' +
-        '<rect x="468" y="12" width="68" height="78" fill="transparent" pointer-events="all"/>' +
-        '<rect x="476" y="30" width="52" height="52" rx="6" fill="#6E5A7A" stroke="#C9A45C" stroke-width="2"/>' +
-        '<path d="M494 30 V18 Q502 10 510 18 V30" fill="#8A7296" stroke="#C9A45C" stroke-width="1.5"/>' +
-        '<rect x="486" y="54" width="32" height="20" fill="#A8573F" opacity=".85"/>' +
+        '<rect x="424" y="14" width="160" height="84" fill="transparent" pointer-events="all"/>' +
+        '<path d="M456 34 V22 Q484 10 512 22 V34" fill="#8A7296" stroke="#C9A45C" stroke-width="1.6"/>' +
+        '<rect x="448" y="34" width="80" height="58" rx="8" fill="#6E5A7A" stroke="#C9A45C" stroke-width="2.2"/>' +
+        '<rect x="456" y="62" width="64" height="20" fill="#A8573F" opacity=".85"/>' +
         '<title>玉玺 · 常课御批</title>' +
       '</g>' +
-      /* 砚台 + 笔（热区 · 议事） */
-      '<g class="sc-hot" data-scene-go="meetings">' +
-        '<rect x="556" y="26" width="122" height="70" fill="transparent" pointer-events="all"/>' +
-        '<rect x="566" y="46" width="56" height="34" rx="4" fill="#2E2C2A"/>' +
-        '<ellipse cx="594" cy="60" rx="18" ry="9" fill="#1C1B1A"/>' +
-        '<path d="M636 34 L672 78" stroke="#C9A45C" stroke-width="5" stroke-linecap="round"/>' +
-        '<path d="M672 78 l6 9" stroke="#2E2C2A" stroke-width="4"/>' +
-        '<title>砚笔 · 议事</title>' +
-      '</g>' +
-      /* 典籍（热区 · 文渊）——由原灵感笺位置改成叠放书册 */
+      /* 上排 ④ 典籍 */
       '<g class="sc-hot" data-scene-go="library">' +
-        '<rect x="700" y="14" width="90" height="50" fill="transparent" pointer-events="all"/>' +
-        '<g transform="rotate(-4 746 46)"><rect x="710" y="30" width="70" height="34" rx="2" fill="#8C6E4F" stroke="#6A5138" stroke-width="1"/>' +
-        '<rect x="716" y="34" width="58" height="26" fill="#EFE6CE"/></g>' +
-        '<g transform="rotate(5 744 42)"><rect x="708" y="22" width="72" height="34" rx="2" fill="#6E7A5A" stroke="#4E5A3E" stroke-width="1"/>' +
-        '<rect x="714" y="26" width="60" height="26" fill="#F2E8CE"/>' +
-        '<path d="M722 34 h44 M722 42 h38" stroke="#A89B7E" stroke-width="1"/></g>' +
+        '<rect x="612" y="16" width="220" height="82" fill="transparent" pointer-events="all"/>' +
+        '<g transform="rotate(-4 730 58)"><rect x="694" y="30" width="100" height="56" rx="2" fill="#8C6E4F" stroke="#6A5138" stroke-width="1"/>' +
+        '<rect x="702" y="36" width="84" height="44" fill="#EFE6CE"/></g>' +
+        '<g transform="rotate(5 728 50)"><rect x="684" y="22" width="104" height="56" rx="2" fill="#6E7A5A" stroke="#4E5A3E" stroke-width="1"/>' +
+        '<rect x="692" y="28" width="88" height="44" fill="#F2E8CE"/>' +
+        '<path d="M704 40 h64 M704 52 h56" stroke="#A89B7E" stroke-width="1"/></g>' +
         '<title>典籍 · 文渊</title>' +
       '</g>' +
-      /* 宏图卷轴（热区 · 宏图）——左下空位 */
+      /* 下排 ① 宏图卷轴 */
       '<g class="sc-hot" data-scene-go="goals">' +
-        '<rect x="30" y="86" width="158" height="54" fill="transparent" pointer-events="all"/>' +
-        '<rect x="42" y="96" width="132" height="34" rx="2" fill="#EFE6CE" stroke="#B09A6A" stroke-width="1"/>' +
-        '<rect x="36" y="92" width="8" height="42" rx="3" fill="#9A7340"/>' +
-        '<rect x="172" y="92" width="8" height="42" rx="3" fill="#9A7340"/>' +
-        '<path d="M58 118 l14 -12 l12 12 l16 -16 l18 16 l20 -10 l14 10" fill="none" stroke="#8A9B72" stroke-width="1.5"/>' +
-        '<circle cx="142" cy="108" r="3" fill="#A8573F"/>' +
+        '<rect x="22" y="102" width="192" height="78" fill="transparent" pointer-events="all"/>' +
+        '<rect x="40" y="116" width="160" height="48" rx="2" fill="#EFE6CE" stroke="#B09A6A" stroke-width="1"/>' +
+        '<rect x="32" y="111" width="10" height="58" rx="3" fill="#9A7340"/>' +
+        '<rect x="198" y="111" width="10" height="58" rx="3" fill="#9A7340"/>' +
+        '<path d="M56 148 l18 -18 l16 16 l20 -24 l22 24 l24 -16 l16 16" fill="none" stroke="#8A9B72" stroke-width="1.8"/>' +
+        '<circle cx="176" cy="128" r="3.5" fill="#A8573F"/>' +
         '<title>宏图卷轴 · 宏图</title>' +
       '</g>' +
-      /* 宝匣（热区 · 灵感罐，替代原珍宝阁映射） */
+      /* 下排 ② 砚台 + 笔 */
+      '<g class="sc-hot" data-scene-go="meetings">' +
+        '<rect x="214" y="102" width="194" height="78" fill="transparent" pointer-events="all"/>' +
+        '<rect x="248" y="124" width="82" height="40" rx="6" fill="#2E2C2A"/>' +
+        '<ellipse cx="289" cy="140" rx="26" ry="11" fill="#1C1B1A"/>' +
+        '<path d="M340 114 L392 158" stroke="#C9A45C" stroke-width="7" stroke-linecap="round"/>' +
+        '<path d="M392 158 l8 12" stroke="#2E2C2A" stroke-width="5"/>' +
+        '<title>砚笔 · 议事</title>' +
+      '</g>' +
+      /* 下排 ③ 烛台（装饰） */
+      '<rect x="526" y="128" width="8" height="30" fill="#C9A45C"/>' +
+      '<path d="M530 128 Q518 108 530 98 Q542 108 530 128" fill="#EF9F27" opacity=".85"/>' +
+      '<ellipse cx="530" cy="158" rx="16" ry="4.5" fill="#C9A45C"/>' +
+      /* 下排 ④ 宝匣 */
       '<g class="sc-hot" data-scene-go="idea">' +
-        '<rect x="690" y="84" width="128" height="54" fill="transparent" pointer-events="all"/>' +
-        '<rect x="690" y="90" width="120" height="42" rx="4" fill="#4A3324" stroke="#C9A45C" stroke-width="1.5"/>' +
-        '<path d="M690 104 h120" stroke="#C9A45C" stroke-width="1"/>' +
-        '<rect x="736" y="98" width="28" height="12" rx="2" fill="#C9A45C"/>' +
-        '<circle cx="750" cy="104" r="3" fill="#4A3324"/>' +
-        '<g fill="#E7D98F"><circle cx="782" cy="99" r="2"/><circle cx="790" cy="112" r="1.5"/><circle cx="704" cy="122" r="1.5"/></g>' +
+        '<rect x="612" y="102" width="220" height="78" fill="transparent" pointer-events="all"/>' +
+        '<rect x="626" y="118" width="196" height="56" rx="5" fill="#4A3324" stroke="#C9A45C" stroke-width="1.8"/>' +
+        '<path d="M626 134 h196" stroke="#C9A45C" stroke-width="1"/>' +
+        '<rect x="710" y="126" width="36" height="16" rx="2" fill="#C9A45C"/>' +
+        '<circle cx="728" cy="134" r="3.5" fill="#4A3324"/>' +
+        '<g fill="#E7D98F"><circle cx="796" cy="128" r="2.5"/><circle cx="808" cy="150" r="2"/><circle cx="650" cy="150" r="2"/></g>' +
         '<title>宝匣 · 灵感罐</title>' +
       '</g>' +
-      /* 烛台（装饰） */
-      '<rect x="590" y="112" width="6" height="24" fill="#C9A45C"/>' +
-      '<path d="M593 112 Q585 96 593 88 Q601 96 593 112" fill="#EF9F27" opacity=".85"/>' +
-      '<ellipse cx="593" cy="136" rx="14" ry="4" fill="#C9A45C"/>' +
-      '<rect x="0" y="0" width="860" height="150" fill="none" stroke="rgba(60,40,20,.25)" stroke-width="3"/>' +
     '</svg>';
   }
 
