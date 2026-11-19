@@ -102,6 +102,27 @@
           '<button class="btn ghost" data-act="debug-res-all">＋全套资源</button>' +
           '<button class="btn ghost" data-act="debug-dims">＋全套四维</button>' +
         '</div>' +
+      '</section>' +
+
+      /* ===== 历代年表（11-19 传代沉淀，永久保存） ===== */
+      '<section class="card">' +
+        '<div class="card-head"><span class="card-title">历 代 年 表</span>' +
+          '<span class="card-note">' + ((s.chronicle || []).length) + ' 代 · 每周日改元继统</span></div>' +
+        (function(){
+          var list = s.chronicle || [];
+          if(!list.length) return '<p class="card-note">尚无传代记录。满七日后自动改元，历代功过将刻入此册。</p>';
+          return '<div class="chronicle-list">' + list.slice().reverse().map(function(rec){
+            var hosted = (rec.hosted || []).length, rescued = (rec.rescued || []).length;
+            return '<div class="chronicle-row">' +
+              '<div class="chronicle-head">第 ' + rec.generation + ' 代 · ' + fmtEsc(rec.finalRankName || '') +
+                ' · ' + rec.focusMin + ' 分</div>' +
+              '<div class="chronicle-epitaph">' + fmtEsc(rec.epitaph || '') + '</div>' +
+              '<div class="chronicle-meta">' + fmtEsc(rec.span || '') +
+                ' · 最深 ' + (rec.bestRank || 1) + ' 阶 · 光复 ' + (rec.restoreCount || 0) +
+                ' / 亡国 ' + (rec.fallCount || 0) + ' · 质子 ' + hosted + ' / 迎回 ' + rescued + '</div>' +
+            '</div>';
+          }).join('') + '</div>';
+        })() +
       '</section>'
     );
   });

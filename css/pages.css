@@ -2124,3 +2124,10 @@ body.zen .sidebar{display:none}
     padding:6px 4px;text-align:center;white-space:nowrap;font-size:11px;
   }
 }
+
+/* ---------- 历代年表（设置页，11-19 传代沉淀） ---------- */
+.chronicle-list{display:flex;flex-direction:column;gap:8px}
+.chronicle-row{padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+.chronicle-head{font-weight:600;color:var(--ink);font-size:13px}
+.chronicle-epitaph{font-size:12px;color:var(--zhuqian);margin:3px 0;line-height:1.5}
+.chronicle-meta{font-size:11px;color:var(--ink3);line-height:1.5}

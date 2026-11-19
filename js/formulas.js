@@ -47,18 +47,49 @@
       };
     },
 
-    /* 指定分钟数的产出 */
-    gainForMinutes: function(min){
-      var g = this.perMinuteGain();
-      var k = min > 0 ? min : 0;
-      return { qinZheng: g.qinZheng * k, jinQian: g.jinQian * k, guoJin: g.guoJin * k };
+    /* 11-19 越久越赚：单场时长的「有效分钟」＝分段累进积分。
+       cum(0-120)=×1，cum(120-240)=×1.2，cum(240+)=×1.5。 */
+    cumEffMin: function(min){
+      min = Math.max(0, min || 0);
+      var tiers = (P.OUTPUT_TIERS && P.OUTPUT_TIERS.length)
+        ? P.OUTPUT_TIERS : [{ untilMin: Infinity, mult: 1 }];
+      var acc = 0, prev = 0;
+      for(var i = 0; i < tiers.length; i++){
+        var hi = Math.min(min, tiers[i].untilMin);
+        if(hi > prev) acc += (hi - prev) * tiers[i].mult;
+        if(min <= tiers[i].untilMin) break;
+        prev = tiers[i].untilMin;
+      }
+      return acc;
+    },
+    /* 有效分钟 → 实际分钟（cumEffMin 的分段逆，供 minutesFromGain 用） */
+    minFromEffMin: function(eff){
+      eff = Math.max(0, eff || 0);
+      var tiers = (P.OUTPUT_TIERS && P.OUTPUT_TIERS.length)
+        ? P.OUTPUT_TIERS : [{ untilMin: Infinity, mult: 1 }];
+      var acc = 0, prev = 0;
+      for(var i = 0; i < tiers.length; i++){
+        var span = (tiers[i].untilMin - prev) * tiers[i].mult;
+        if(eff <= acc + span) return prev + (eff - acc) / tiers[i].mult;
+        acc += span; prev = tiers[i].untilMin;
+      }
+      return prev + (eff - acc) / (tiers[tiers.length - 1].mult || 1);
     },
 
-    /* 由已产出的勤政值反推已专注分钟数（用于刷新后补进度） */
+    /* 指定分钟数的产出（累积语义：从 0 到 min 的总收益，含分段累进）。
+       before 可选：传入时返回 [before, before+min] 区间的增量收益。 */
+    gainForMinutes: function(min, before){
+      var g = this.perMinuteGain();
+      var k = Math.max(0, min || 0), b = Math.max(0, before || 0);
+      var eff = this.cumEffMin(b + k) - this.cumEffMin(b);
+      return { qinZheng: g.qinZheng * eff, jinQian: g.jinQian * eff, guoJin: g.guoJin * eff };
+    },
+
+    /* 由已产出的勤政值反推已专注分钟数（分段逆，累进下也准确） */
     minutesFromGain: function(gained){
       var per = this.perMinuteGain().qinZheng;
       if(!per) return 0;
-      return Math.max(0, (gained || 0) / per);
+      return Math.max(0, this.minFromEffMin((gained || 0) / per));
     },
 
     /* ---------- M2 征伐 ---------- */

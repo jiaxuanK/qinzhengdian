@@ -55,7 +55,9 @@
     var out = { claimed: [], finishedMemorial: false, memorial: null };
     if(!(min > 0)) return out;
 
-    var gain = F.gainForMinutes(min);
+    /* 11-19 越久越赚：按本场已记账分钟作 before，取分段累进的增量收益。
+       before 用勤政值反推（分段逆），保证逐秒调用与刷新补算都不重复计。 */
+    var gain = F.gainForMinutes(min, F.minutesFromGain(gainedOf().qinZheng));
     /* 晨课本场：只把金钱乘倍率，勤政/国力照常。
        倍率绑在 p.morningBoost（本场标记），不按钟点，跨过 7:30 仍生效。 */
     if(po().morningBoost && gain.jinQian){
@@ -82,6 +84,8 @@
       var bm = p.boundMemorialId ? QZD.memorials.find(p.boundMemorialId) : null;
       QZD.study.addMinutesSilent(min, bm ? bm.subjectId : null);
     }
+    /* 帝阶累计专注：本代专注分钟（亡国/传代归零，升级不清零） */
+    if(QZD.regime && QZD.regime.addFocus) QZD.regime.addFocus(min);
     return out;
   }
 

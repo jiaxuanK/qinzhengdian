@@ -423,6 +423,15 @@
         /* 6 项数值合并到同一网格：桌面 3 列×2 行、手机也 3 列×2 行，
            国力与声望自然并排，不再各占一行 */
         '<div class="emp-res-row">' + res + realmMini + '</div>' +
+        /* 11-19 帝阶：本代帝号 + 累计专注进度 + 可迎回名额；登录连登天数 */
+        '<div class="emp-rank-line">' +
+          (QZD.regime && QZD.regime.topbarText
+            ? '<span title="帝阶只看本代累计专注；亡国或传代归零重爬">◈ ' +
+                UI.fmt.escape(QZD.regime.topbarText()) + '</span>' : '') +
+          (QZD.checkin && QZD.checkin.loginStat
+            ? '<span class="emp-login-chip" title="每日首次打开自动签到；累计连登可领奖励">· 连登 ' +
+                QZD.checkin.loginStat().streak + ' 天</span>' : '') +
+        '</div>' +
       '</div>' +
     '</section>';
   }
@@ -436,11 +445,12 @@
       talk: '朝臣窃议，勤政数日即可平息。',
       omen: '御案已添《修省弭灾疏》，批阅即是修省。',
       border: '城郭无恙、仓廪尚实，回朝坐镇便足平复。',
-      mourn: '六宫都在等你，没有半分怨色。'
+      mourn: '六宫都在等你，没有半分怨色。',
+      refuge: '国破潜邸，帝号待复。勤政数日即可再起——她们还在等你接回。'
     };
     return '<section class="card" style="border-left:4px solid #b3542e;background:#fff8f2">' +
       '<div class="card-head"><span class="card-title">国势 · ' + UI.fmt.escape(v.name) +
-      '</span><span class="card-note">安定 ' + Math.round(v.stability) + ' / 100</span></div>' +
+      '</span><span class="card-note">安定 ' + Math.round(v.stability) + '</span></div>' +
       '<p class="today-line">' + UI.fmt.escape(tips[v.level] || '勤政即可挽回。') + '</p>' +
       '<div class="bar"><i style="width:' + Math.max(0, Math.min(100, v.stability)) +
       '%;background:#b3542e"></i></div>' +

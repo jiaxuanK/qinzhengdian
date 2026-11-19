@@ -146,8 +146,14 @@
 
       QZD.stateIO.pushLog('conquest',
         '御驾亲征，克复「' + city.name + '」 · 国力 +' + reward.guoJin + ' · 声望 +' + reward.shengWang);
+      /* 11-19 消耗回路：出征磨损上阵名臣（任期-1、用兵/理政-10、耗尽致仕） */
+      var wear = null;
+      if(QZD.ministers && QZD.ministers.wearFromSortie) wear = QZD.ministers.wearFromSortie();
+      if(wear && wear.retired && wear.retired.length){
+        QZD.stateIO.pushLog('conquest', '沙场老臣致仕：' + wear.retired.join('、') + ' · 上阵位已腾出');
+      }
       QZD.stateIO.save();
-      return { ok: true, city: city, cost: cost, reward: reward, power: power };
+      return { ok: true, city: city, cost: cost, reward: reward, power: power, wear: wear };
     },
 
     /* 启动补算：页面关闭期间按真实时间补贡赋（封顶 8 小时） */

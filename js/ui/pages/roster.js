@@ -174,11 +174,14 @@
     var pCom = Math.max(0, 100 - pRare - pUnc);
     var singleReason = jin + 1e-9 < single ? '金钱不足（需 ' + single + '）' : '';
     var tenReason = jin + 1e-9 < ten ? '金钱不足（需 ' + ten + '）' : '';
+    /* 11-19 消费倍率透明：明确显示"打卡 X% · 消费 ×N"，把隐形倍率变成看得懂的规则 */
+    var ckScore = QZD.checkin && QZD.checkin.todayStat ? QZD.checkin.todayStat().score : 100;
+    var costMult = QZD.study && QZD.study.multiplier ? QZD.study.multiplier() : 1;
 
     return '<section class="card">' +
       '<div class="card-head"><span class="card-title">选秀</span>' +
       '<span class="card-note">单抽 ' + single + ' 金 · 十连 ' + ten + ' 金（9 折）' +
-        (single !== (G.PULL_COST || 120) ? ' · 未达标 ×2' : '') + '</span></div>' +
+        ' · 今日打卡 ' + ckScore + '% · 消费 ×' + costMult + '</span></div>' +
       /* 11-18：card-note 已含价格/次数，删去重复长说明；
          只保留「勾选入宫」这一条操作要点 */
       '<p class="card-note" style="margin:2px 0 6px">抽出后勾选入宫，一人不选即放弃</p>' +
@@ -471,6 +474,22 @@
     var costQin = QZD.harem.summonCostOf(c, { costMult: 2 });   /* 侍寝价（残留展示计算） */
     var jin = QZD.state.resources.qinZheng;
     var title = QZD.harem.rankTitle(c);
+    /* 11-19 质子妃：暂不可召幸，改显迎回按钮（名额+成本双门槛；够条件才可点） */
+    var isHostage = !!(QZD.regime && QZD.regime.isHostage && QZD.regime.isHostage(c.id));
+    var rescueBtn = '';
+    if(isHostage && QZD.regime){
+      var rk = Math.max(0, Math.min(QZD.harem.rankOf ? QZD.harem.rankOf(c) : (c.rank||0), 5));
+      var rcCost = ((QZD.config.REGIME && QZD.config.REGIME.RESCUE_COST) || [])[rk] || { jinQian:150, guoJin:25 };
+      var slots = QZD.regime.rankInfo().slots;
+      var canAfford = QZD.state.resources.jinQian + 1e-9 >= rcCost.jinQian &&
+                      QZD.state.resources.guoJin + 1e-9 >= rcCost.guoJin;
+      var canRescue = slots > 0 && canAfford;
+      rescueBtn = '<button class="btn primary" data-rescue="' + c.id + '"' +
+        (canRescue ? '' : ' disabled') + ' title="迎回需 1 名额 + ' + rcCost.jinQian +
+        '金/' + rcCost.guoJin + '国力；名额随帝阶晋升获得">' +
+        '迎 归 · ' + rcCost.jinQian + '金/' + rcCost.guoJin + '国力' +
+        (slots <= 0 ? '（无名额）' : (canAfford ? '' : '（资源不足）')) + '</button>';
+    }
     /* 侍寝统一从「相 处」进入（用户决策）：名册不再放独立「召 幸」按钮，
        避免两个入口通往同一件事、也避免绕过确认弹窗误点直接判一次喜讯。 */
     var action = c.pregnant ? '<span class="badge buff">有孕在身</span>' : '';
@@ -519,7 +538,8 @@
           (c.rare ? ' <span class="badge rare">绝色</span>' : '') +
           bloodChip(c) +
           ' <span class="badge rank">' + UI.fmt.escape(title) + '</span>' +
-          (c.pregnant ? ' <span class="badge buff">有孕</span>' : '') + '</div>' +
+          (c.pregnant ? ' <span class="badge buff">有孕</span>' : '') +
+          (isHostage ? ' <span class="badge" style="background:#8a6d3b;color:#fff">质子·藩邦</span>' : '') + '</div>' +
         '<div class="attr-row">' +
           attrItem('容貌', c.yan, 'lit') +
           attrItem('体质', c.ti, 'gov') +
@@ -537,9 +557,12 @@
             ((c.poseIndex || 0) + 1) + '/' + c.poses.length + '</span>（点立绘换）' : '') + '</div>' +
         pregnancyLine(c) +
       '</div>' +
-      '<div class="talent-action consort-actions">' + modeBtn + action + rankBtn +
-        '<button class="btn ghost" data-gift="consort:' + c.id + '">赏 赐</button>' +
-        wishBtn + storyBtn + '</div>' +
+      '<div class="talent-action consort-actions">' +
+        (isHostage
+          ? rescueBtn + storyBtn     /* 质子：只给迎归 + 她的故事，其余相处动作隐去 */
+          : modeBtn + action + rankBtn +
+            '<button class="btn ghost" data-gift="consort:' + c.id + '">赏 赐</button>' +
+            wishBtn + storyBtn) + '</div>' +
     '</div>';
   }
 
@@ -725,6 +748,27 @@
     if(haremGate){
       setTab('consorts');
       UI.show('roster');
+      return;
+    }
+
+    /* 11-19 迎回质子妃：确认后扣名额+资源、清除质子态 */
+    var rescueBtn = e.target.closest('[data-rescue]');
+    if(rescueBtn){
+      var rid = rescueBtn.getAttribute('data-rescue');
+      var rc = QZD.harem.consortById ? QZD.harem.consortById(rid) : null;
+      var rname = rc ? rc.name : '此妃';
+      UI.modal({
+        title:'迎 ' + rname + ' 归宫',
+        body:'<p>她远在藩邦为质。迎归需 <b>1 个名额</b>与对应金钱、国力；' +
+          '名额随帝阶晋升获得，攒着不过期。接不接、何时接，皆由你定。</p>',
+        okText:'迎归', cancelText:'再等等',
+        onOk:function(){
+          var rr = QZD.regime.rescue(rid);
+          if(!rr.ok){ UI.toast(rr.error || '暂不能迎归'); return false; }
+          UI.toast('迎归成功 · ' + rname + ' 已回宫');
+          UI.renderPage();
+        }
+      });
       return;
     }
 

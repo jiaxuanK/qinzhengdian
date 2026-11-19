@@ -82,6 +82,13 @@
 .topbar .emp-chip[data-key="mingDe"]{border-color:var(--teng);color:var(--teng)}
 .topbar .emp-chip[data-key="renXin"]{border-color:var(--zhuqian);color:var(--zhuqian)}
 
+/* 11-19 帝阶行：本代帝号 + 累计专注进度 + 可迎回名额 */
+.topbar .emp-rank-line{
+  font-size:11.5px;color:var(--zhuqian);margin-top:2px;
+  letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  display:flex;gap:10px;flex-wrap:wrap;
+}
+.topbar .emp-login-chip{color:var(--ink3)}
 /* 资源：竖线分隔 + 数字醒目 */
 .topbar .emp-res-row{display:flex;gap:4px 16px;align-items:center}
 .topbar .emp-res{

@@ -207,9 +207,58 @@
     return st.allDone ? (C.ALL_DONE_BUFF || 0) : 0;
   }
 
+  /* ========== 11-19 登录打卡：每日首次打开自动签到 ==========
+     独立于自建目标，只记录"今天来过"。用于精确判断登录（dynasty 分档读
+     state.login.lastDate），并发累登里程碑奖励（纯增益，不碰惩罚）。 */
+  function loginState(){
+    var s = QZD.state;
+    if(!s.login || typeof s.login !== 'object') s.login = { lastDate:'', streak:0, total:0, claimed:[] };
+    var L = s.login;
+    if(typeof L.lastDate !== 'string') L.lastDate = '';
+    if(typeof L.streak !== 'number' || L.streak < 0) L.streak = 0;
+    if(typeof L.total !== 'number' || L.total < 0) L.total = 0;
+    if(!Array.isArray(L.claimed)) L.claimed = [];
+    return L;
+  }
+  function dateBefore(d, n){
+    var x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    x.setDate(x.getDate() - n);
+    return x.getFullYear() + '-' + String(x.getMonth()+1).padStart(2,'0') + '-' + String(x.getDate()).padStart(2,'0');
+  }
+  /* 开机打卡：幂等；今天已打则返回 ok:false。
+     必须先于 dynasty.onLaunch() 调用，让 settle 能读到今日登录。 */
+  function onLogin(){
+    var L = loginState(), t = todayStr();
+    if(L.lastDate === t) return { ok:false, reason:'今日已签到' };
+    var yesterday = dateBefore(new Date(), 1);
+    L.streak = (L.lastDate === yesterday) ? (L.streak || 0) + 1 : 1;
+    L.total = (L.total || 0) + 1;
+    L.lastDate = t;
+    /* 累登里程碑：达到天数且未领过则发一次（按 days 精确匹配或跨过即补） */
+    var rewards = C.LOGIN_REWARDS || [], gained = null;
+    for(var i = 0; i < rewards.length; i++){
+      var rw = rewards[i], key = 'd' + rw.days;
+      if(L.streak >= rw.days && L.claimed.indexOf(key) < 0){
+        L.claimed.push(key);
+        var delta = { qinZheng:rw.qinZheng||0, jinQian:rw.jinQian||0, guoJin:rw.guoJin||0, shengWang:rw.shengWang||0 };
+        if(delta.qinZheng||delta.jinQian||delta.guoJin||delta.shengWang) QZD.resources.add(delta);
+        gained = { days:rw.days, text:rw.text, delta:delta };
+        try { QZD.stateIO.pushLog('login', rw.text); } catch(e){}
+      }
+    }
+    QZD.stateIO.save();
+    return { ok:true, streak:L.streak, total:L.total, gained:gained };
+  }
+  function loginStat(){
+    var L = loginState();
+    return { streak:L.streak, total:L.total, todayDone:(L.lastDate === todayStr()) };
+  }
+
   QZD.checkin = {
     LEVELS: LEVELS,
     PRESETS: C.PRESETS || [],
+    onLogin: onLogin,
+    loginStat: loginStat,
     list: goals,
     levelMeta: levelMeta,
     rewardOf: rewardOf,

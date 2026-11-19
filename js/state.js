@@ -72,6 +72,8 @@
       },
       /* 每日打卡：goals 为今日自建小目标，history 为历史得分（热力图数据源） */
       checkin: { date: todayStr(), goals: [], history: {}, buff: null },
+      /* 11-19 登录打卡：精确记录每日上线；累计/连续天数 + 已领里程碑 */
+      login: { lastDate: '', streak: 0, total: 0, claimed: [] },
       logs: [],
       /* M2+ 预留空壳：先建好，保证存档结构从第一版就稳定 */
       cities: [], territories: [],
@@ -130,13 +132,23 @@
         lastRollDate: '', lastNodeDate: '', lastSeenDate: '', lastReunionDate: '',
         forceUsedDate: '', recentFragments: [], fragmentOwner: {}, lastSummon: null
       },
-      /* F1/F2/F3 温和版国势：安定度槽 + 分级事件 + 拨乱反正 */
+      /* 11-19 国运：安定度槽 + 每日表现分档 + 各级惩罚叠加 + 周期资源罚 */
       dynasty: {
         stability: (CFG.DYNASTY && CFG.DYNASTY.INITIAL) || 80,
         level: 'calm', lastSettledDate: '', fired: [],
         crisisDays: 0, wasCrisis: false, restoredAt: 0,
-        deepestLevel: 'calm'   /* 本次危机周期到达过的最深级别，用于 F3 奖励门槛 */
+        deepestLevel: 'calm',  /* 本次危机周期到达过的最深级别，用于 F3 奖励门槛 */
+        lastLoginDate: '', lastDeedDate: '', lastPenaltyAt: 0,
+        noDeedDays: 0, restoredGen: 0
       },
+      /* 11-19 帝阶升级流：本代帝阶/累计专注/迎回名额/质子；亡国·传代归零 */
+      regime: {
+        generation: 1, rank: 1, focusMin: 0, hostageSlots: 0,
+        fallCount: 0, hostages: [], bestRank: 1, restoreCount: 0,
+        weekKey: '', generationStart: todayStr()
+      },
+      /* 历代年表：永久保存，传代时归档本代功过（P4 写入） */
+      chronicle: [],
       /* 快捷栏：{ id, label, url, color, category, hideUrl }。
          点标签用系统浏览器/系统协议打开，不占游戏内存。category: ai/study/work/notes。 */
       quickLinks: (CFG.QUICK_LINKS || []).map(function(x, i){
@@ -366,7 +378,7 @@
     var DY = obj.dynasty;
     var DYI = (CFG.DYNASTY && CFG.DYNASTY.INITIAL) || 80;
     if(typeof DY.stability !== 'number' || !isFinite(DY.stability)) DY.stability = DYI;
-    DY.stability = Math.max(0, Math.min((CFG.DYNASTY && CFG.DYNASTY.MAX) || 100, DY.stability));
+    /* 11-19：取消上下限钳制，安定可为负、可 >80（dynasty.js clamp 只防 NaN） */
     if(typeof DY.level !== 'string' || !DY.level) DY.level = 'calm';
     if(typeof DY.lastSettledDate !== 'string') DY.lastSettledDate = '';
     if(!Array.isArray(DY.fired)) DY.fired = [];
@@ -374,6 +386,53 @@
     if(typeof DY.wasCrisis !== 'boolean') DY.wasCrisis = false;
     if(typeof DY.restoredAt !== 'number') DY.restoredAt = 0;
     if(typeof DY.deepestLevel !== 'string' || !DY.deepestLevel) DY.deepestLevel = 'calm';
+    /* 11-19 国运新字段 */
+    if(typeof DY.lastLoginDate !== 'string') DY.lastLoginDate = '';
+    if(typeof DY.lastDeedDate !== 'string') DY.lastDeedDate = '';
+    if(typeof DY.lastPenaltyAt !== 'number') DY.lastPenaltyAt = 0;
+    if(typeof DY.noDeedDays !== 'number') DY.noDeedDays = 0;
+    if(typeof DY.restoredGen !== 'number') DY.restoredGen = 0;
+    /* 11-19 帝阶升级流：旧档补默认；focusMin 首次 0（regime.S() 会按需从 history 补算） */
+    if(!obj.regime || typeof obj.regime !== 'object') obj.regime = {};
+    var RG = obj.regime;
+    if(typeof RG.generation !== 'number' || RG.generation < 1) RG.generation = 1;
+    if(typeof RG.rank !== 'number' || RG.rank < 1) RG.rank = 1;
+    if(typeof RG.focusMin !== 'number' || !isFinite(RG.focusMin) || RG.focusMin < 0){
+      /* 旧档：从 study.history 汇总最近 7 天专注，作为本代可追溯起点 */
+      var hist = (obj.study && obj.study.history) || {}, _sum = 0, _now = Date.now();
+      var _days = (CFG.REGIME && CFG.REGIME.CYCLE_DAYS) || 7;
+      for(var _i = 0; _i < _days; _i++){
+        var _d = new Date(_now - _i * 86400000);
+        var _k = _d.getFullYear() + '-' + String(_d.getMonth()+1).padStart(2,'0') + '-' + String(_d.getDate()).padStart(2,'0');
+        if(typeof hist[_k] === 'number' && isFinite(hist[_k])) _sum += hist[_k];
+      }
+      RG.focusMin = Math.max(0, Math.round(_sum));
+      /* 补算专注后同步帝阶，避免旧档升级后首次专注连跳多阶、误弹多次晋升。
+         用 config.RANKS 直接算（state.js 加载早于 regime.js，不能调其方法）。 */
+      var _ranks = (CFG.REGIME && CFG.REGIME.RANKS) || [];
+      var _rk = 1;
+      for(var _ri = 0; _ri < _ranks.length; _ri++){
+        if(RG.focusMin >= (_ranks[_ri].min || 0)) _rk = _ri + 1;
+      }
+      RG.rank = _rk;
+      RG.bestRank = _rk;
+      RG.hostageSlots = (_ranks[_rk - 1] && _ranks[_rk - 1].slots) || 0;
+    }
+    if(typeof RG.hostageSlots !== 'number' || RG.hostageSlots < 0) RG.hostageSlots = 0;
+    if(typeof RG.fallCount !== 'number' || RG.fallCount < 0) RG.fallCount = 0;
+    if(!Array.isArray(RG.hostages)) RG.hostages = [];
+    if(typeof RG.bestRank !== 'number' || RG.bestRank < 1) RG.bestRank = RG.rank;
+    if(typeof RG.restoreCount !== 'number' || RG.restoreCount < 0) RG.restoreCount = 0;
+    if(typeof RG.weekKey !== 'string') RG.weekKey = '';
+    if(typeof RG.generationStart !== 'string' || !RG.generationStart) RG.generationStart = todayStr();
+    if(!Array.isArray(obj.chronicle)) obj.chronicle = [];
+    /* 11-19 登录打卡：旧档补默认 */
+    if(!obj.login || typeof obj.login !== 'object') obj.login = {};
+    var LG = obj.login;
+    if(typeof LG.lastDate !== 'string') LG.lastDate = '';
+    if(typeof LG.streak !== 'number' || LG.streak < 0) LG.streak = 0;
+    if(typeof LG.total !== 'number' || LG.total < 0) LG.total = 0;
+    if(!Array.isArray(LG.claimed)) LG.claimed = [];
     /* 网页快捷栏：旧档没有则从预置补；有则清洗字段 */
     if(!Array.isArray(obj.quickLinks)){
       obj.quickLinks = (CFG.QUICK_LINKS || []).map(function(x, i){

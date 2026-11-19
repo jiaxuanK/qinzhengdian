@@ -645,6 +645,9 @@
     var sceneTag = mode ? mode.scene : 'bed';
 
     if(c.pregnant && isSleep) return { ok: false, error: '有孕在身，暂不宜召幸' };
+    /* 11-19 质子妃：流落藩邦、不可召幸；迎回后移除标记即恢复 */
+    if(QZD.regime && QZD.regime.isHostage && QZD.regime.isHostage(id))
+      return { ok: false, error: '此妃现为质子，远在藩邦，暂不可召幸' };
     var costQin = summonCostOf(c, mode);   /* 侍寝×2、日常陪伴×0.6 等；不传 mode 仍×1 */
     if(state().resources.qinZheng + 1e-9 < costQin){
       return { ok: false, error: '勤政值不足（需 ' + costQin + '）' };

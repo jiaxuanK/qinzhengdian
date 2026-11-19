@@ -99,7 +99,8 @@
       gov: c.gov,
       lit: c.lit,
       createdAt: Date.now(),
-      fielded: false
+      fielded: false,
+      tourLeft: M.TOUR_LIMIT || 8    /* 11-19 消耗回路：可出征次数 */
     };
     ministers().push(m);
     keju().candidates = [];
@@ -126,6 +127,9 @@
     if(fielded().length >= M.FIELD_SLOTS){
       return { ok: false, error: '上阵名额已满（' + M.FIELD_SLOTS + ' 人）' };
     }
+    /* 11-19：任期耗尽者不可再上阵，须致仕让贤 */
+    if(typeof m.tourLeft === 'number' && m.tourLeft <= 0)
+      return { ok: false, error: '「' + m.name + '」任期已尽，须致仕归乡' };
     m.fielded = true;
     QZD.stateIO.pushLog('roster', '「' + m.name + '」列于阵前');
     QZD.stateIO.save();
@@ -206,9 +210,35 @@
     return { ok: true, count: idle.length, gain: total, backToPrince: backToPrince };
   }
 
+  /* 11-19 消耗回路：每次出征后磨损所有上阵名臣。
+     用兵/理政各 −TOUR_WEAR（下限0）、任期 −1；任期用尽或用兵归 0 → 自动致仕归乡。
+     文采不消耗（入朝时已一次性换声望，无可二次收费）。 */
+  function wearFromSortie(){
+    var worn = [], retired = [], wear = M.WEAR_PER_SORTIE || 10;
+    fielded().forEach(function(m){
+      /* 旧档名臣无任期：首次磨损时补初始化，避免永远不耗尽 */
+      if(typeof m.tourLeft !== 'number') m.tourLeft = M.TOUR_LIMIT || 8;
+      m.war = Math.max(0, (m.war || 0) - wear);
+      m.gov = Math.max(0, (m.gov || 0) - wear);
+      if(typeof m.tourLeft === 'number') m.tourLeft -= 1;
+      worn.push({ id:m.id, name:m.name, war:m.war, gov:m.gov, tourLeft:m.tourLeft });
+    });
+    /* 收集耗尽者再致仕，避免遍历中改数组 */
+    var spent = fielded().filter(function(m){
+      return (typeof m.tourLeft === 'number' && m.tourLeft <= 0) || (m.war || 0) <= 0;
+    }).map(function(m){ return m.id; });
+    spent.forEach(function(id){
+      var d = dismiss(id);
+      if(d.ok) retired.push(d.name);
+    });
+    QZD.stateIO.save();
+    return { ok:true, worn:worn, retired:retired };
+  }
+
   QZD.ministers = {
     list: ministers,
     fielded: fielded,
+    wearFromSortie: wearFromSortie,
     fieldedCount: function(){ return fielded().length; },
     slots: M.FIELD_SLOTS,
     pending: function(){ return keju().candidates; },

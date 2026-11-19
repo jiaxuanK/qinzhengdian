@@ -32,8 +32,26 @@
   /* S1：旧档追认 + 开机情境判定（只给 toast，不弹模态窗） */
   if(QZD.story) QZD.story.onLaunch();
 
+  /* 11-19 传代检查：跨周（周日24:00）自动改元继统、归档年表、周期和亲。
+     须先于其他结算，让新代的帝阶/质子态就位。 */
+  if(QZD.regime && QZD.regime.checkGeneration) QZD.regime.checkGeneration();
+
+  /* 11-19 登录打卡：每日首次打开自动签到（须先于国势结算，
+     让 settle 的今日登录分档读得到 state.login.lastDate） */
+  var loginR = null;
+  if(QZD.checkin && QZD.checkin.onLogin) loginR = QZD.checkin.onLogin();
+
   /* F1/F2/F3：国势日结算（缺席缓降 / 分级事件 / 拨乱反正，只给 toast） */
   if(QZD.dynasty) QZD.dynasty.onLaunch();
+
+  /* 登录打卡反馈：累登里程碑给明确 toast，普通签到给轻提示 */
+  if(loginR && loginR.ok){
+    if(loginR.gained){
+      QZD.ui.toast('签到 · 连登 ' + loginR.streak + ' 天 · ' + loginR.gained.text);
+    }else{
+      QZD.ui.toast('签到成功 · 连登 ' + loginR.streak + ' 天');
+    }
+  }
 
   /* 桌面版：每天首次启动自动备份存档 + 导出周报数据 */
   if(QZD.backup) QZD.backup.autoRun();
