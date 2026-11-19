@@ -21,7 +21,7 @@
      .sc-shadow 殿影(长短) · .sc-lantern 宫灯(夜亮) */
   function hall(mobile){
     return '' +
-    '<svg class="scene-svg scene-hall" viewBox="' + (mobile ? '160 0 575 150' : '0 0 860 150') + '" preserveAspectRatio="' + (mobile ? 'xMidYMid meet' : 'xMidYMid slice') + '" role="img" aria-label="金銮殿时辰场景">' +
+    '<svg class="scene-svg scene-hall" viewBox="' + (mobile ? '160 0 575 150' : '0 0 860 150') + '" preserveAspectRatio="' + (mobile ? 'xMidYMid slice' : 'xMidYMid slice') + '" role="img" aria-label="金銮殿时辰场景">' +
       '<defs>' +
         '<linearGradient id="scSky" x1="0" y1="0" x2="0" y2="1">' +
           '<stop class="sc-sky-a" offset="0"/><stop class="sc-sky-b" offset="1"/>' +
@@ -109,7 +109,7 @@
   /* ---------- 金銮殿 · 手机紧凑版（495×150 填满 100px 横幅） ---------- */
   function hallCompact(){
     return '' +
-    '<svg class="scene-svg scene-hall" viewBox="0 0 495 150" preserveAspectRatio="xMidYMid meet" role="img" aria-label="金銮殿时辰场景（手机）">' +
+    '<svg class="scene-svg scene-hall" viewBox="0 0 495 150" preserveAspectRatio="xMidYMid slice" role="img" aria-label="金銮殿时辰场景（手机）">' +
       '<defs>' +
         '<linearGradient id="scSkyM" x1="0" y1="0" x2="0" y2="1">' +
           '<stop class="sc-sky-a" offset="0"/><stop class="sc-sky-b" offset="1"/>' +
@@ -256,7 +256,7 @@
   /* ---------- 政务 · 手机两行版（7 个入口排进 495×150） ---------- */
   function studyDeskCompact(){
     return '' +
-    '<svg class="scene-svg scene-desk" viewBox="0 0 495 150" preserveAspectRatio="xMidYMid meet" role="img" aria-label="御书房桌面（手机）">' +
+    '<svg class="scene-svg scene-desk" viewBox="0 0 495 150" preserveAspectRatio="xMidYMid slice" role="img" aria-label="御书房桌面（手机）">' +
       '<rect width="495" height="150" fill="#8E7557"/>' +
       '<rect x="4" y="4" width="487" height="142" rx="5" fill="none" stroke="#6F5638" stroke-width="2"/>' +
       /* 上排：奏折 / 文书 / 玉玺 / 典籍 */
@@ -330,7 +330,7 @@
     var territories = (QZD.state && QZD.state.territories) || [];
     var ownedN = territories.length;
     return '' +
-    '<svg class="scene-svg scene-map" viewBox="' + (mobile ? '235 0 545 150' : '0 0 860 150') + '" preserveAspectRatio="' + (mobile ? 'xMidYMid meet' : 'xMidYMid slice') + '" role="img" aria-label="虚构疆域舆图">' +
+    '<svg class="scene-svg scene-map" viewBox="' + (mobile ? '235 0 545 150' : '0 0 860 150') + '" preserveAspectRatio="' + (mobile ? 'xMidYMid slice' : 'xMidYMid slice') + '" role="img" aria-label="虚构疆域舆图">' +
       '<defs><linearGradient id="scSkyMap" x1="0" y1="0" x2="0" y2="1">' +
         '<stop class="sc-sky-a" offset="0"/><stop class="sc-sky-b" offset="1"/>' +
       '</linearGradient></defs>' +
@@ -397,7 +397,7 @@
     var territories = (QZD.state && QZD.state.territories) || [];
     var ownedN = territories.length;
     return '' +
-    '<svg class="scene-svg scene-map" viewBox="0 0 495 150" preserveAspectRatio="xMidYMid meet" role="img" aria-label="虚构疆域舆图（手机）">' +
+    '<svg class="scene-svg scene-map" viewBox="0 0 495 150" preserveAspectRatio="xMidYMid slice" role="img" aria-label="虚构疆域舆图（手机）">' +
       '<defs><linearGradient id="scSkyMapM" x1="0" y1="0" x2="0" y2="1">' +
         '<stop class="sc-sky-a" offset="0"/><stop class="sc-sky-b" offset="1"/>' +
       '</linearGradient></defs>' +

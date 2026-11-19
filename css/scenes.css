@@ -70,11 +70,10 @@ body[data-ambient="dusk"] .scene-svg .sc-sun{transform:translate(-30px,46px) sca
 }
 
 /* ---------- 移动端：专用取景 + 加高 ----------
-   JS 在窄屏输出 500×150 的 viewBox（政务为 495×150 两行版），
-   容器 100px 高与画面比例一致，场景填满且元素比全图模式大 1.7 倍。 */
+   JS 在窄屏输出 495×150 的 viewBox（政务两行版），容器 100px 高画面填满。 */
 @media(max-width:860px){
   .scene-banner{height:100px;border-radius:8px}
-  .scene-banner-desk{height:100px}   /* 政务桌面单独加高在窄屏回落到 100px */
+  .scene-banner-desk{height:100px}
   .scene-svg{height:100%}
   /* 手机取景已把日月纳入画面；清晨位移收小，避免太阳又移出取景框 */
   body[data-ambient="dawn"] .scene-svg .sc-sun{transform:translate(10px,30px) scale(.85)}
