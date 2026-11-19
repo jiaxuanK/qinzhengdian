@@ -2670,13 +2670,13 @@ body.zen .sidebar{display:none}
    零新增定时器、零图片。热区 hover 只改透明度/描边。
    ============================================================ */
 .scene-banner{
-  width:100%;height:170px;border-radius:var(--radius);overflow:hidden;
+  width:100%;height:190px;border-radius:var(--radius);overflow:hidden;
   margin-bottom:16px;position:relative;box-shadow:var(--shadow);
   background:var(--paper);   /* meet 模式下两侧留白的兜底色 */
 }
 .scene-svg{display:block;width:100%;height:100%}
-/* 桌面场景留白用木色兜底，与桌面同色不突兀 */
-.scene-banner-desk{background:#8E7557;height:190px}
+/* 桌面场景留白用木色兜底，与桌面同色不突兀；三页横幅统一 190px */
+.scene-banner-desk{background:#8E7557}
 
 /* ---------- 金銮殿 · 时辰换色 ----------
    四个时段各定义天色渐变两端 + 日/月/影/灯状态。
