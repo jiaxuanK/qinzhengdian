@@ -12347,9 +12347,9 @@ QZD.ASSETS = {
       '<path d="M0 92 Q70 58 150 84 T320 80 T500 86 T680 78 T860 88 L860 150 L0 150 Z" fill="rgba(90,110,100,.18)"/>' +
       '<path d="M0 108 Q120 82 240 102 T480 98 T720 104 T860 100 L860 150 L0 150 Z" fill="rgba(70,90,82,.16)"/>' +
       /* 日/月 */
-      '<circle class="sc-sun" cx="690" cy="42" r="19" fill="#F0B429"/>' +
-      '<circle class="sc-sun-halo" cx="690" cy="42" r="30" fill="#F0B429" opacity=".18"/>' +
-      '<path class="sc-moon" d="M712 30 A17 17 0 1 0 712 58 A13 13 0 1 1 712 30 Z" fill="#F3EFD8"/>' +
+      '<circle class="sc-sun" cx="620" cy="42" r="19" fill="#F0B429"/>' +
+      '<circle class="sc-sun-halo" cx="620" cy="42" r="30" fill="#F0B429" opacity=".18"/>' +
+      '<path class="sc-moon" d="M648 30 A17 17 0 1 0 648 58 A13 13 0 1 1 648 30 Z" fill="#F3EFD8"/>' +
       /* 云 */
       '<g fill="rgba(255,255,255,.28)"><ellipse cx="180" cy="40" rx="52" ry="10"/><ellipse cx="230" cy="46" rx="38" ry="8"/>' +
       '<ellipse cx="560" cy="30" rx="44" ry="9"/></g>' +
@@ -12645,9 +12645,9 @@ QZD.ASSETS = {
       '</linearGradient></defs>' +
       /* 天空 + 日月（与金銮殿共用时辰变量） */
       '<rect width="860" height="150" fill="url(#scSkyMap)"/>' +
-      '<circle class="sc-sun" cx="700" cy="36" r="16" fill="#F0B429"/>' +
-      '<circle class="sc-sun-halo" cx="700" cy="36" r="26" fill="#F0B429" opacity=".18"/>' +
-      '<path class="sc-moon" d="M730 20 A20 20 0 1 0 730 56 A16 16 0 1 1 730 20 Z" fill="#F3EFD8"/>' +
+      '<circle class="sc-sun" cx="620" cy="36" r="16" fill="#F0B429"/>' +
+      '<circle class="sc-sun-halo" cx="620" cy="36" r="26" fill="#F0B429" opacity=".18"/>' +
+      '<path class="sc-moon" d="M650 20 A20 20 0 1 0 650 56 A16 16 0 1 1 650 20 Z" fill="#F3EFD8"/>' +
       '<g fill="rgba(255,255,255,.3)"><ellipse cx="120" cy="32" rx="42" ry="8"/>' +
       '<ellipse cx="168" cy="38" rx="30" ry="6"/></g>' +
       /* 虚构大陆及元素整体放大 1.2 倍（绕大陆中心 385,80），天空/文字不放大 */
