@@ -3,18 +3,59 @@
    策略：预缓存关键文件 + cache-first 静态资源 + network-first 存档 API
    版本号每次改 SW 时递增，浏览器会自动更新。
    ============================================================ */
-var CACHE_NAME = 'qzd-20261119-2113';
+var CACHE_NAME = 'qzd-20261119-2125';
 
 /* 预缓存：首次安装就拉进缓存的核心文件 */
 var PRECACHE_URLS = [
   './',
   './index.html',
   './manifest.json',
-  './assets/app.css',
-  './assets/app.js',
+  './js/state.js',
+  './js/config.js',
+  './js/systems/idea.js',
+  './js/systems/goals.js',
+  './js/systems/memorials.js',
+  './js/systems/meetings.js',
+  './js/systems/thesis.js',
+  './js/systems/chronos.js',
+  './js/systems/link.js',
+  './js/systems/archive.js',
+  './js/systems/checkin.js',
+  './js/systems/quicklinks.js',
+  './js/systems/study.js',
+  './js/systems/resources.js',
+  './js/systems/harem.js',
+  './js/systems/story.js',
+  './js/systems/dynasty.js',
+  './js/systems/conquest.js',
+  './js/systems/tasks.js',
+  './js/systems/morning.js',
+  './js/systems/life.js',
+  './js/systems/roster.js',
+  './js/ui/render.js',
+  './js/ui/scenes.js',
+  './js/ui/portrait.js',
+  './js/ui/live2d.js',
+  './js/ui/pomodoro.js',
+  './js/ui/heatmap.js',
+  './js/ui/assets-refresh.js',
+  './js/ui/pages/overview.js',
+  './js/ui/pages/memorials.js',
+  './js/ui/pages/goals.js',
+  './js/ui/pages/thesis.js',
+  './js/ui/pages/meetings.js',
+  './js/ui/pages/library.js',
+  './js/ui/pages/chronos.js',
+  './js/ui/pages/logs.js',
+  './js/ui/pages/settings.js',
+  './css/base.css',
+  './css/pages.css',
+  './css/layout.css',
+  './css/scenes.css',
   './assets/pwa/icon-192.png',
-  './assets/pwa/icon-512.png'
-]
+  './assets/pwa/icon-512.png',
+  './assets/icon.ico'
+];
 
 self.addEventListener('install', function(event){
   event.waitUntil(
