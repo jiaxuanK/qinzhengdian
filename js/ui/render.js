@@ -97,34 +97,15 @@
       }
     } catch(e){ console.error('buildTopbar error:', e); }
   }
-  /* 11-19 数字滚动：值变化时用短时 rAF 滚到新值（约 420ms，播完即停、非常驻）。
-     无 rAF 或系统「减少动态效果」时直接设值。动画中被再次调用会先取消上一轮。 */
-  function animateNum(el, to){
-    var target = UI.fmt.num(to);
-    if(el.textContent === target) return;              /* 值没变：零开销 */
-    var reduce = false;
-    try { reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch(e){}
-    if(reduce || typeof requestAnimationFrame === 'undefined' || typeof performance === 'undefined'){
-      el.textContent = target; return;
-    }
-    var from = parseFloat(String(el.textContent).replace(/[^\d.-]/g, '')) || 0;
-    var end = Number(to) || 0, start = performance.now(), dur = 420;
-    if(el.__numRaf) cancelAnimationFrame(el.__numRaf);
-    function frame(t){
-      var k = Math.min(1, (t - start) / dur);
-      var eased = 1 - Math.pow(1 - k, 3);              /* easeOutCubic */
-      el.textContent = UI.fmt.num(Math.round(from + (end - from) * eased));
-      if(k < 1) el.__numRaf = requestAnimationFrame(frame);
-      else { el.textContent = target; el.__numRaf = null; }
-    }
-    el.__numRaf = requestAnimationFrame(frame);
-  }
   function refreshTopbar(){
-    /* 只更新资源数字，不重建 DOM；值没变则完全不触碰（省 CPU） */
+    /* 只更新资源数字，不重建 DOM；值没变则完全不触碰（省 CPU）。
+       11-19 移除数字滚动：赚钱路径(overview.tick)本就绕过它、基本不生效，
+       且每 2s 小幅跳动滚动反而晃眼，回归直接赋值。 */
     var s = QZD.state;
     CFG.RESOURCES.forEach(function(r){
       var el = document.getElementById('ov-res-' + r.key);
-      if(el) animateNum(el, s.resources[r.key]);
+      var v = UI.fmt.num(s.resources[r.key]);
+      if(el && el.textContent !== v) el.textContent = v;
     });
   }
 
@@ -200,7 +181,10 @@
       var html = '<div class="empty">渲染出错：' + (e && e.message || e) + '</div>';
     }
     if(!root) return;
-    root.innerHTML = html;
+    /* 11-19 场景横幅：三个一级页面顶部各一条（金銮殿/御书房/舆图），
+       金銮殿随时辰换色；纯 SVG + CSS，热区点击由 scenes.js 委托处理。 */
+    var banner = (QZD.scenes && QZD.scenes.banner) ? QZD.scenes.banner(current) : '';
+    root.innerHTML = banner + html;
     watchPortraits(root);
     var key = currentKey();
     if(hooks[current]) hooks[current](root);

@@ -44,6 +44,7 @@ QZD.config = {
       tabs: [
         { id: 'ov',      name: '概览' },
         { id: 'quick',   name: '速行' },
+        { id: 'idea',    name: '灵感' },
         { id: 'settings', name: '设置' }
       ]
     },

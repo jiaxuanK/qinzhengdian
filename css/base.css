@@ -120,17 +120,8 @@ body{
   line-height:1.75;
   -webkit-font-smoothing:antialiased;
 }
-/* 11-19 时辰氛围：按真实时间给宣纸底加一层极淡天光渐变。
-   纯静态 CSS（无动画/无 blur/无新 DOM），JS 每小时才切一次 data 属性。
-   JS 未运行时 data-ambient 缺省为 day，视觉等同原来的纯宣纸底。 */
-body[data-ambient="dawn"]{background:linear-gradient(160deg,#EAF0EA 0%,var(--paper) 42%) fixed}
-body[data-ambient="day"]{background:linear-gradient(160deg,#F7F3E9 0%,var(--paper) 55%) fixed}
-body[data-ambient="dusk"]{background:linear-gradient(160deg,#F5EADF 0%,var(--paper) 48%) fixed}
-body[data-ambient="night"]{background:linear-gradient(160deg,#E4E7EE 0%,var(--paper) 50%) fixed}
-@media (prefers-color-scheme:dark){
-  /* 深色模式（若将来启用）：天光同样克制，不额外加 blur */
-  body[data-ambient="night"]{background:linear-gradient(160deg,#1a1d24 0%,#12141a 60%) fixed}
-}
+/* 11-19 背景固定为宣纸色：时辰已由 SVG 场景表示，页面底色不再随时间/系统深色模式变化。 */
+body{background:var(--paper)}
 h1,h2,h3,h4{margin:0;font-weight:700;letter-spacing:.5px}
 p{margin:0}
 button{font-family:inherit;font-size:inherit;cursor:pointer}

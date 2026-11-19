@@ -3,7 +3,7 @@
    策略：预缓存关键文件 + cache-first 静态资源 + network-first 存档 API
    版本号每次改 SW 时递增，浏览器会自动更新。
    ============================================================ */
-var CACHE_NAME = 'qzd-20261119-1714';
+var CACHE_NAME = 'qzd-20261119-2026';
 
 /* 预缓存：首次安装就拉进缓存的核心文件 */
 var PRECACHE_URLS = [
@@ -33,6 +33,7 @@ var PRECACHE_URLS = [
   './js/systems/life.js',
   './js/systems/roster.js',
   './js/ui/render.js',
+  './js/ui/scenes.js',
   './js/ui/portrait.js',
   './js/ui/live2d.js',
   './js/ui/pomodoro.js',
@@ -50,6 +51,7 @@ var PRECACHE_URLS = [
   './css/base.css',
   './css/pages.css',
   './css/layout.css',
+  './css/scenes.css',
   './assets/pwa/icon-192.png',
   './assets/pwa/icon-512.png',
   './assets/icon.ico'

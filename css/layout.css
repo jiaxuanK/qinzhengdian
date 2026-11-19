@@ -54,13 +54,6 @@
   overflow:hidden;position:relative;cursor:pointer;line-height:0;
 }
 .topbar .emp-avatar .emperor-photo{width:100%;height:100%;background-size:cover;background-position:center;display:block}
-/* 11-19 帝王卡天光：静态径向渐变，画上就不动（零 CPU/零动画）。
-   pointer-events:none 不挡点击换立绘；极淡不遮面容。 */
-.topbar .emp-avatar::after{
-  content:'';position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(120% 80% at 30% 0%,rgba(255,246,214,.28),transparent 62%);
-  mix-blend-mode:soft-light;
-}
 .topbar .emp-avatar-none{font-size:20px;display:flex;align-items:center;justify-content:center;height:100%;background:var(--daiqing);color:#fff}
 .topbar .emp-avatar:hover{border-color:var(--daiqing);box-shadow:0 2px 8px rgba(54,58,50,.15)}
 .topbar .emp-avatar-edit{
@@ -145,6 +138,26 @@
   .main{padding-bottom:64px}
   .topbar{padding:12px 16px}
   .topbar h2{font-size:16px}
+  /* 窄屏把帝王卡改成 Grid：头像跨三行，名字/资源在右列，
+     帝阶行走正常布局横跨整行（不用绝对定位，避免被顶栏裁掉） */
+  .topbar .emperor-card{
+    display:grid;grid-template-columns:63px minmax(0,1fr);grid-template-rows:auto auto auto;
+    column-gap:8px;row-gap:2px;align-items:start;
+  }
+  .topbar .emp-head,.topbar .emp-res-row{min-width:0}
+  .topbar .emp-name{font-size:14px}
+  .topbar .emp-chip{font-size:9px;padding:1px 4px}
+  .topbar .emp-dims{gap:2px}
+  .topbar .emp-avatar{grid-column:1;grid-row:1/4;height:84px}
+  .topbar .emp-res{font-size:11px;padding-left:8px}
+  .topbar .emp-info{display:contents}
+  .topbar .emp-head{grid-column:2;grid-row:1}
+  .topbar .emp-res-row{grid-column:2;grid-row:2}
+  .topbar .emp-rank-line{
+    grid-column:1/3;grid-row:3;position:static;width:auto;margin-top:0;
+    flex-wrap:nowrap;gap:6px;font-size:10.5px;letter-spacing:0;
+  }
+  .topbar .emp-login-chip{white-space:nowrap}
   .banner{margin:12px 16px 0}
   .page-root{padding:16px}
 }

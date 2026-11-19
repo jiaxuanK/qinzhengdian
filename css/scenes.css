@@ -1,0 +1,82 @@
+/* ============================================================
+   scenes.css · 三页顶部场景横幅（11-19）
+   金銮殿是唯一显示时辰的场景：全靠 body[data-ambient] 切 CSS 变量，
+   零新增定时器、零图片。热区 hover 只改透明度/描边。
+   ============================================================ */
+.scene-banner{
+  width:100%;height:170px;border-radius:var(--radius);overflow:hidden;
+  margin-bottom:16px;position:relative;box-shadow:var(--shadow);
+  background:var(--paper);   /* meet 模式下两侧留白的兜底色 */
+}
+.scene-svg{display:block;width:100%;height:100%}
+/* 桌面场景留白用木色兜底，与桌面同色不突兀 */
+.scene-banner-desk{background:#8E7557}
+
+/* ---------- 金銮殿 · 时辰换色 ----------
+   四个时段各定义天色渐变两端 + 日/月/影/灯状态。
+   日轮用 transform 位移与缩放模拟朝阳→高日→落日；夜里隐藏换月。 */
+.scene-hall{--sc-sky-a:#F7F3E9;--sc-sky-b:#E8EDE6;--sc-sun-op:1;--sc-moon-op:0;
+  --sc-shadow-sx:1.5;--sc-lantern-op:.25}
+body[data-ambient="dawn"] .scene-hall{
+  --sc-sky-a:#EAF1F0;--sc-sky-b:#F4EFE2;--sc-sun-op:1;--sc-moon-op:0;
+  --sc-shadow-sx:2.2;--sc-lantern-op:.15}
+body[data-ambient="day"] .scene-hall{
+  --sc-sky-a:#DCEAF4;--sc-sky-b:#F2F0E4;--sc-sun-op:1;--sc-moon-op:0;
+  --sc-shadow-sx:.85;--sc-lantern-op:.15}
+body[data-ambient="dusk"] .scene-hall{
+  --sc-sky-a:#F6DDBE;--sc-sky-b:#F1E6D4;--sc-sun-op:1;--sc-moon-op:0;
+  --sc-shadow-sx:2.6;--sc-lantern-op:.5}
+body[data-ambient="night"] .scene-hall{
+  --sc-sky-a:#2A3348;--sc-sky-b:#4A5164;--sc-sun-op:0;--sc-moon-op:1;
+  --sc-shadow-sx:1.1;--sc-lantern-op:1}
+
+/* 金銮殿与舆图共用同一套天色/日月变量（11-19 舆图蓝色海纹改天空后） */
+.scene-hall,.scene-map{--sc-sky-a:#F7F3E9;--sc-sky-b:#E8EDE6;--sc-sun-op:1;--sc-moon-op:0;
+  --sc-shadow-sx:1.5;--sc-lantern-op:.25}
+body[data-ambient="dawn"] .scene-hall,body[data-ambient="dawn"] .scene-map{
+  --sc-sky-a:#EAF1F0;--sc-sky-b:#F4EFE2;--sc-sun-op:1;--sc-moon-op:0;
+  --sc-shadow-sx:2.2;--sc-lantern-op:.15}
+body[data-ambient="day"] .scene-hall,body[data-ambient="day"] .scene-map{
+  --sc-sky-a:#DCEAF4;--sc-sky-b:#F2F0E4;--sc-sun-op:1;--sc-moon-op:0;
+  --sc-shadow-sx:.85;--sc-lantern-op:.15}
+body[data-ambient="dusk"] .scene-hall,body[data-ambient="dusk"] .scene-map{
+  --sc-sky-a:#F6DDBE;--sc-sky-b:#F1E6D4;--sc-sun-op:1;--sc-moon-op:0;
+  --sc-shadow-sx:2.6;--sc-lantern-op:.5}
+body[data-ambient="night"] .scene-hall,body[data-ambient="night"] .scene-map{
+  --sc-sky-a:#2A3348;--sc-sky-b:#4A5164;--sc-sun-op:0;--sc-moon-op:1;
+  --sc-shadow-sx:1.1;--sc-lantern-op:1}
+
+.scene-svg .sc-sky-a{stop-color:var(--sc-sky-a)}
+.scene-svg .sc-sky-b{stop-color:var(--sc-sky-b)}
+.scene-svg .sc-sun{opacity:var(--sc-sun-op);transform-box:fill-box;transform-origin:center;
+  transform:translateY(0) scale(1);transition:transform .6s ease,opacity .6s ease}
+.scene-svg .sc-sun-halo{opacity:calc(var(--sc-sun-op) * .18)}
+.scene-svg .sc-moon{opacity:var(--sc-moon-op);transition:opacity .6s ease}
+.scene-hall .sc-shadow{transform-box:fill-box;transform-origin:center;
+  transform:scaleX(var(--sc-shadow-sx));transition:transform .6s ease}
+.scene-hall .sc-lantern{opacity:var(--sc-lantern-op);transition:opacity .6s ease}
+/* 朝阳低、高日中、落日低——用变量控制纵向位移（两场景同款） */
+body[data-ambient="dawn"] .scene-svg .sc-sun{transform:translate(60px,42px) scale(.85)}
+body[data-ambient="dusk"] .scene-svg .sc-sun{transform:translate(-30px,46px) scale(1.05)}
+
+/* ---------- 热区：入口 ---------- */
+.scene-banner .sc-hot{cursor:pointer;transition:opacity .15s ease,filter .15s ease}
+.scene-banner .sc-hot:hover{opacity:.82;filter:brightness(1.08)}
+.scene-banner .sc-hot title{pointer-events:none}
+
+/* ---------- 减少动态效果：关掉过渡 ---------- */
+@media (prefers-reduced-motion: reduce){
+  .scene-hall .sc-sun,.scene-hall .sc-moon,.scene-hall .sc-shadow,.scene-hall .sc-lantern{transition:none}
+}
+
+/* ---------- 移动端：专用取景 + 加高 ----------
+   JS 在窄屏输出 500×150 的 viewBox（政务为 495×150 两行版），
+   容器 100px 高与画面比例一致，场景填满且元素比全图模式大 1.7 倍。 */
+@media(max-width:860px){
+  .scene-banner{height:100px;border-radius:8px}
+  .scene-svg{height:100%}
+  /* 手机取景已把日月纳入画面；清晨位移收小，避免太阳又移出取景框 */
+  body[data-ambient="dawn"] .scene-svg .sc-sun{transform:translate(10px,30px) scale(.85)}
+  /* 月牙在窄屏只有几像素，放大到可辨认 */
+  .scene-svg .sc-moon{transform:scale(1.6);transform-box:fill-box;transform-origin:center}
+}
