@@ -7,10 +7,10 @@ QZD.QUEEN_OUTFITS = {
       "name": "常服",
       "folder": "常服",
       "images": [
-        "enc:YXNzZXRzL2E4Zi9jZTVkZDRiNjRmYmU3YzYyLmpwZw==",
-        "enc:YXNzZXRzL2E4Zi84YzU5MGVmN2FiMTA5NWE1LmpwZw=="
+        "enc:YXNzZXRzL2E4Zi84YzU5MGVmN2FiMTA5NWE1LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi8wMWY3ZDA3OWE5YTcxZWNhLmpwZw=="
       ],
-      "cover": "enc:YXNzZXRzL2E4Zi9jZTVkZDRiNjRmYmU3YzYyLmpwZw=="
+      "cover": "enc:YXNzZXRzL2E4Zi84YzU5MGVmN2FiMTA5NWE1LmpwZw=="
     },
     {
       "name": "swim",
