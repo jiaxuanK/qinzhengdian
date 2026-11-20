@@ -181,6 +181,13 @@
       r.queue[i].doneAt = Date.now();
       if(r.pickId === id) r.pickId = null;
       IO.pushLog('reading', '精读完成 · ' + r.queue[i].title);
+      /* 鲛人天赋：精读完成给最高位的她加固定整数点喜爱，不碰专注经济 */
+      var bt = QZD.bloodTalent ? QZD.bloodTalent.readingFavorBonus() : null;
+      if(bt && bt.value > 0 && QZD.harem){
+        var cap = QZD.harem.favorMaxOf(bt.consort);
+        bt.consort.favor = Math.max(0, Math.min(cap, (bt.consort.favor || 0) + bt.value));
+        IO.pushLog('reading', '血脉天赋 · ' + bt.consort.name + ' 喜爱 +' + bt.value);
+      }
       IO.save();
       return { ok: true, item: r.queue[i] };
     }

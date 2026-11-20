@@ -37,6 +37,35 @@
     window.QZD.ASSETS = m;
     return true;
   }
+  function applyQueenManifest(m){
+    if(!m || !Array.isArray(m.outfits)) return false;
+    window.QZD = window.QZD || {};
+    window.QZD.QUEEN_OUTFITS = m;
+    return true;
+  }
+
+  /* 浏览器：从选中的 assets/images 里单独挑出皇后装扮，重建换装清单。
+     目录结构：皇后/<装扮名>/01.jpg → 一个装扮。 */
+  function buildQueenFromFiles(fileList){
+    var map = {};
+    for(var i = 0; i < fileList.length; i++){
+      var rp = fileList[i].webkitRelativePath || '';
+      var idx = rp.toLowerCase().indexOf('images/');
+      if(idx < 0) continue;
+      var parts = rp.slice(idx + 'images/'.length).split('/');
+      if(parts.length < 3 || parts[0] !== '皇后' || !IMG_RE.test(parts[2])) continue;
+      var name = parts[1];
+      if(!map[name]) map[name] = { name: name, folder: name, images: [], cover: '' };
+      map[name].images.push('assets/images/' + encodeURI(parts.slice(0, 3).join('/')));
+    }
+    var outfits = Object.keys(map).sort().map(function(k){
+      var o = map[k];
+      o.images.sort();
+      o.cover = o.images[0];
+      return o;
+    }).filter(function(o){ return o.images.length; });
+    return { root: 'assets/images/皇后', outfits: outfits };
+  }
 
   /* 浏览器：从 FileList（webkitdirectory）重建清单，逻辑镜像 gen_manifest.js */
   function buildFromFiles(fileList){
@@ -69,7 +98,8 @@
       var folders = [], seenF = {};
       relPaths.forEach(function(p){
         var parts = p.split('/');
-        if(parts.length > 1 && parts[0] && parts[0].toLowerCase() !== 'king' && !seenF[parts[0]]){
+        /* 「皇后」是换装角色目录，不进绝色妃子池 */
+    if(parts.length > 1 && parts[0] && parts[0].toLowerCase() !== 'king' && parts[0] !== '皇后' && !seenF[parts[0]]){
           seenF[parts[0]] = true; folders.push(parts[0]);
         }
       });
@@ -93,7 +123,8 @@
         if(IMG_RE.test(parts[parts.length - 1])) emperor.push('assets/images/' + encodeURI(p));
         return;
       }
-      // 子文件夹 = 一位妃嫔（绝色），多图 = 多姿态
+      // 子文件夹 = 一位妃嫔（绝色），多图 = 多姿态；「皇后」除外
+      if(folder === '皇后') return;
       var last = parts[parts.length - 1];
       var isImg = IMG_RE.test(last), isVid = VID_RE.test(last);
       if(!isImg && !isVid) return;
@@ -124,8 +155,10 @@
           return;
         }
         if(res.manifest) applyManifest(res.manifest); // 即时热更新当前画面
+        if(res.queenManifest) applyQueenManifest(res.queenManifest);
         if(UI){
-          UI.toast('立绘素材已刷新 · 帝王 ' + res.emperor + ' · 绝色 ' + res.rare + ' · 普通池 ' + res.pool);
+          UI.toast('立绘素材已刷新 · 帝王 ' + res.emperor + ' · 绝色 ' + res.rare +
+            ' · 普通池 ' + res.pool + ' · 装扮 ' + (res.outfits != null ? res.outfits : '—'));
           if(UI.onStateChanged) UI.onStateChanged();
         }
       }).catch(function(err){
@@ -135,16 +168,18 @@
     }
 
     // 浏览器兜底：让用户选 assets/images 文件夹
-    pickFolder(function(m, status){
+    pickFolder(function(m, q, status){
       if(status === 'cancel') return; // 用户取消选择，静默不提示
-      if(!m){
+      if(!m && (!q || !q.outfits.length)){
         // 选了文件夹但里面没有可用的图片结构
         if(UI) UI.toast('所选文件夹内未找到可用图片，请选择 assets/images 文件夹');
         return;
       }
-      if(applyManifest(m)){
+      var a = applyManifest(m), b = applyQueenManifest(q);
+      if(a || b){
         if(UI){
-          UI.toast('立绘素材已刷新（浏览器） · 绝色 ' + m.rare.length + ' · 普通池 ' + m.pool.length);
+          UI.toast('素材已刷新（浏览器） · 绝色 ' + (m ? m.rare.length : 0) +
+            ' · 普通池 ' + (m ? m.pool.length : 0) + ' · 装扮 ' + (q ? q.outfits.length : 0));
           if(UI.onStateChanged) UI.onStateChanged();
         }
       }
@@ -173,7 +208,7 @@
     return folderInput;
   }
 
-  /* cb(manifest, status)  status: 'ok' | 'cancel' | 'empty' */
+  /* cb(manifest, queenManifest, status)  status: 'ok' | 'cancel' | 'empty' */
   function pickFolder(cb){
     var input = ensureInput();
     var onPick = function(){
@@ -183,8 +218,11 @@
       input.value = ''; // 重置，便于下次重新触发 change
       if(!had){ cb(null, 'cancel'); return; }
       var m = buildFromFiles(files);
-      if(m && (m.rare.length || m.pool.length || m.emperor.length)) cb(m, 'ok');
-      else cb(null, 'empty'); // 选了文件夹但里面没有 images 结构
+      var q = buildQueenFromFiles(files);
+      if((m && (m.rare.length || m.pool.length || m.emperor.length)) || q.outfits.length){
+        cb(m, q, 'ok');
+      }
+      else cb(null, null, 'empty'); // 选了文件夹但里面没有 images 结构
     };
     input.addEventListener('change', onPick);
     // 离屏元素需等一帧再 click，部分浏览器同步 click 不弹窗
@@ -202,6 +240,8 @@
   window.QZD.assetsRefresh = {
     refresh: refresh,
     buildFromFiles: buildFromFiles,
+    buildQueenFromFiles: buildQueenFromFiles,
+    applyQueenManifest: applyQueenManifest,
     isDesktop: isDesktop
   };
 })();

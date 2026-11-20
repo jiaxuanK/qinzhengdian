@@ -137,6 +137,7 @@
   function matchWhen(when, c, ctx, st){
     if(!when) return true;
     var w = when, l = lifeOf(c), i;
+    if(w.isQueen != null && !!c.isQueen !== !!w.isQueen) return false;
     if(w.trait && !inList(w.trait, c.trait)) return false;
     if(w.notTrait && inList(w.notTrait, c.trait)) return false;
     /* 志怪血脉：blood/notBlood 决定「谁有资格」，veil 决定「藏到第几章」。
@@ -295,6 +296,9 @@
       var res = resonanceFor(c);
       if(res && res.text) omen = res.text;
     }
+
+    /* 专属剧情可指定场合换装（如就寝/朝会），玩家手动选过装扮后不覆盖 */
+    if(node.outfit && QZD.queen && QZD.queen.autoDress) QZD.queen.autoDress(node.outfit);
 
     /* 她的共同记忆 + 里程碑 */
     if(!Array.isArray(c.memory)) c.memory = [];

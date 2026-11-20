@@ -399,6 +399,34 @@ QZD.config = {
     DOTE_GAIN: 6
   },
 
+  /* ---------- 皇后：始终陪伴的固定妃嫔 ----------
+     开局即在宫、不进选秀池；位份显示固定为「皇后」，不受册封上限约束。
+     装扮目录名由 assets/images/皇后/ 下的文件夹决定，游戏里不写死套装表。 */
+  QUEEN: {
+    ID: 'queen',
+    NAME: '皇后',
+    TITLE: '皇后',
+    PERSONALITY: 'duan',
+    TRAIT: '通诗书',
+    AGE: 22,
+    HOMETOWN: '江南',
+    ORIGIN: '名门嫡女',
+    BLOOD: 'ren',                  /* 默认凡俗：不占用志怪线名额；想给她特殊血脉改这里即可 */
+    VEIL: false,
+    ATTR: { yan: 78, ti: 72, cai: 76 },
+    FAVOR: 40,
+    DOTE: 20,
+    /* 自动换装关键词：剧情标了 outfit 时按关键词选一套，用户手动更衣后停止自动 */
+    OUTFIT_HINT: { sleep: ['睡', '寝'], court: ['朝', '礼'], daily: ['常', '便'] },
+    GREETINGS: [
+      '陛下回来了。案上的茶还温着，臣妾刚换过。',
+      '今日的折子多吗？臣妾把灯芯剪短些，光就柔了。',
+      '臣妾在这儿等了许久，倒也不觉得闷——书翻了两页，茶温了两回。',
+      '夜深了。陛下若还批折子，臣妾就陪着，不说话也无妨。'
+    ],
+    DOING: '她正把案上的册子理齐，见陛下进来，只抬了抬眼'
+  },
+
   /* ---------- M4 后宫：性格 / 喜爱度 / 昭幸对话 ---------- */
   /* 妃嫔的「性格」决定说话口吻，「喜爱度」(0–100) 决定亲密层级。
      对话模板按 性格key × 层级(low<33 / mid 33–65 / high≥66) 组织；
@@ -887,23 +915,36 @@ QZD.config = {
      出身/国势组合，且旧档默认 ren 不触发任何志怪内容。 */
   BLOOD: {
     SHOW_IN_ROSTER: true,       /* 设 false 可恢复隐藏，一行即可反悔 */
+    TALENTS_ENABLED: true,      /* 血脉整数点天赋总开关；false 即回到纯文本血脉 */
     COMMON_RATE: 0.10,          /* 普通秀女带血脉的概率 */
-    RARE_RATE: 0.90,            /* 稀世 / 绝色几乎都有血脉 */
+    UNCOMMON_RATE: 0.30,        /* 稀有秀女带血脉的概率（高于普通、低于绝色） */
+    RARE_RATE: 0.90,            /* 稀世/绝色带血脉的概率 */
     /* 藏几章才露：按性格给节奏，同一血脉读法不同 */
     VEIL_AT: { wen: 2, huo: 1, qing: 3, mei: 2, duan: 3, jue: 3, min: 1, chou: 2 },
     LIST: [
       { key: 'ren',   name: '凡俗',     weight: 0,  sign: '' },
-      { key: 'shen',  name: '神女转世', weight: 8,  sign: '她写的句子，像从旧祭文里抄来的' },
-      { key: 'hu',    name: '九尾',     weight: 9,  sign: '弦上总多一缕收不住的尾音' },
-      { key: 'cao',   name: '草木灵',   weight: 9,  sign: '她绣的花，会跟着节令换' },
-      { key: 'yizu',  name: '异族',     weight: 10, sign: '她跳的舞，不是宫里教的路数' },
-      { key: 'wu',    name: '巫祝',     weight: 8,  sign: '她摆的残局，原是一卦' },
-      { key: 'jiao',  name: '鲛人',     weight: 7,  sign: '画上的水痕，一夜都不干' },
-      { key: 'shan',  name: '山鬼',     weight: 7,  sign: '她哼的调子里有山风' },
-      { key: 'xue',   name: '雪魄',     weight: 7,  sign: '砚里的墨，寒天也不凝' },
-      { key: 'jing',  name: '镜灵',     weight: 7,  sign: '镜里比人多一重影' },
-      { key: 'long',  name: '龙裔',     weight: 6,  sign: '她一抬腕，檐雨就密了些' },
-      { key: 'yu',    name: '羽人',     weight: 6,  sign: '广袖垂着，却像有风自袖底起' }
+      { key: 'shen',  name: '神女转世', weight: 8,  sign: '她写的句子，像从旧祭文里抄来的',
+        talent: { type: 'attr_cai', value: 8, label: '初始才情 +8' } },
+      { key: 'hu',    name: '九尾',     weight: 9,  sign: '弦上总多一缕收不住的尾音',
+        talent: { type: 'summon_dote', value: 2, label: '侍寝宠爱 +2' } },
+      { key: 'cao',   name: '草木灵',   weight: 9,  sign: '她绣的花，会跟着节令换',
+        talent: { type: 'hobby_point', value: 1, label: '才艺练习 +1' } },
+      { key: 'yizu',  name: '异族',     weight: 10, sign: '她跳的舞，不是宫里教的路数',
+        talent: { type: 'attr_yan', value: 8, label: '初始容貌 +8' } },
+      { key: 'wu',    name: '巫祝',     weight: 8,  sign: '她摆的残局，原是一卦',
+        talent: { type: 'daily_qin', value: 1, label: '每日首次专注勤政 +1' } },
+      { key: 'jiao',  name: '鲛人',     weight: 7,  sign: '画上的水痕，一夜都不干',
+        talent: { type: 'reading_favor', value: 2, label: '精读完成喜爱 +2' } },
+      { key: 'shan',  name: '山鬼',     weight: 7,  sign: '她哼的调子里有山风',
+        talent: { type: 'night_favor', value: 1, label: '夜间专注喜爱 +1' } },
+      { key: 'xue',   name: '雪魄',     weight: 7,  sign: '砚里的墨，寒天也不凝',
+        talent: { type: 'attr_ti', value: 8, label: '初始体质 +8' } },
+      { key: 'jing',  name: '镜灵',     weight: 7,  sign: '镜里比人多一重影',
+        talent: { type: 'dote_cap', value: 10, label: '宠爱上限 +10' } },
+      { key: 'long',  name: '龙裔',     weight: 6,  sign: '她一抬腕，檐雨就密了些',
+        talent: { type: 'attr_all', value: 5, label: '初始三维各 +5' } },
+      { key: 'yu',    name: '羽人',     weight: 6,  sign: '广袖垂着，却像有风自袖底起',
+        talent: { type: 'companion_favor', value: 1, label: '陪伴奖励喜爱 +1' } }
     ]
   },
 
@@ -967,6 +1008,35 @@ QZD.config = {
   },
 
   STORY_LINES: [
+    /* 皇后专属：只有她能认领，通用 bed/陪伴剧情仍照常复用 */
+    {
+      id: 'queen_lamp', name: '长明灯', kind: 'main', maxOwners: 1,
+      intro: '她总替陛下留一盏灯',
+      nodes: [
+        { id: 'n1', claim: true, when: { isQueen:true, gapDaysMin:2, returning:true },
+          reason: '久别回宫，灯还亮着',
+          text: '帘子掀起时，案上那盏灯还没剪。她从内室出来，先伸手把灯芯拨短一寸，才低声道「陛下回来了」。桌上压着两卷批过的旧折，纸角齐整，像是一直等着人来看。她没说等了多久，只把茶盏推近了些。' },
+        { id: 'n2', ownerOnly: true, when: { isQueen:true, focusDone:true }, outfit:'sleep',
+          reason: '你又坐到夜深，她换了便服来陪',
+          text: '更漏过了三刻，她换了身素净的衣裳进来，没催陛下歇，只把砚台边压着的纸一张张理好。「臣妾不困。」她说着，在案侧坐下，手里还捻着一线没绣完的丝。灯影落在她鬓边，她自己也没察觉。' },
+        { id: 'n3', ownerOnly: true, when: { isQueen:true, favorMin:60 },
+          reason: '她说出那句憋了很久的话',
+          reward: { address:'中宫', phrase:'灯还留着。', pose:'把灯挪到案角，退半步再抬眼' },
+          text: '她把灯挪远半寸，好让光不刺着陛下的眼。这一回她没有垂眼，「臣妾不求陛下常来，只求这盏灯，陛下进门时能看见。」说完耳根微红，手却在灯台上按得很稳。窗外更鼓响了，殿里谁也没提歇息。' }
+      ]
+    },
+    {
+      id: 'queen_seal', name: '中宫之匣', kind: 'side', maxOwners: 1,
+      intro: '她把一只旧匣推到案前',
+      nodes: [
+        { id: 'n1', claim: true, when: { isQueen:true, rankMin:0 },
+          reason: '她有一只从不离身的匣子',
+          text: '她把一只旧匣推到案前，指尖在匣盖上停了停，「这里头是臣妾入宫时带来的。陛下若问，臣妾便打开；不问，它就一直在这儿。」语气平平，像在说一件极寻常的东西。匣角磨得发亮，显然常被人握着。' },
+        { id: 'n2', ownerOnly: true, when: { isQueen:true, doteMin:35 },
+          reason: '她终于把匣子打开',
+          text: '匣里没有金玉，只有一叠旧笺，最上面那张字迹稚拙，写着「愿年年同坐此案」。她别过脸去，「臣妾那年写得傻。」陛下把笺纸放回去，她才转回来，把匣盖一层层合上，动作很慢。' }
+      ]
+    },
     {
       id: 'tea_three', name: '茶凉三回', kind: 'main', maxOwners: 1,
       intro: '她似乎总在等什么',

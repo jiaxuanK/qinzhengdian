@@ -574,8 +574,7 @@
     return '<section class="card">' +
       '<div class="card-head"><span class="card-title">御案奏折</span>' +
         '<button class="btn primary" data-mem="new">+ 新建奏折</button></div>' +
-      '<p class="today-line">奏折就是专注任务：本身不计时，拆出小目标后点「专注」开始正计时；' +
-        '奖励严格按专注分钟累计，放弃按五成计入。</p>' +
+      '<p class="card-note">拆出小目标后点「专注」计时，奖励按专注分钟结算（放弃折半）。</p>' +
       '<div class="chip-row" style="margin:10px 0 8px">' + chipHtml + '</div>' +
       '<div style="margin-bottom:12px">' + viewBar() + '</div>' +
       body +

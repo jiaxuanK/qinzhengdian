@@ -323,6 +323,62 @@
     '</svg>';
   }
 
+  /* ---------- 朝野 · 营造工程与城池旗帜（动态） ----------
+     六项工程建成一项，舆图上就浮现一处专属小地物（未建不出现）；
+     城池旗帜数量 = 已控城池数，随征伐推进而增加。 */
+  var WORK_MARKS = [
+    { id:'hegong',    name:'河工堤防', shape:'levee',   color:'#4C7A8C' },
+    { id:'changping', name:'常平仓',   shape:'granary', color:'#9A7B36' },
+    { id:'yantie',    name:'盐铁司',   shape:'forge',   color:'#A85A32' },
+    { id:'junxie',    name:'军械监',   shape:'arsenal', color:'#7A4A38' },
+    { id:'yichuan',   name:'驿传所',   shape:'post',    color:'#4C6E8C' },
+    { id:'zhuqian',   name:'铸钱局',   shape:'mint',    color:'#3E6B5C' }
+  ];
+  function workLevel(id){
+    var w = QZD.state && QZD.state.works;
+    return (w && w.levels && w.levels[id]) || 0;
+  }
+  function builtWorks(){
+    return WORK_MARKS.filter(function(w){ return workLevel(w.id) > 0; }).length;
+  }
+  function workShape(w){
+    var c = w.color;
+    switch(w.shape){
+      case 'levee':   return '<path d="M-11 5 h22 v5 h-22 Z" fill="'+c+'"/><path d="M-11 1 q5 -4 10 0 q5 -4 10 0" fill="none" stroke="'+c+'" stroke-width="1.5"/>';
+      case 'granary': return '<path d="M-9 10 v-11 h18 v11 Z" fill="'+c+'"/><path d="M-11 -1 L0 -9 L11 -1 Z" fill="'+c+'"/><rect x="-3" y="2" width="6" height="8" fill="rgba(50,40,25,.3)"/>';
+      case 'forge':   return '<path d="M-9 10 v-10 h18 v10 Z" fill="'+c+'"/><rect x="-2" y="-10" width="4" height="7" fill="'+c+'"/><path d="M-4 2 q4 -9 8 0" fill="#E08A3C"/>';
+      case 'arsenal': return '<path d="M-10 10 L7 -7 M-7 -7 L10 10" stroke="'+c+'" stroke-width="2.5"/><path d="M7 -7 l4 -3 l-1 5 Z M-7 -7 l-4 -3 l1 5 Z" fill="'+c+'"/>';
+      case 'post':    return '<path d="M-9 10 v-9 h18 v9 Z" fill="'+c+'"/><path d="M-11 1 L0 -7 L11 1 Z" fill="'+c+'"/><path d="M11 -7 v-6 l6 2 l-6 2" fill="'+c+'"/><rect x="-2" y="3" width="4" height="7" fill="rgba(50,40,25,.3)"/>';
+      case 'mint':    return '<circle cx="0" cy="1" r="9" fill="'+c+'"/><rect x="-3" y="-2" width="6" height="6" fill="#EFE7D2"/>';
+    }
+    return '';
+  }
+  function workMarks(compact){
+    var pos = compact
+      ? [[82,62],[84,94],[196,106],[278,72],[310,98],[284,106]]
+      : [[180,82],[228,101],[320,104],[472,74],[500,104],[196,60]];
+    var out = '', s = compact ? 0.75 : 1;
+    WORK_MARKS.forEach(function(w,i){
+      var lv = workLevel(w.id);
+      if(!lv) return;
+      var p = pos[i];
+      out += '<g class="sc-work" transform="translate('+p[0]+','+p[1]+') scale('+s+')">' +
+        workShape(w) +
+        '<circle cx="10" cy="-9" r="5" fill="#F3EFD8" stroke="'+w.color+'"/>' +
+        '<text x="10" y="-6" text-anchor="middle" font-size="9" font-family="serif" fill="'+w.color+'">'+lv+'</text>' +
+        '<title>'+w.name+' · Lv.'+lv+'</title></g>';
+    });
+    return out;
+  }
+  function mapFlags(owned, compact){
+    var n = Math.min(owned, 8), out = '';
+    for(var i=0;i<n;i++){
+      var x = (compact ? 205 : 350) + i*(compact ? 16 : 18);
+      out += '<path d="M'+x+' 42 v-14 l11 3 l-11 4 Z"/>';
+    }
+    return '<g fill="#A8573F"><title>已控城池旗帜 '+owned+'</title>'+out+'</g>';
+  }
+
   /* ---------- 朝野 · 虚构舆图（无时辰，疆域状态） ----------
      原创虚构大陆，非现实世界地图，不涉及真实国界/领土。 */
   function worldMap(mobile){
@@ -369,24 +425,27 @@
         '<path d="M286 64 h46" stroke="#F2CE6C" stroke-width="2"/>' +
         '<title>宫阙 · 名册</title>' +
       '</g>' +
-      /* 驿站（热区 · 营造）——放大 */
+      /* 在建城楼（热区 · 营造）——常驻入口，脚手架 + 半截黄顶 */
       '<g class="sc-hot" data-scene-go="works">' +
         '<rect x="374" y="48" width="74" height="68" fill="transparent" pointer-events="all"/>' +
-        '<rect x="398" y="72" width="24" height="24" fill="#4C6E8C"/>' +
-        '<path d="M410 72 v-8 M398 84 h24" stroke="#4C6E8C" stroke-width="2"/>' +
-        '<rect x="405" y="81" width="9" height="9" fill="#E2EBEF"/>' +
-        '<title>驿站 · 营造</title>' +
+        '<rect x="392" y="72" width="40" height="26" fill="#CDBB96" stroke="#8A7A54" stroke-width="1"/>' +
+        '<rect x="405" y="80" width="12" height="18" fill="#8A6A45"/>' +
+        '<path d="M388 72 L412 54 L436 72 Z" fill="#E5B23C" stroke="#A97816" stroke-width="1"/>' +
+        '<path d="M388 52 v46 M436 52 v46 M388 62 h48 M388 82 h48" stroke="#8A6A45" stroke-width="1.5"/>' +
+        '<title>在建城楼 · 营造</title>' +
       '</g>' +
       /* 烽烟（国破/边患时显示，由国运属性控制） */
       '<g class="sc-beacon"><path d="M563 62 q-8 -14 1 -24 q-4 -10 5 -18" fill="none" stroke="#8C3B32" stroke-width="2" opacity=".7"/>' +
       '<circle cx="569" cy="24" r="7" fill="#A8573F" opacity=".4"/></g>' +
-      /* 旗帜（帝阶越高越多，静态 3 面代表当前） */
-      '<g fill="#A8573F"><path d="M350 60 v-18 l14 4 l-14 5 Z"/><path d="M452 68 v-16 l12 4 l-12 5 Z"/><path d="M500 74 v-14 l10 3 l-10 4 Z"/></g>' +
+      /* 城池旗帜：按已控城池数增加 */
+      mapFlags(ownedN, false) +
+      /* 营造六项工程：建成一项浮现一处地物 */
+      workMarks(false) +
       /* 已控城池点位：按属地数量点亮 */
       '<g class="sc-cities"></g>' +
       '</g>' +
-      '<text x="' + (mobile ? 245 : 26) + '" y="' + (mobile ? 12 : 30) + '" fill="#6E6858" font-size="12" font-family="serif"> fiction · 寰宇舆图</text>' +
-      '<text x="' + (mobile ? 245 : 26) + '" y="' + (mobile ? 145 : 130) + '" fill="#7C7869" font-size="11" font-family="serif">已控城池 ' + ownedN + ' · 后宫 ' + consorts.length + '</text>' +
+      '<text x="' + (mobile ? 245 : 165) + '" y="' + (mobile ? 12 : 30) + '" fill="#6E6858" font-size="12" font-family="serif"> fiction · 寰宇舆图</text>' +
+      '<text x="' + (mobile ? 16 : 165) + '" y="' + (mobile ? 143 : 130) + '" fill="#7C7869" font-size="11" font-family="serif">已控城池 ' + ownedN + ' · 营造 ' + builtWorks() + '/6 · 后宫 ' + consorts.length + '</text>' +
       '<rect x="0" y="0" width="860" height="150" fill="none" stroke="rgba(90,80,60,.15)" stroke-width="3"/>' +
     '</svg>';
   }
@@ -426,14 +485,17 @@
       '</g>' +
       '<g class="sc-hot" data-scene-go="works">' +
         '<rect x="225" y="62" width="40" height="42" fill="transparent" pointer-events="all"/>' +
-        '<rect x="233" y="72" width="20" height="20" fill="#4C6E8C"/>' +
-        '<path d="M243 72 v-6 M233 80 h20" stroke="#4C6E8C" stroke-width="1.5"/>' +
-        '<title>驿站 · 营造</title>' +
+        '<rect x="231" y="74" width="24" height="18" fill="#CDBB96" stroke="#8A7A54" stroke-width="1"/>' +
+        '<rect x="240" y="80" width="7" height="12" fill="#8A6A45"/>' +
+        '<path d="M228 74 L243 61 L258 74 Z" fill="#E5B23C" stroke="#A97816" stroke-width="1"/>' +
+        '<path d="M228 58 v38 M258 58 v38 M228 64 h30" stroke="#8A6A45" stroke-width="1.2"/>' +
+        '<title>在建城楼 · 营造</title>' +
       '</g>' +
       '<g class="sc-beacon"><path d="M363 62 q-6 -10 1 -17 q-3 -7 3 -12" fill="none" stroke="#8C3B32" stroke-width="1.5" opacity=".7"/></g>' +
-      '<g fill="#A8573F"><path d="M205 58 v-14 l11 3 l-11 4 Z"/><path d="M292 62 v-12 l10 3 l-10 4 Z"/></g>' +
-      '<text x="8" y="15" fill="#6E6858" font-size="10" font-family="serif"> fiction · 寰宇舆图</text>' +
-      '<text x="8" y="143" fill="#7C7869" font-size="10" font-family="serif">已控城池 ' + ownedN + ' · 后宫 ' + consorts.length + '</text>' +
+      mapFlags(ownedN, true) +
+      workMarks(true) +
+      '<text x="14" y="15" fill="#6E6858" font-size="10" font-family="serif"> fiction · 寰宇舆图</text>' +
+      '<text x="14" y="143" fill="#7C7869" font-size="10" font-family="serif">已控城池 ' + ownedN + ' · 营造 ' + builtWorks() + '/6 · 后宫 ' + consorts.length + '</text>' +
       '<rect x="0" y="0" width="495" height="150" fill="none" stroke="rgba(90,80,60,.18)" stroke-width="2"/>' +
     '</svg>';
   }

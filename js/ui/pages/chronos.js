@@ -385,6 +385,401 @@
     '</div>';
   }
 
+  /* ---------- ① 周内进度带：本周逐日累计 vs 匀速线，看周初超前/欠账 ----------
+     匀速线＝66h 摊到 7 天（每天 9.43h）；实际累计来自 study.history。
+     差额为正＝超前，负＝欠账，一眼可见该不该补。 */
+  function weekPaceBand(){
+    var hist = (QZD.state.study && QZD.state.study.history) || {};
+    var st = QZD.state.study || {};
+    var mon = mondayOf(new Date()), today = new Date(); today.setHours(0,0,0,0);
+    var todayIdx = Math.floor((today.getTime() - mon.getTime()) / 86400000);
+    if(todayIdx < 0) todayIdx = 0; if(todayIdx > 6) todayIdx = 6;
+    var GOAL = 66 * 60, perDay = GOAL / 7;
+    var W = 640, L = 46, R = 14, T = 22, B = 40;
+    var cw = (W - L - R) / 7, chartH = 200 - T - B;
+    var cum = 0, pts = [], idealPts = [], labels = ['一','二','三','四','五','六','日'];
+    for(var i=0;i<7;i++){
+      var d = new Date(mon.getTime()); d.setDate(d.getDate()+i);
+      if(i <= todayIdx){
+        var v = Math.round(hist[dateKey(d)] || 0);
+        if(i === todayIdx && st.doneMin) v = Math.max(v, Math.round(st.doneMin));
+        cum += v;
+      }
+      pts.push({ x:L + cw*(i+0.5), y:T + chartH * (1 - Math.min(1, cum/GOAL)), v:cum, future:i>todayIdx });
+      idealPts.push({ x:L + cw*(i+0.5), y:T + chartH * (1 - Math.min(1, (perDay*(i+1))/GOAL)) });
+    }
+    function path(a){ return a.map(function(p,i){ return (i?'L':'M') + p.x.toFixed(1) + ' ' + p.y.toFixed(1); }).join(' '); }
+    var actualSeg = pts.filter(function(p){ return !p.future; });
+    var actualPathEnd = actualSeg[actualSeg.length-1] || pts[0];
+    var grid = '';
+    [0, 0.25, 0.5, 0.75, 1].forEach(function(f){
+      var y = T + chartH * (1 - f);
+      grid += '<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="var(--viz-grid)" stroke-width="1"/>' +
+        '<text x="'+(L-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="10" fill="var(--ink2)">'+
+        Math.round(f*66)+'h</text>';
+    });
+    var dayLabels = labels.map(function(s,i){
+      return '<text x="'+(L+cw*(i+0.5))+'" y="'+(T+chartH+16)+'" text-anchor="middle" font-size="10" '+
+        'fill="'+(i===todayIdx?'var(--zhuqian)':'var(--ink2)')+'">周'+s+'</text>';
+    }).join('');
+    var dots = actualSeg.map(function(p){
+      return '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3" fill="var(--viz-2)"><title>'+
+        Math.round(p.v/60*10)/10+' h</title></circle>';
+    }).join('');
+    var nowMin = actualSeg.length ? actualSeg[actualSeg.length-1].v : 0;
+    var shouldMin = perDay * (todayIdx+1);
+    var diffMin = Math.round(nowMin - shouldMin);
+    var tone = diffMin >= 0 ? '超前' : '欠账';
+    var badge = '<div class="pace-badge '+(diffMin>=0?'ahead':'behind')+'">'+
+      '比匀速线'+tone+' '+Math.abs(Math.round(diffMin/60*10)/10)+' h</div>';
+    return '<div class="pace-wrap">'+ badge +
+      '<svg viewBox="0 0 '+W+' 200" class="pace-svg" role="img" aria-label="本周累计专注与匀速线对比">'+
+        grid +
+        '<path d="'+path(idealPts)+'" fill="none" stroke="var(--viz-grid)" stroke-width="2" stroke-dasharray="6 5"/>' +
+        (actualSeg.length>1 ? '<path d="'+path(actualSeg)+'" fill="none" stroke="var(--viz-2)" stroke-width="2.5"/>' : '') +
+        dots + dayLabels +
+        '<circle cx="'+actualPathEnd.x.toFixed(1)+'" cy="'+actualPathEnd.y.toFixed(1)+'" r="5" fill="none" stroke="var(--viz-2)" stroke-width="1.5"/>' +
+      '</svg>'+
+      '<div class="pace-legend"><span><i class="solid"></i>实际累计</span>'+
+        '<span><i class="dash"></i>匀速线（66h ÷ 7 天）</span></div>'+
+    '</div>';
+  }
+
+  /* ---------- ② 星期×时段热力矩阵：7 天 × 24 小时，找「周几的哪个点」最高效 ----------
+     读 study.dayHour（日期×小时）。列=小时(0–23 合并为每2小时一格)，行=周一到周日。 */
+  function weekdayHourMatrix(){
+    var dh = (QZD.state.study && QZD.state.study.dayHour) || {};
+    var buckets = 12, cols = buckets, W = 640, L = 34, T = 26, cellW = (W - L - 10)/cols, cellH = 20;
+    var grid = [], max = 0, total = 0;
+    for(var r0=0;r0<7;r0++){ grid[r0]=[]; for(var c0=0;c0<12;c0++) grid[r0][c0]=0; }
+    Object.keys(dh).forEach(function(dk){
+      var d = new Date(dk+'T00:00:00'); if(isNaN(d.getTime())) return;
+      var row = (d.getDay()+6)%7;
+      Object.keys(dh[dk]).forEach(function(hk){
+        var h = parseInt(hk,10); if(isNaN(h)||h<0||h>23) return;
+        var v = dh[dk][hk] || 0; if(v<=0) return;
+        grid[row][Math.floor(h/2)] += v;
+        if(grid[row][Math.floor(h/2)] > max) max = grid[row][Math.floor(h/2)];
+        total += v;
+      });
+    });
+    if(!total) return '<div class="empty">还没有按时段记录<span class="card-note">专注几次后，这里会显示周几的哪个时段最高效</span></div>';
+    var wk = ['一','二','三','四','五','六','日'], cells='';
+    for(var r=0;r<7;r++){
+      for(var c=0;c<cols;c++){
+        var v = grid[r][c], lv = v<=0?0:(v<60?1:(v<180?2:(v<360?3:(v<600?4:5))));
+        var A = [0,.16,.34,.54,.76,1][lv];
+        var fill = lv===0?'transparent':'rgba(62,107,92,'+A+')';
+        var x = L+c*cellW, y = T+r*cellH;
+        cells += '<rect x="'+x.toFixed(1)+'" y="'+y+'" width="'+(cellW-2).toFixed(1)+'" height="'+(cellH-2)+
+          '" rx="2" fill="'+fill+'"'+(lv===0?' stroke="var(--viz-grid)" stroke-width="0.5"':'')+
+          '><title>周'+wk[r]+' '+(c*2)+':00–'+(c*2+2)+':00 · '+Math.round(v)+' 分</title></rect>';
+      }
+      cells += '<text x="'+(L-8)+'" y="'+(T+r*cellH+12)+'" text-anchor="end" font-size="10" fill="var(--ink2)">'+
+        wk[r]+'</text>';
+    }
+    var hourLabels='';
+    for(var c2=0;c2<cols;c2+=2){
+      hourLabels += '<text x="'+(L+c2*cellW)+'" y="'+(T-8)+'" font-size="10" fill="var(--ink2)">'+(c2*2)+'时</text>';
+    }
+    var Hh = T + 7*cellH + 8;
+    var legend = '<div class="hc-legend"><span>少</span>'+
+      ['#EFEBDD','rgba(62,107,92,.16)','rgba(62,107,92,.34)','rgba(62,107,92,.54)',
+       'rgba(62,107,92,.76)','rgba(62,107,92,1)'].map(function(c){return '<i style="background:'+c+'"></i>';}).join('')+
+      '<span>多</span></div>';
+    return '<div class="hc-wrap"><svg viewBox="0 0 '+W+' '+Hh+'" class="hc-svg" role="img" '+
+      'aria-label="星期与时段专注热力矩阵">'+hourLabels+cells+'</svg></div>'+legend;
+  }
+
+  /* ---------- ③ 单场时长 × 完成率：场次数柱状 + 完整率折线 ----------
+     读 focusLog.minutes / full，看「定多长才跑得完」。柱子＝场次，折线＝该桶完整率。 */
+  function durationCompletionCurve(){
+    var logs = (QZD.state.study && Array.isArray(QZD.state.study.focusLog))
+      ? QZD.state.study.focusLog : [];
+    var buckets = [
+      { name:'不足 25 分', lo:0,  hi:25 },
+      { name:'25–50 分',  lo:25, hi:50 },
+      { name:'50–90 分',  lo:50, hi:90 },
+      { name:'90 分以上', lo:90, hi:Infinity }
+    ];
+    var rows = buckets.map(function(b){
+      return { name:b.name, n:0, full:0 };
+    });
+    logs.forEach(function(x){
+      var m = Number(x.minutes) || 0;
+      if(m <= 0) return;
+      var i = m < 25 ? 0 : (m < 50 ? 1 : (m < 90 ? 2 : 3));
+      rows[i].n++; if(x.full) rows[i].full++;
+    });
+    var total = rows.reduce(function(a, r){ return a + r.n; }, 0);
+    if(!total) return '<div class="empty">还没有完成的专注场次' +
+      '<span class="card-note">专注几次后，这里会画出「多长跑得完」</span></div>';
+    var W = 640, H = 190, L = 38, R = 16, T = 18, B = 42;
+    var cw = (W - L - R) / rows.length, chartH = H - T - B;
+    var maxN = Math.max.apply(null, rows.map(function(r){ return r.n; })) || 1;
+    var grid = '', bars = '', linePts = [], labels = '';
+    [0, 0.5, 1].forEach(function(f){
+      var y = T + chartH * (1 - f);
+      grid += '<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="var(--viz-grid)" stroke-width="1"/>' +
+        '<text x="'+(L-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="10" fill="var(--ink2)">'+
+        Math.round(f*100)+'%</text>';
+    });
+    rows.forEach(function(r, i){
+      var cx = L + cw * (i + 0.5);
+      var hN = chartH * (r.n / maxN);
+      var rate = r.n ? r.full / r.n : 0;
+      var yRate = T + chartH * (1 - rate);
+      bars += '<rect x="'+(cx-cw*0.28).toFixed(1)+'" y="'+(T+chartH-hN).toFixed(1)+
+        '" width="'+(cw*0.56).toFixed(1)+'" height="'+hN.toFixed(1)+'" rx="3" '+
+        'fill="var(--viz-2)" opacity=".22"><title>'+r.name+' · '+r.n+' 场</title></rect>';
+      linePts.push({ x:cx, y:yRate, r:r, rate:rate });
+      labels += '<text x="'+cx.toFixed(1)+'" y="'+(T+chartH+16)+'" text-anchor="middle" '+
+        'font-size="10" fill="var(--ink2)">'+r.name+'</text>' +
+        '<text x="'+cx.toFixed(1)+'" y="'+(T+chartH+30)+'" text-anchor="middle" '+
+        'font-size="10" fill="var(--ink3)">'+r.n+' 场</text>';
+    });
+    var line = linePts.map(function(p,i){
+      return (i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1);
+    }).join(' ');
+    var dots = linePts.map(function(p){
+      return '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.5" fill="var(--viz-2)">' +
+        '<title>'+p.r.name+' · 完整率 '+Math.round(p.rate*100)+'% ('+p.r.full+'/'+p.r.n+')</title></circle>';
+    }).join('');
+    var best = linePts.slice().sort(function(a,b){ return b.rate - a.rate; })[0];
+    return '<div class="dc-wrap"><svg viewBox="0 0 '+W+' '+H+'" class="dc-svg" role="img" '+
+      'aria-label="单场时长与完整率曲线">'+grid+bars+
+      '<path d="'+line+'" fill="none" stroke="var(--viz-2)" stroke-width="2.5"/>'+
+      dots+labels+'</svg>'+
+      '<div class="dc-legend"><span><i class="bar"></i>场次数</span>'+
+        '<span><i class="line"></i>完整率</span></div></div>'+
+      '<p class="page-foot" style="margin-top:8px">完整率最高的区间：<b>'+best.r.name+'</b>（'+
+        Math.round(best.rate*100)+'%）· 若长时段完整率明显掉，说明番茄定得太长。</p>';
+  }
+
+  /* ---------- ④ 课题投入边际趋势：近 8 周，各课题一条线 ----------
+     读 study.subjectDaily（日期×课题），按自然周聚合；同一颜色沿用 subjectColor。 */
+  function subjectMomentumChart(){
+    var sd = (QZD.state.study && QZD.state.study.subjectDaily) || {};
+    var now = new Date(); now.setHours(0,0,0,0);
+    var mon = mondayOf(now);
+    var WEEKS = 8, all = [], names = {}, weekly = [];
+    for(var w=0; w<WEEKS; w++){
+      var start = new Date(mon.getTime()); start.setDate(start.getDate() - (WEEKS-1-w)*7);
+      var end = new Date(start.getTime()); end.setDate(end.getDate()+7);
+      var row = { start:start, end:end, vals:{}, total:0 };
+      for(var di=0; di<7; di++){
+        var d = new Date(start.getTime()); d.setDate(d.getDate()+di);
+        var day = sd[dateKey(d)];
+        if(!day) continue;
+        Object.keys(day).forEach(function(id){
+          var v = Number(day[id]) || 0;
+          if(v <= 0) return;
+          row.vals[id] = (row.vals[id] || 0) + v;
+          row.total += v;
+          names[id] = true;
+        });
+      }
+      weekly.push(row);
+      Object.keys(row.vals).forEach(function(id){ if(all.indexOf(id)<0) all.push(id); });
+    }
+    if(!all.length) return '<div class="empty">还没有按课题的每日记录' +
+      '<span class="card-note">专注时挂上课题，这里会画出近 8 周的投入走势</span></div>';
+    /* 只画投入最高的 4 条线，其余并入「其他」，避免图例糊成一片 */
+    var totals = {};
+    all.forEach(function(id){ totals[id] = weekly.reduce(function(a,r){ return a + (r.vals[id]||0); }, 0); });
+    var top = all.slice().sort(function(a,b){ return totals[b]-totals[a]; }).slice(0,4);
+    var series = top.map(function(id){ return { id:id, name:QZD.study.subjectName(id) }; });
+    if(all.length > 4) series.push({ id:'__other__', name:'其他', other:true });
+    var seriesMax = 1;
+    series.forEach(function(s){
+      weekly.forEach(function(r){
+        var v = s.other
+          ? r.total - top.reduce(function(a,id){ return a + (r.vals[id]||0); }, 0)
+          : (r.vals[s.id] || 0);
+        if(v > seriesMax) seriesMax = v;
+      });
+    });
+    var W = 640, L = 40, R = 14, T = 18, B = 40, cw = (W-L-R)/(WEEKS-1), chartH = 160;
+    var grid = '';
+    [0, 0.5, 1].forEach(function(f){
+      var y = T + chartH * (1-f);
+      grid += '<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="var(--viz-grid)" stroke-width="1"/>' +
+        '<text x="'+(L-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="10" fill="var(--ink2)">'+
+        Math.round(seriesMax*f)+'m</text>';
+    });
+    var paths = '', legend = '';
+    series.forEach(function(s){
+      var pts = weekly.map(function(r,i){
+        var v = s.other
+          ? r.total - top.reduce(function(a,id){ return a + (r.vals[id]||0); }, 0)
+          : (r.vals[s.id] || 0);
+        return { x:L+cw*i, y:T+chartH*(1-v/seriesMax), v:v };
+      });
+      var col = s.other ? 'var(--ink3)' : subjectColor(s.id);
+      paths += '<path d="'+pts.map(function(p,i){
+        return (i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1);
+      }).join(' ')+'" fill="none" stroke="'+col+'" stroke-width="2"/>' +
+        pts.map(function(p){
+          return '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="2.8" fill="'+col+'">'+
+            '<title>'+UI.fmt.escape(s.name)+' · '+(p.v/60).toFixed(1)+' h</title></circle>';
+        }).join('');
+      var sTot = s.other
+        ? (function(){ var t=0; weekly.forEach(function(r){
+            t += r.total - top.reduce(function(a,id){ return a + (r.vals[id]||0); }, 0); }); return t; })()
+        : (totals[s.id] || 0);
+      legend += '<div class="sm-legend-item"><i style="background:'+col+'"></i>'+
+        '<span>'+UI.fmt.escape(s.name)+'</span><b>'+Math.round(sTot/60*10)/10+' h</b></div>';
+    });
+    var xlabels = '';
+    weekly.forEach(function(r,i){
+      if(i%2===0 || i===WEEKS-1){
+        xlabels += '<text x="'+(L+cw*i)+'" y="'+(T+chartH+18)+'" text-anchor="middle" '+
+          'font-size="10" fill="var(--ink2)">'+(r.start.getMonth()+1)+'/'+r.start.getDate()+'</text>';
+      }
+    });
+    var last = weekly[WEEKS-1], prev = weekly[WEEKS-2] || { total:0 };
+    var delta = last.total - prev.total;
+    return '<div class="sm-wrap"><svg viewBox="0 0 '+W+' 220" class="sm-svg" role="img" '+
+      'aria-label="近八周各课题投入趋势">'+grid+paths+xlabels+'</svg>'+
+      '<div class="sm-legend">'+legend+'</div></div>'+
+      '<p class="page-foot" style="margin-top:8px">本周课题投入 <b>'+
+        Math.round(last.total/60*10)/10+' h</b> · 较上周'+
+        (delta>=0?'增加':'减少')+' <b>'+Math.round(Math.abs(delta)/60*10)/10+' h</b>'+
+        ' · 线越平，说明节奏越稳。</p>';
+  }
+
+  /* ---------- ⑤ 帝王四维成长轨迹：丹药每次生效记一点，画四条阶梯线 ----------
+     读 state.emperorGrowth（ts/key/v）与 emperor 当前值；旧档无轨迹时显示当前四维。 */
+  function emperorGrowthChart(){
+    var e = QZD.state.emperor || {};
+    var dims = (QZD.config && QZD.config.DIMENSIONS) || [
+      { key:'ningShen', name:'凝神' }, { key:'yuLue', name:'御略' },
+      { key:'mingDe', name:'明德' }, { key:'renXin', name:'仁心' }
+    ];
+    var growth = Array.isArray(QZD.state.emperorGrowth) ? QZD.state.emperorGrowth : [];
+    var colors = ['var(--daiqing)', 'var(--teng)', 'var(--dailan)', 'var(--zhuqian)'];
+    if(!growth.length){
+      var bars = dims.map(function(d,i){
+        var v = e[d.key] || 0;
+        return '<div class="eg-bar-row"><span>'+d.name+'</span>'+
+          '<div class="eg-bar"><i style="width:'+(v*10)+'%;background:'+colors[i]+'"></i></div>'+
+          '<b>'+v+' / 10</b></div>';
+      }).join('');
+      return '<div class="eg-wrap">'+bars+'</div>'+
+        '<p class="page-foot" style="margin-top:8px">还没有成长记录。服下凝神 / 御略 / 明德 / 仁心丹后，'+
+        '这里会画出从今往后的四维轨迹（旧档不追溯）。</p>';
+    }
+    /* 等距取样到 12 点，避免早期密集点挤成一团 */
+    var STEP = 12, step = Math.max(1, Math.ceil(growth.length / STEP));
+    var samples = [];
+    for(var i=0;i<growth.length;i+=step) samples.push(growth[i]);
+    if(samples[samples.length-1] !== growth[growth.length-1]) samples.push(growth[growth.length-1]);
+    var W = 640, L = 34, R = 14, T = 18, B = 42, cw = (W-L-R)/Math.max(1,samples.length-1), chartH = 150;
+    var grid = '';
+    [0, 2.5, 5, 7.5, 10].forEach(function(v){
+      var y = T + chartH * (1 - v/10);
+      grid += '<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="var(--viz-grid)" stroke-width="1"/>' +
+        '<text x="'+(L-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="10" fill="var(--ink2)">'+v+'</text>';
+    });
+    var lines = '', legend = '';
+    dims.forEach(function(d, di){
+      var pts = [], cur = 0;
+      pts.push({ x:L, y:T+chartH });
+      samples.forEach(function(g, gi){
+        if(g.key === d.key) cur = Number(g.v) || 0;
+        var x = L + cw*gi, y = T + chartH * (1 - cur/10), py = pts[pts.length-1].y;
+        pts.push({ x:x, y:py });
+        pts.push({ x:x, y:y });
+      });
+      lines += '<path d="'+pts.map(function(p,i){
+        return (i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1);
+      }).join(' ')+'" fill="none" stroke="'+colors[di]+'" stroke-width="2"/>';
+      legend += '<div class="eg-legend-item"><i style="background:'+colors[di]+'"></i>'+
+        '<span>'+d.name+'</span><b>'+(e[d.key]||0)+' / 10</b></div>';
+    });
+    var first = samples[0], last = samples[samples.length-1];
+    var xlabels = '<text x="'+L+'" y="'+(T+chartH+18)+'" font-size="10" fill="var(--ink2)">'+
+      new Date(first.ts||Date.now()).toLocaleDateString('zh-CN')+'</text>'+
+      '<text x="'+(W-R)+'" y="'+(T+chartH+18)+'" text-anchor="end" font-size="10" fill="var(--ink2)">'+
+      new Date(last.ts||Date.now()).toLocaleDateString('zh-CN')+'</text>';
+    return '<div class="eg-wrap"><svg viewBox="0 0 '+W+' 224" class="eg-svg" role="img" '+
+      'aria-label="帝王四维成长轨迹">'+grid+lines+xlabels+'</svg>'+
+      '<div class="eg-legend">'+legend+'</div></div>'+
+      '<p class="page-foot" style="margin-top:8px">每次丹药生效记一点 · 共 '+
+        growth.length+' 次提升 · 阶梯不降，看得见慢慢养成。</p>';
+  }
+
+  /* ---------- 勤政画像雷达图：六维一眼看全，全部读现有存档 ----------
+     六维：专注（本周 66h）/ 课题 / 精读 / 灵感 / 修书 / 目标。
+     每维归一化到 0–1；点标签跳到对应页面。纯 SVG，无依赖、无常驻动画。 */
+  function radarChart(){
+    var weekMin = QZD.study && QZD.study.weekMinutes ? QZD.study.weekMinutes() : 0;
+    var subjects = QZD.study && QZD.study.subjects ? QZD.study.subjects() : [];
+    var idea = QZD.idea && QZD.idea.stats ? QZD.idea.stats() : { total:0, hatched:0 };
+    var read = QZD.reading && QZD.reading.stats ? QZD.reading.stats() : { doneWeek:0 };
+    var goals = QZD.goals && QZD.goals.stats ? QZD.goals.stats() : { avgProgress:0 };
+    var cur = 0, tgt = 0, books = QZD.thesis ? QZD.thesis.list() : [];
+    books.forEach(function(t){
+      (t.sections || []).forEach(function(x){ cur += (x.current || 0); tgt += (x.target || 0); });
+    });
+
+    var axes = [
+      { name:'专注', value:Math.min(1, weekMin / (66 * 60)), text:(Math.round(weekMin / 60 * 10) / 10) + ' / 66 h', go:'memorials' },
+      { name:'课题', value:Math.min(1, subjects.length / 6), text:subjects.length + ' 个方向', go:'subject' },
+      { name:'精读', value:Math.min(1, (read.doneWeek || 0) / 7), text:'本周 ' + (read.doneWeek || 0) + ' 篇', go:'library' },
+      { name:'灵感', value:idea.total ? idea.hatched / idea.total : 0, text:'孵化 ' + idea.hatched + '/' + idea.total, go:'idea' },
+      { name:'修书', value:tgt > 0 ? Math.min(1, cur / tgt) : 0, text:tgt > 0 ? Math.round(cur / tgt * 100) + '%' : '未立书', go:'thesis' },
+      { name:'目标', value:(goals.avgProgress || 0) / 100, text:'均进 ' + (goals.avgProgress || 0) + '%', go:'goals' }
+    ];
+
+    var cx = 150, cy = 142, R = 104, n = axes.length;
+    function pt(i, r){
+      var a = -Math.PI / 2 + i * 2 * Math.PI / n;
+      return [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
+    }
+    function ring(r){
+      return axes.map(function(_, i){ var p = pt(i, r); return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ');
+    }
+    var grid = '';
+    [0.25, 0.5, 0.75, 1].forEach(function(f){
+      grid += '<polygon points="' + ring(R * f) + '" fill="none" stroke="var(--viz-grid)" stroke-width="1"/>';
+    });
+    axes.forEach(function(_, i){
+      var p = pt(i, R);
+      grid += '<line x1="' + cx + '" y1="' + cy + '" x2="' + p[0].toFixed(1) + '" y2="' + p[1].toFixed(1) +
+        '" stroke="var(--viz-grid)" stroke-width="1"/>';
+    });
+    var poly = axes.map(function(ax, i){ var p = pt(i, R * Math.max(0.03, ax.value));
+      return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ');
+    var dots = '', tags = '';
+    axes.forEach(function(ax, i){
+      var p = pt(i, R * Math.max(0.03, ax.value));
+      var lp = pt(i, R + 24);
+      var anchor = Math.abs(lp[0] - cx) < 8 ? 'middle' : (lp[0] > cx ? 'start' : 'end');
+      dots += '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="3.4" ' +
+        'fill="var(--viz-2)"><title>' + UI.fmt.escape(ax.name) + ' · ' + UI.fmt.escape(ax.text) + '</title></circle>';
+      tags += '<g data-radar-go="' + ax.go + '" style="cursor:pointer">' +
+        '<text x="' + lp[0].toFixed(1) + '" y="' + lp[1].toFixed(1) + '" text-anchor="' + anchor +
+        '" font-size="11" fill="var(--ink2)">' + UI.fmt.escape(ax.name) + '</text>' +
+        '<title>' + UI.fmt.escape(ax.text) + ' · 点击前往</title></g>';
+    });
+
+    var legend = axes.map(function(ax){
+      return '<div class="radar-legend-item" data-radar-go="' + ax.go + '" title="点击前往">' +
+        '<span>' + UI.fmt.escape(ax.name) + '</span><b>' + UI.fmt.escape(ax.text) + '</b></div>';
+    }).join('');
+
+    return '<div class="radar-wrap">' +
+      '<svg viewBox="0 0 300 292" class="radar-svg" role="img" aria-label="勤政画像六维雷达图">' +
+        grid +
+        '<polygon points="' + poly + '" fill="var(--viz-2)" fill-opacity="0.22" ' +
+          'stroke="var(--viz-2)" stroke-width="2"/>' +
+        dots + tags +
+      '</svg>' +
+      '<div class="radar-legend">' + legend + '</div>' +
+    '</div>';
+  }
+
   /* ---------- 周目标进度环：本周专注 ÷ 66h，按课题分色 ----------
      环的填充长度＝完成度；填充部分再按各课题本周分钟切成多段，各用课题色。
      配色复用 subjectColor，与网格/甘特/饼图/课题条完全一致。 */
@@ -1440,6 +1835,11 @@
         starDial() +
       '</section>' +
       '<section class="card">' +
+        '<div class="card-head"><span class="card-title">周 内 进 度 带</span>' +
+          '<span class="card-note">实际累计 vs 匀速线 · 该不该补一眼可见</span></div>' +
+        weekPaceBand() +
+      '</section>' +
+      '<section class="card">' +
         '<div class="card-head"><span class="card-title">专注趋势</span>' +
           trendChartSwitch() +
           '<button class="chip sm" data-weekly-poster title="把本周数据拼成一张可保存的长图">长图</button>' +
@@ -1454,6 +1854,11 @@
           '<div class="realm-stat"><span>有记录天数</span><b>' + active + ' / ' + trendDays + '</b></div>' +
           '<div class="realm-stat"><span>最高一天</span><b>' + (best ? best.v + ' 分' : '—') + '</b></div>' +
         '</div>' +
+      '</section>' +
+      '<section class="card">' +
+        '<div class="card-head"><span class="card-title">勤 政 画 像</span>' +
+          '<span class="card-note">六维一眼看全 · 点维度直达</span></div>' +
+        radarChart() +
       '</section>' +
       '<section class="card">' +
         '<div class="card-head"><span class="card-title">本周目标</span>' +
@@ -1479,6 +1884,11 @@
         '<div class="card-head"><span class="card-title">中断时段</span>' +
           '<span class="card-note">每天哪个钟点最容易被叫走</span></div>' +
         abandonHours() +
+      '</section>' +
+      '<section class="card">' +
+        '<div class="card-head"><span class="card-title">帝王四维成长</span>' +
+          '<span class="card-note">凝神 / 御略 / 明德 / 仁心 · 每次丹药记一点</span></div>' +
+        emperorGrowthChart() +
       '</section>';
   }
 
@@ -1535,7 +1945,13 @@
               '<div class="pie-detail-split"></div>' + subjectPanel()
             : '<div class="empty">尚无课题投入记录' +
               '<span class="card-note">开始一场专注后按课题自动归类</span></div>') +
-        '</section>' + managePanel();
+        '</section>' +
+        '<section class="card">' +
+          '<div class="card-head"><span class="card-title">课题投入边际趋势</span>' +
+            '<span class="card-note">近 8 周 · 每条线是一个课题</span></div>' +
+          subjectMomentumChart() +
+        '</section>' +
+        managePanel();
     }
 
     return '' +
@@ -1547,9 +1963,16 @@
       '</section>' +
       (d.total > 0 ? '<section class="card"><div class="card-head"><span class="card-title">批 语</span></div>' + verdict(d) + '</section>' : '') +
       '<section class="card">' +
+        '<div class="card-head"><span class="card-title">周 几 × 时 辰</span>' +
+          '<span class="card-note">7 天 × 12 格 · 找你最稳的那个组合</span></div>' +
+        weekdayHourMatrix() +
+      '</section>' +
+      '<section class="card">' +
         '<div class="card-head"><span class="card-title">单 场 时 长 分 布</span>' +
           '<span class="card-note">你的专注极限在哪，直接决定番茄该定多长</span></div>' +
         durationDist() +
+        '<div class="viz-split"></div>' +
+        durationCompletionCurve() +
       '</section>' +
       managePanel();
   });
@@ -1636,6 +2059,21 @@
       } catch(err){ UI.toast('生成失败：' + err.message); }
       return;
     }
+    /* 勤政画像六维雷达：点维度标签/图例跳到对应页面 */
+    var rg = e.target.closest('[data-radar-go]');
+    if(rg){
+      var dest = rg.getAttribute('data-radar-go');
+      if(dest === 'subject'){
+        view = 'subject';
+        if(QZD.state && QZD.state.settings){
+          QZD.state.settings.chronosView = view;
+          if(QZD.stateIO && QZD.stateIO.save) QZD.stateIO.save();
+        }
+        refreshChronos();   /* 课题维度 → 本页课题视图，不跳走 */
+      }else UI.show(dest);
+      return;
+    }
+
     var sw = e.target.closest('[data-chronos-view]');
     if(sw){
       view = sw.getAttribute('data-chronos-view');

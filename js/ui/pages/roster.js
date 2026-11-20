@@ -179,12 +179,11 @@
     var costMult = QZD.study && QZD.study.multiplier ? QZD.study.multiplier() : 1;
 
     return '<section class="card">' +
-      '<div class="card-head"><span class="card-title">选秀</span>' +
-      '<span class="card-note">单抽 ' + single + ' 金 · 十连 ' + ten + ' 金（9 折）' +
-        ' · 今日打卡 ' + ckScore + '% · 消费 ×' + costMult + '</span></div>' +
-      /* 11-18：card-note 已含价格/次数，删去重复长说明；
-         只保留「勾选入宫」这一条操作要点 */
-      '<p class="card-note" style="margin:2px 0 6px">抽出后勾选入宫，一人不选即放弃</p>' +
+      '<div class="card-head"><span class="card-title">选秀</span></div>' +
+      /* 两条注释合并到标题下方一行，避免手机端拆成两段换行 */
+      '<p class="card-note" style="margin:2px 0 6px">单抽 ' + single + ' 金 · 十连 ' + ten +
+        ' 金（9折）· 今日打卡 ' + ckScore + '% · 消费 ×' + costMult +
+        '；抽出后勾选入宫，一人不选即放弃</p>' +
       '<div class="realm-stats">' +
         '<div class="realm-stat"><span>绝色</span><b>' + pRare + '%</b></div>' +
         '<div class="realm-stat"><span>稀有</span><b>' + pUnc + '%</b></div>' +
@@ -403,6 +402,14 @@
       (c.veil ? ' · 已识破' : ' · 未明') + '</span>';
   }
 
+  /* 血脉天赋正面展示：未识破只给问号，识破后把整数点效果写在卡片上（手机也看得见） */
+  function bloodTalentLine(c){
+    if(!QZD.bloodTalent || !c.blood || c.blood === 'ren') return '';
+    var t = QZD.bloodTalent.describe(c, !!c.veil);
+    if(!t) return '';
+    return '<div class="blood-talent-line">' + UI.fmt.escape(t) + '</div>';
+  }
+
   /* L2 可见性：她自己的日子（爱好 / 私房钱 / 自购 / 心愿） */
   function lifeLine(c){
     if(!QZD.life) return '';
@@ -469,6 +476,41 @@
     return n;
   }
 
+  /* 皇后更衣：文件夹名即装扮名，来自 js/outfit-manifest.js */
+  function openOutfitDialog(){
+    if(!QZD.queen){ UI.toast('换装模块未加载'); return; }
+    var all = QZD.queen.outfits(), cur = QZD.queen.current();
+    if(!all.length){
+      UI.modal({
+        title: '皇后更衣',
+        body: '<p>尚未找到皇后图片。请把图片按下面结构放好，再点「重新扫描装扮」：</p>' +
+          '<p class="card-note">assets/images/皇后/常服/01.jpg<br>assets/images/皇后/朝服/01.jpg</p>',
+        cancelText: '关闭'
+      });
+      return;
+    }
+    var cards = all.map(function(o){
+      var on = o.name === cur.name;
+      return '<button class="outfit-item' + (on ? ' active' : '') + '" data-wear="' +
+        UI.fmt.escape(o.name) + '">' +
+        (o.cover ? '<img src="' + UI.fmt.escape(o.cover) + '" alt="" loading="lazy">' :
+          '<span class="outfit-ph">暂无立绘</span>') +
+        '<b>' + UI.fmt.escape(o.name) + '</b><small>' + (o.images || []).length + ' 张' +
+        (on ? ' · 当前穿着' : '') + '</small></button>';
+    }).join('');
+    UI.modal({
+      title: '皇后更衣 · ' + UI.fmt.escape(cur.name || '未选'),
+      wide: true,
+      cancelText: '关闭',
+      body: '<p class="card-note">装扮来自「皇后」目录下的文件夹；换上后名册、陪伴、剧情里的立绘都会跟着变。</p>' +
+        '<div class="outfit-grid">' + cards + '</div>' +
+        '<p class="card-note">' + (cur.manual ? '当前为手动选择' : '当前为自动换装') +
+        ' · 加了新的装扮文件夹后：</p>' +
+        '<button class="btn ghost" data-outfit-refresh>重新扫描装扮</button>',
+      ok: false
+    });
+  }
+
   function consortCard(c){
     var rate = Math.round(QZD.harem.rateOf(c) * 100);
     var costQin = QZD.harem.summonCostOf(c, { costMult: 2 });   /* 侍寝价（残留展示计算） */
@@ -476,6 +518,7 @@
     var title = QZD.harem.rankTitle(c);
     /* 11-19 质子妃：暂不可召幸，改显迎回按钮（名额+成本双门槛；够条件才可点） */
     var isHostage = !!(QZD.regime && QZD.regime.isHostage && QZD.regime.isHostage(c.id));
+    var isQueen = !!c.isQueen;
     var rescueBtn = '';
     if(isHostage && QZD.regime){
       var rk = Math.max(0, Math.min(QZD.harem.rankOf ? QZD.harem.rankOf(c) : (c.rank||0), 5));
@@ -495,7 +538,9 @@
     var action = c.pregnant ? '<span class="badge buff">有孕在身</span>' : '';
 
     var rankBtn;
-    if(QZD.harem.isMaxRank(c)){
+    if(isQueen){
+      rankBtn = '<button class="btn ghost" disabled>位极中宫</button>';
+    }else if(QZD.harem.isMaxRank(c)){
       rankBtn = '<button class="btn ghost" disabled>已至贵妃</button>';
     }else{
       var rc = QZD.harem.ennobleCost(c);
@@ -535,9 +580,10 @@
           : QZD.portrait.svg(c.id, c.name, { kind: 'female', img: c.img, model: c.model })) + '</div>' +
       '<div class="talent-main">' +
         '<div class="talent-name">' + UI.fmt.escape(c.name) + ' ' + personaChip(c) +
+          (isQueen ? ' <span class="badge queen">皇后</span>' : '') +
           (c.rare ? ' <span class="badge rare">绝色</span>' : '') +
           bloodChip(c) +
-          ' <span class="badge rank">' + UI.fmt.escape(title) + '</span>' +
+          ' <span class="badge rank">' + UI.fmt.escape(isQueen ? '中宫' : title) + '</span>' +
           (c.pregnant ? ' <span class="badge buff">有孕</span>' : '') +
           (isHostage ? ' <span class="badge" style="background:#8a6d3b;color:#fff">质子·藩邦</span>' : '') + '</div>' +
         '<div class="attr-row">' +
@@ -546,6 +592,7 @@
           attrItem('才情', c.cai, 'war') +
         '</div>' +
         personaMeta(c) +
+        bloodTalentLine(c) +
         lifeLine(c) +
         storyLine(c) +
         personaLine(c) +
@@ -560,7 +607,8 @@
       '<div class="talent-action consort-actions">' +
         (isHostage
           ? rescueBtn + storyBtn     /* 质子：只给迎归 + 她的故事，其余相处动作隐去 */
-          : modeBtn + action + rankBtn +
+          : (isQueen ? '<button class="btn ghost" data-queen-outfit>更 衣</button>' : '') +
+            modeBtn + action + rankBtn +
             '<button class="btn ghost" data-gift="consort:' + c.id + '">赏 赐</button>' +
             wishBtn + storyBtn) + '</div>' +
     '</div>';
@@ -748,6 +796,26 @@
     if(haremGate){
       setTab('consorts');
       UI.show('roster');
+      return;
+    }
+
+    /* 皇后换装：打开更衣弹窗 / 选中装扮 / 重新扫描目录 */
+    var qOpen = e.target.closest('[data-queen-outfit]');
+    if(qOpen){ openOutfitDialog(); return; }
+    var qRescan = e.target.closest('[data-outfit-refresh]');
+    if(qRescan){
+      if(QZD.assetsRefresh) QZD.assetsRefresh.refresh();
+      else UI.toast('当前版本不支持热刷新，请运行 npm run gen:outfits 后刷新页面');
+      return;
+    }
+    var wear = e.target.closest('[data-wear]');
+    if(wear){
+      if(!QZD.queen) return;
+      var wr = QZD.queen.setOutfit(wear.getAttribute('data-wear'));
+      if(!wr.ok){ UI.toast(wr.error); return; }
+      document.querySelectorAll('.modal-mask').forEach(function(m){ if(m.parentNode) m.parentNode.removeChild(m); });
+      UI.toast('皇后已换上「' + wr.name + '」');
+      UI.renderPage();
       return;
     }
 

@@ -65,6 +65,9 @@
       gain.jinQian = gain.jinQian * (typeof mr === 'number' && mr > 0 ? mr : 1.5);
     }
     QZD.resources.add(gain);
+    /* 巫祝天赋：每日首次专注 +1 勤政。单独入账、不写 p.gained，
+       否则「按勤政反推分钟」的分段结算会把这 1 点当成专注时长。 */
+    if(QZD.bloodTalent) QZD.bloodTalent.onFocusTick();
     /* P0：在线勤政的金钱产出按比例计提为「可拨内帑」（只记账，不动钱包） */
     if(QZD.privy) QZD.privy.capture(gain.jinQian);
     var g = gainedOf();

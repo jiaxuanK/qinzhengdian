@@ -48,6 +48,8 @@
         emperorName: '朕'
       },
       emperor: { ningShen: 0, yuLue: 0, mingDe: 0, renXin: 0 },
+      /* 帝王四维成长日志：每次丹药真正生效记一点 { ts, key, v }，上限 200 条；旧档不追溯 */
+      emperorGrowth: [],
       emperorPortrait: (QZD.ASSETS && QZD.ASSETS.emperor && QZD.ASSETS.emperor[0]) || '',
       /* 皇帝立绘路径（king 文件夹中任选） */
       resources: { qinZheng: 0, jinQian: 0, guoJin: 0, shengWang: 0 },
@@ -81,6 +83,9 @@
       ministers: [], keju: { candidates: [] },
       /* M4 后宫：待选秀女同样跨刷新保留 */
       consorts: [], xuanxiu: { candidates: [] }, princes: [], sleep: {},
+      /* 皇后换装：outfit 存装扮文件夹名，空串表示用清单第一套；auto=false 表示用户手动选过 */
+      queen: { outfit: '', poseIndex: 0, auto: true },
+      bloodTalent: { dailyQinDate: '' },
       items: {},              /* 珍宝阁背包：itemId -> 数量 */
       /* 学习目标与偏好：把游戏节奏绑回真实专注 */
       settings: { focusQuiet: true, zen: false, chronosView: 'hour' },
@@ -174,6 +179,9 @@
     if(!obj.meta.lastDailyReset) obj.meta.lastDailyReset = todayStr();
     if(!obj.meta.emperorName) obj.meta.emperorName = '朕';
 
+    if(!Array.isArray(obj.emperorGrowth)) obj.emperorGrowth = [];
+    if(obj.emperorGrowth.length > 200) obj.emperorGrowth = obj.emperorGrowth.slice(-200);
+
     if(!Array.isArray(obj.cities)) obj.cities = [];
     if(!Array.isArray(obj.territories)) obj.territories = [];
     if(!Array.isArray(obj.ministers)) obj.ministers = [];
@@ -182,6 +190,46 @@
     });
     if(!obj.keju || !Array.isArray(obj.keju.candidates)) obj.keju = { candidates: [] };
     if(!Array.isArray(obj.consorts)) obj.consorts = [];
+
+    /* 皇后：新档与旧档都补一位固定成员，置名册首位。
+       她不参与选秀、不会被遣散；装扮状态单独存 obj.queen，立绘路径同步到 c.img/c.poses。 */
+    if(!obj.queen || typeof obj.queen !== 'object' || Array.isArray(obj.queen)){
+      obj.queen = { outfit: '', poseIndex: 0, auto: true };
+    }
+    if(typeof obj.queen.outfit !== 'string') obj.queen.outfit = '';
+    if(typeof obj.queen.poseIndex !== 'number') obj.queen.poseIndex = 0;
+    if(typeof obj.queen.auto !== 'boolean') obj.queen.auto = true;
+    /* 血脉天赋账本：巫祝「每日首次专注 +1 勤政」按日期防重复 */
+    if(!obj.bloodTalent || typeof obj.bloodTalent !== 'object' || Array.isArray(obj.bloodTalent)){
+      obj.bloodTalent = {};
+    }
+    if(typeof obj.bloodTalent.dailyQinDate !== 'string') obj.bloodTalent.dailyQinDate = '';
+    var QN = CFG.QUEEN || {};
+    var qid = QN.ID || 'queen';
+    var queen = null;
+    for(var qi = 0; qi < obj.consorts.length; qi++){
+      if(obj.consorts[qi] && obj.consorts[qi].id === qid){ queen = obj.consorts[qi]; break; }
+    }
+    if(!queen){
+      queen = {
+        id: qid, name: QN.NAME || '皇后', isQueen: true, rare: false,
+        yan: (QN.ATTR && QN.ATTR.yan) || 78,
+        ti:  (QN.ATTR && QN.ATTR.ti)  || 72,
+        cai: (QN.ATTR && QN.ATTR.cai) || 76,
+        personality: QN.PERSONALITY || 'duan',
+        trait: QN.TRAIT || '通诗书',
+        age: QN.AGE || 22, hometown: QN.HOMETOWN || '江南', origin: QN.ORIGIN || '名门嫡女',
+        blood: QN.BLOOD || 'ren', veil: QN.VEIL === true,
+        favor: QN.FAVOR != null ? QN.FAVOR : 40,
+        dote:  QN.DOTE  != null ? QN.DOTE  : 20,
+        rank: 5, joinedAt: Date.now(), pregnant: null,
+        poses: [], poseIndex: 0, img: '', memory: [], milestones: 0, reunions: 0,
+        address: '', phrase: '', storyPose: ''
+      };
+      obj.consorts.unshift(queen);
+    }else{
+      queen.isQueen = true;
+    }
 
     /* 番茄状态兜底：存档缺失时补一份空闲态，避免 restore() 读到 undefined */
     if(!obj.pomodoro || typeof obj.pomodoro !== 'object'){
@@ -199,7 +247,7 @@
     });
     if(obj.consorts.length && !attrMigrated){
       obj.consorts.forEach(function(c){
-        if(!c || typeof c !== 'object') return;
+        if(!c || typeof c !== 'object' || c.isQueen) return; /* 皇后属性是配置值，不参与旧档缩放 */
         ['yan', 'ti', 'cai'].forEach(function(k){
           if(typeof c[k] === 'number'){
             c[k] = Math.max(30, Math.min(120, Math.round(c[k] * 4 / 3)));
@@ -261,6 +309,21 @@
         }
       }
     });
+    /* 皇后换装落盘：优先用存档里的装扮名，找不到就回退第一套。
+       这里直接读清单，不依赖 systems/queen.js，所以测试/桌面老加载顺序也不会丢立绘。 */
+    if(obj.queen && QZD.QUEEN_OUTFITS && Array.isArray(QZD.QUEEN_OUTFITS.outfits)){
+      var O = QZD.QUEEN_OUTFITS.outfits, chosen = null;
+      for(var oi = 0; oi < O.length; oi++){
+        if(O[oi].name === obj.queen.outfit || O[oi].folder === obj.queen.outfit){ chosen = O[oi]; break; }
+      }
+      if(!chosen && O.length) chosen = O[0];
+      if(chosen && queen){
+        queen.poses = (chosen.images || []).slice();
+        obj.queen.poseIndex = Math.max(0, Math.min(obj.queen.poseIndex || 0, Math.max(0, queen.poses.length - 1)));
+        queen.poseIndex = obj.queen.poseIndex;
+        queen.img = queen.poses[queen.poseIndex] || chosen.cover || '';
+      }
+    }
     if('haremExtraSlots' in obj) delete obj.haremExtraSlots;   /* 席位机制已移除 */
     if(!obj.items || typeof obj.items !== 'object' || Array.isArray(obj.items)){
       obj.items = {};

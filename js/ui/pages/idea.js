@@ -177,7 +177,7 @@
         '</span></div>';
     return '' +
       '<section class="card">' +
-        '<div class="card-head"><span class="card-title">朱 批 灵 感 罐 · 科研灵感随手记</span>' +
+        '<div class="card-head"><span class="card-title">灵感罐</span>' +
           '<span class="card-note">一行一念，可标记已落地</span></div>' +
         statBar() +
       '</section>' +

@@ -352,71 +352,78 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
   font-size:10px;padding:2px 7px;border-radius:999px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
 
 /* ---------- M2 江山 / 宏图征伐 / 属地贡赋 ---------- */
-.realm-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.realm-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
 .realm-stat{
   background:rgba(239,235,221,.5);border:1px solid var(--line);
   border-left:3px solid var(--morandi-1);
-  border-radius:var(--radius);padding:8px 10px;
+  border-radius:var(--radius);padding:6px 7px;
 }
 /* 标签只用直接子 span，别误伤 <b> 内包数字的动态 span（否则数字变小变灰） */
-.realm-stat > span{display:block;font-size:11px;color:var(--ink2);margin-bottom:3px}
+.realm-stat > span{display:block;font-size:10px;color:var(--ink2);margin-bottom:1px}
 /* 数字主角：放大加粗主色；单位（.unit）小字灰 */
-.realm-stat b{font-size:22px;font-weight:700;color:var(--daiqing);
-  font-variant-numeric:tabular-nums;letter-spacing:-.5px}
-.realm-stat b .unit{font-size:12px;font-weight:400;color:var(--ink2);margin-left:2px;letter-spacing:0}
+.realm-stat b{font-size:17px;font-weight:700;color:var(--daiqing);
+  font-variant-numeric:tabular-nums;letter-spacing:-.5px;white-space:nowrap}
+.realm-stat b .unit{font-size:10px;font-weight:400;color:var(--ink2);margin-left:2px;letter-spacing:0}
 .realm-stat.hot b{color:var(--teng)}
-.city-list{display:flex;flex-direction:column;gap:10px}
-.city-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
+.city-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:7px}
+.city-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:9px 11px}
 .city-card.owned{border-color:var(--daiqing);background:rgba(62,107,92,.05)}
-.city-top{display:flex;align-items:center;gap:12px}
-.city-name{flex:1;min-width:0;font-size:14px;font-weight:700}
-.city-region{font-size:11px;font-weight:400;color:var(--ink2);margin-left:4px}
+.city-top{display:flex;align-items:center;gap:8px}
+.city-name{flex:1;min-width:0;font-size:13px;font-weight:700}
+.city-region{font-size:10px;font-weight:400;color:var(--ink2);margin-left:4px}
 .city-action{flex:none}
-.city-action .btn{padding:4px 14px;font-size:12.5px}
-.city-meta{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--ink2);margin-top:8px}
+.city-action .btn{padding:3px 11px;font-size:11.5px}
+.city-meta{display:flex;flex-wrap:wrap;gap:5px 12px;font-size:11.5px;color:var(--ink2);margin-top:5px}
 .city-meta b{color:var(--ink);font-weight:700}
-.city-note{font-size:12px;color:var(--ink2);margin-top:6px}
+.city-note{font-size:11px;color:var(--ink2);margin-top:4px}
 .city-confirm p{margin-bottom:6px}
 
 /* ---------- M5 内政营造 ---------- */
 /* 概览卡：紧凑等高，数值大字、单位小字分离，顶部细色条点缀 */
-.work-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
-.work-stat{position:relative;overflow:hidden;min-width:0;padding:14px 14px 13px;
-  border:1px solid var(--line);border-radius:12px;background:var(--paper)}
-.work-stat:before{content:'';position:absolute;left:0;right:0;top:0;height:3px;
+.work-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.work-stat{position:relative;overflow:hidden;min-width:0;padding:9px 10px 8px;
+  border:1px solid var(--line);border-radius:10px;background:var(--paper)}
+.work-stat:before{content:'';position:absolute;left:0;right:0;top:0;height:2px;
   background:var(--line)}
 .work-stat.hot:before{background:var(--daiqing)}
-.ws-label{display:block;font-size:11.5px;color:var(--ink2);margin-bottom:7px}
+.ws-label{display:block;font-size:10px;color:var(--ink2);margin-bottom:4px}
 .ws-value{display:flex;align-items:baseline;gap:3px;flex-wrap:nowrap;white-space:nowrap}
-.ws-value b{font-size:28px;font-weight:700;line-height:1;color:var(--ink);
+.ws-value b{font-size:20px;font-weight:700;line-height:1;color:var(--ink);
   font-variant-numeric:tabular-nums;letter-spacing:-.5px}
 .work-stat.hot .ws-value b{color:var(--daiqing)}
-.ws-value i{font-size:11.5px;font-style:normal;color:var(--ink2)}
+.ws-value i{font-size:10px;font-style:normal;color:var(--ink2)}
 @media(max-width:900px){.work-stats{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:560px){
-  .work-stats{grid-template-columns:repeat(2,1fr)}
-  .ws-value b{font-size:24px}
+  .work-stats{grid-template-columns:repeat(3,1fr);gap:4px}
+  .work-stat{padding:6px 5px}
+  .ws-label{font-size:9px;margin-bottom:2px}
+  .ws-value b{font-size:16px}
+  .ws-value i{font-size:9px}
 }
-.work-list{display:flex;flex-direction:column;gap:10px}
+.work-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:7px}
 .work-card{
   background:var(--paper);border:1px solid var(--line);
-  border-radius:var(--radius);padding:12px 14px;
+  border-radius:var(--radius);padding:9px 11px;
 }
 .work-card.built{border-color:var(--daiqing);background:rgba(62,107,92,.05)}
-.work-top{display:flex;align-items:center;gap:12px}
-.work-name{flex:1;min-width:0;font-size:14px;font-weight:700}
-.work-dept{font-size:11px;font-weight:400;color:var(--ink2);margin-left:4px}
+.work-top{display:flex;align-items:center;gap:8px}
+.work-name{flex:1;min-width:0;font-size:13px;font-weight:700}
+.work-dept{font-size:10px;font-weight:400;color:var(--ink2);margin-left:4px}
 .work-action{flex:none}
-.work-action .btn{padding:4px 14px;font-size:12.5px}
-.work-meta{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--ink2);margin-top:8px}
-.work-cost{font-size:12px;color:var(--ink2);margin-top:6px}
+.work-action .btn{padding:3px 11px;font-size:11.5px}
+.work-meta{display:flex;flex-wrap:wrap;gap:5px 12px;font-size:11.5px;color:var(--ink2);margin-top:5px}
+.work-cost{font-size:11.5px;color:var(--ink2);margin-top:4px}
 .work-cost b{color:var(--ink);font-weight:700}
-.work-note{font-size:11.5px;color:var(--ink2);margin-top:4px}
+.work-note{font-size:10.5px;color:var(--ink2);margin-top:3px}
 
 @media(max-width:500px){
   .res-row{grid-template-columns:repeat(2,1fr)}
   .gates{grid-template-columns:repeat(2,1fr)}
-  .realm-stats{grid-template-columns:repeat(2,1fr)}
+  .realm-stats{grid-template-columns:repeat(4,1fr);gap:4px}
+  .realm-stat{padding:5px 4px}
+  .realm-stat > span{font-size:9px}
+  .realm-stat b{font-size:14px}
+  .realm-stat b .unit{font-size:9px}
   .ledger-grid{grid-template-columns:repeat(2,1fr)}
   #pomo-root{right:16px;left:16px;bottom:76px;width:auto}
 }
@@ -2140,3 +2147,112 @@ body.zen .sidebar{display:none}
 .chronicle-head{font-weight:600;color:var(--ink);font-size:13px}
 .chronicle-epitaph{font-size:12px;color:var(--zhuqian);margin:3px 0;line-height:1.5}
 .chronicle-meta{font-size:11px;color:var(--ink3);line-height:1.5}
+.blood-talent-line{margin:3px 0;font-size:10.5px;line-height:1.4;color:var(--zhuqian);
+  background:rgba(168,132,44,.07);border-left:2px solid rgba(168,132,44,.4);padding:2px 6px;border-radius:2px}
+
+/* ---------- 皇后更衣（装扮来自 assets/images/皇后/<装扮名>/） ---------- */
+.badge.queen{background:rgba(184,138,44,.18);color:#7a5418;border:1px solid rgba(184,138,44,.45)}
+.outfit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px;margin:10px 0}
+.outfit-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 6px;
+  border:1px solid var(--line);border-radius:8px;background:var(--card);
+  cursor:pointer;font:inherit;color:var(--ink);text-align:center}
+.outfit-item:hover{border-color:var(--zhuqian)}
+.outfit-item.active{border-color:#b88a2c;box-shadow:0 0 0 2px rgba(184,138,44,.2)}
+.outfit-item img{width:72px;height:96px;object-fit:cover;border-radius:4px;background:var(--soft)}
+.outfit-item b{font-size:12px;font-weight:600}
+.outfit-item small{font-size:10px;color:var(--ink3)}
+.outfit-ph{display:flex;align-items:center;justify-content:center;width:72px;height:96px;
+  border-radius:4px;background:var(--soft);font-size:10px;color:var(--ink3)}
+
+/* ---------- 勤政画像雷达图（起居注·趋势与目标，纯 SVG 无依赖） ---------- */
+.radar-wrap{display:grid;grid-template-columns:minmax(240px,320px) 1fr;gap:14px;align-items:center}
+.radar-svg{display:block;width:100%;max-width:320px;height:auto;margin:0 auto}
+.radar-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.radar-legend-item{display:flex;flex-direction:column;gap:2px;padding:7px 10px;border:1px solid var(--line);
+  border-radius:8px;background:var(--card);cursor:pointer;min-width:0}
+.radar-legend-item:hover{border-color:var(--viz-2)}
+.radar-legend-item span{font-size:11px;color:var(--ink3)}
+.radar-legend-item b{font-size:12px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:640px){
+  .radar-wrap{grid-template-columns:1fr;gap:10px}
+  .radar-svg{max-width:280px}
+  .radar-legend{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .radar-legend-item{padding:6px 7px}
+  .radar-legend-item b{font-size:11px}
+}
+
+/* ---------- 歇一歇：节拍呼吸（吸4·停2·呼6） ----------
+   只在休息层打开时存在动画；颜色沿用沉浸层的深色，不碰专注计时。 */
+.rest-card-body{display:flex;align-items:center;gap:18px;margin-top:4px}
+.rest-card-ring{position:relative;width:76px;height:76px;flex:none;border-radius:50%;
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
+  background:var(--viz-surface)}
+.rest-card-ring i{position:absolute;inset:8px;border-radius:50%;background:var(--viz-2);opacity:.28}
+.rest-card-ring b{position:relative;font-size:15px;font-weight:500;color:var(--ink)}
+.rest-card-txt{flex:1;min-width:0}
+.rest-card-txt p{margin:0 0 8px;font-size:12px;color:var(--ink2);line-height:1.6}
+@media(max-width:560px){.rest-card-body{gap:12px}.rest-card-ring{width:64px;height:64px}}
+
+.rest-overlay{position:fixed;inset:0;z-index:10000;background:#101218;color:#F4EFE6;
+  display:flex;align-items:center;justify-content:center}
+.rest-inner{display:flex;flex-direction:column;align-items:center;gap:24px;width:100%;padding:24px}
+.rest-head{width:100%;max-width:420px;display:flex;align-items:center;justify-content:space-between}
+.rest-head b{font-size:15px;font-weight:500;letter-spacing:3px;color:#F4EFE6}
+.rest-x{background:none;border:0.5px solid rgba(255,255,255,.25);color:#cfd8e6;
+  width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;line-height:1}
+.rest-x:hover{border-color:rgba(255,255,255,.6)}
+.rest-stage{display:flex;align-items:center;justify-content:center;min-height:280px}
+.rest-ring{position:relative;width:224px;height:224px;border-radius:50%;
+  border:1px solid rgba(143,166,200,.42);display:flex;align-items:center;justify-content:center;
+  animation:restBreath 12s linear infinite}
+.rest-core{position:absolute;inset:22px;border-radius:50%;background:rgba(143,166,200,.16)}
+.rest-word{position:relative;font-size:22px;font-weight:500;letter-spacing:4px;
+  color:#F4EFE6;font-variant-numeric:tabular-nums}
+.rest-beats{display:flex;align-items:center;gap:10px;font-size:12px;color:#9FB2C8;letter-spacing:1px}
+.rest-beats i{width:18px;height:1px;background:rgba(159,178,200,.4)}
+.rest-mins{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.rest-min{background:none;border:0.5px solid rgba(255,255,255,.22);color:#cfd8e6;
+  padding:6px 14px;border-radius:999px;cursor:pointer;font-size:12px}
+.rest-min:hover{border-color:rgba(255,255,255,.5)}
+.rest-min.active{background:rgba(143,166,200,.22);border-color:rgba(159,178,200,.7);color:#F4EFE6}
+.rest-foot{font-size:12px;color:#9FB2C8;letter-spacing:1px}
+/* 吸 4s（0–33.3%）涨满 → 停 2s（33.3–50%）保持 → 呼 6s（50–100%）收回 */
+@keyframes restBreath{
+  0%   {transform:scale(.82);animation-timing-function:ease-out}
+  33.33%{transform:scale(1);animation-timing-function:linear}
+  50%  {transform:scale(1);animation-timing-function:ease-in-out}
+  100% {transform:scale(.82)}
+}
+@media (prefers-reduced-motion: reduce){.rest-ring{animation:none}}
+
+/* ---------- 五张新增可视化：周进度带 / 周×时段矩阵 / 完成率曲线 / 课题趋势 / 帝王四维 ---------- */
+.viz-split{height:1px;background:var(--line);margin:16px 0 14px;opacity:.65}
+.pace-wrap{display:flex;flex-direction:column;gap:6px}
+.pace-svg{display:block;width:100%;height:auto;max-height:210px}
+.pace-badge{align-self:flex-start;padding:3px 10px;border-radius:999px;font-size:11px;letter-spacing:.5px}
+.pace-badge.ahead{background:rgba(62,107,92,.12);color:#3e6b5c}
+.pace-badge.behind{background:rgba(184,138,44,.14);color:#9c6b1e}
+.pace-legend,.dc-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:10.5px;color:var(--ink3)}
+.pace-legend span,.dc-legend span{display:inline-flex;align-items:center;gap:5px}
+.pace-legend i,.dc-legend i{display:inline-block;width:16px;height:0;border-top:2px solid var(--viz-2)}
+.pace-legend i.dash{border-top-style:dashed;border-color:var(--viz-grid)}
+.dc-legend i.bar{height:8px;border-top:0;border-radius:2px;background:var(--viz-2);opacity:.35}
+.dc-wrap .dc-svg{display:block;width:100%;height:auto;max-height:190px}
+.hc-svg text,.pace-svg text,.dc-svg text,.sm-svg text,.eg-svg text{font-family:inherit}
+.sm-wrap .sm-svg,.eg-wrap .eg-svg{display:block;width:100%;height:auto}
+.sm-legend,.eg-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:8px}
+.sm-legend-item,.eg-legend-item{display:flex;align-items:center;gap:7px;min-width:0;
+  padding:6px 9px;border:1px solid var(--line);border-radius:7px;background:var(--card)}
+.sm-legend-item i,.eg-legend-item i{width:9px;height:9px;border-radius:50%;flex:none}
+.sm-legend-item span,.eg-legend-item span{font-size:11px;color:var(--ink2);flex:1;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sm-legend-item b,.eg-legend-item b{font-size:11px;color:var(--ink);font-weight:600;white-space:nowrap}
+.eg-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.eg-bar-row>span{width:36px;flex:none;font-size:11px;color:var(--ink2)}
+.eg-bar{flex:1;height:9px;border-radius:5px;background:var(--soft);overflow:hidden}
+.eg-bar i{display:block;height:100%;border-radius:5px}
+.eg-bar-row b{width:44px;text-align:right;font-size:11px;color:var(--ink2);font-weight:500}
+@media(max-width:640px){
+  .sm-legend,.eg-legend{grid-template-columns:1fr}
+  .pace-wrap .pace-svg,.dc-wrap .dc-svg{max-height:none}
+}

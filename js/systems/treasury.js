@@ -105,6 +105,12 @@
       before = e[item.attr] || 0;
       e[item.attr] = clamp(before + amt, 0, 10);
       after = e[item.attr];
+      /* 成长轨迹只记「真正涨了」的点：封顶无效不记，避免曲线原地打转。
+         旧档首次服丹也从当前值起画，历史不追溯。 */
+      if(after > before && Array.isArray(QZD.state.emperorGrowth)){
+        QZD.state.emperorGrowth.push({ ts: Date.now(), key: item.attr, v: after });
+        if(QZD.state.emperorGrowth.length > 200) QZD.state.emperorGrowth.shift();
+      }
     }else if(kind === 'consort'){
       var c = QZD.harem.consortById(targetId);
       if(!c) return { ok: false, error: '妃嫔不在后宫' };

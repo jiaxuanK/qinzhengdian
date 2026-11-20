@@ -71,6 +71,7 @@
   /* 专注陪伴时她自己正在做的事：按 life 爱好取一句短描写 */
   function companionDoing(c){
     if(!c) return QZD.config.COMPANION_DOING_DEFAULT || '';
+    if(c.isQueen && QZD.config.QUEEN && QZD.config.QUEEN.DOING) return QZD.config.QUEEN.DOING;
     var hobby = (c.life && c.life.hobby) || c.trait || '';
     var bank = QZD.config.COMPANION_DOING || {};
     return bank[hobby] || QZD.config.COMPANION_DOING_DEFAULT || '';
@@ -80,6 +81,7 @@
     if(!c) return { ok:false, error:'妃嫔不存在' };
     var F = QZD.config.FAVOR, D = QZD.config.DOTE;
     var fg = Math.max(0, Math.round((favor || 0) * personalityCoef(c.personality)));
+    fg += QZD.bloodTalent ? QZD.bloodTalent.companionFavorBonus(c) : 0;
     var dg = Math.max(0, Math.round(dote || 0));
     c.favor = Math.max(0, Math.min(favorMaxOf(c), (c.favor || 0) + fg));
     c.dote = Math.max(0, Math.min(doteMaxOf(c), (c.dote || 0) + dg));
@@ -96,6 +98,11 @@
 
   /* 专注陪伴问候：按性格从 HAREM_COMPANION 随机取一句（只读，不改数值） */
   function companionGreeting(c){
+    if(c && c.isQueen){
+      var Q = QZD.config.QUEEN || {};
+      var bankQ = Q.GREETINGS || [];
+      if(bankQ.length) return pick(bankQ);
+    }
     var key = (c && c.personality) || 'wen';
     var bank = (QZD.config.HAREM_COMPANION && QZD.config.HAREM_COMPANION[key]) || [];
     return bank.length ? pick(bank) : '陛下……';
@@ -110,14 +117,21 @@
     var r = (c && typeof c.rank === 'number') ? c.rank : 0;
     return Math.max(0, Math.min(max, Math.floor(r)));
   }
-  function rankTitle(c){ return rankList()[rankOf(c)]; }
-  function isMaxRank(c){ return rankOf(c) >= rankList().length - 1; }
+  function rankTitle(c){
+    if(c && c.isQueen) return (QZD.config.QUEEN || {}).TITLE || '皇后';
+    return rankList()[rankOf(c)];
+  }
+  function isMaxRank(c){
+    if(c && c.isQueen) return true;   /* 皇后位份已到顶，不走册封 */
+    return rankOf(c) >= rankList().length - 1;
+  }
   /* 当前位分下的宠爱上限：按 rank 取 DOTE_CAP，缺配置回退 DOTE.MAX */
   function doteMaxOf(c){
     var R = QZD.config.RANK || {}, caps = R.DOTE_CAP;
     var r = rankOf(c);
-    if(Array.isArray(caps) && caps[r] != null) return caps[r];
-    return (QZD.config.DOTE && QZD.config.DOTE.MAX) || 100;
+    var base = (Array.isArray(caps) && caps[r] != null) ? caps[r]
+      : ((QZD.config.DOTE && QZD.config.DOTE.MAX) || 100);
+    return base + (QZD.bloodTalent ? QZD.bloodTalent.doteCapBonus(c) : 0);
   }
   /* 当前位分下的喜爱上限：按 rank 取 FAVOR_CAP，缺配置回退 FAVOR.MAX。
      喜爱是她对你的心意，不作晋封条件，但满级后随位分提高、进度条同步更新。 */
@@ -318,7 +332,7 @@
   function makeRareConsort(entry){
     var R = QZD.config.RARE || {};
     var poses = (entry.poses || []).slice();
-    return {
+    var c = {
       id: 'rare-' + Date.now().toString(36) + '-' + randInt(100000, 999999).toString(36),
       name: entry.name || '绝色',
       yan: randInt(R.ATTR_MIN || 90, R.ATTR_MAX || 120),
@@ -335,7 +349,7 @@
       hometown: pick((QZD.config.XUANXIU || {}).HOMETOWNS || ['江南']),
       origin: '稀世采选',
       trait: pick((QZD.config.XUANXIU || {}).TRAITS || ['善舞']),
-      blood: rollBlood(true),        /* 稀世几乎都有血脉 */
+      blood: rollBlood('rare'),      /* 绝色 90% 带血脉 */
       veil: false,
       favor: randInt(R.FAVOR_MIN || 25, R.FAVOR_MAX || 45),
       dote: ((QZD.config.DOTE ? QZD.config.DOTE.INIT : 0) + 10),
@@ -343,6 +357,8 @@
       joinedAt: Date.now(),
       pregnant: null
     };
+    if(QZD.bloodTalent) QZD.bloodTalent.initConsort(c);   /* 绝色血脉同样吃初始天赋 */
+    return c;
   }
 
   function recruitRare(){
@@ -387,12 +403,14 @@
     return 'common';
   }
 
-  /* 志怪血脉：凡人是默认，血脉是惊喜。普通秀女 10%，稀世/绝色 90%。
+  /* 志怪血脉：凡人是默认，血脉是惊喜。
+     三档概率——绝色 90% / 稀有 30% / 普通 10%（config.BLOOD 可调）。
      旧档无此字段时由 normalize 补 'ren'，永不追溯。 */
-  function rollBlood(isRare){
+  function rollBlood(tier){
     var B = QZD.config.BLOOD || {};
-    var p = isRare ? (B.RARE_RATE != null ? B.RARE_RATE : 0.9)
-                   : (B.COMMON_RATE != null ? B.COMMON_RATE : 0.1);
+    var p = tier === 'rare'   ? (B.RARE_RATE != null ? B.RARE_RATE : 0.9)
+          : tier === 'uncommon' ? (B.UNCOMMON_RATE != null ? B.UNCOMMON_RATE : 0.3)
+          : (B.COMMON_RATE != null ? B.COMMON_RATE : 0.1);
     if(Math.random() >= p) return 'ren';
     var pool = (B.LIST || []).filter(function(b){ return b.key && b.key !== 'ren'; });
     if(!pool.length) return 'ren';
@@ -411,8 +429,9 @@
   function rollOnce(used, usedImg, usedRare){
     var G = QZD.config.GACHA || {};
     var rarity = rollRarity();
+    var bloodTier = rarity;   /* 血脉概率按「原始」档位，立绘降级不改血脉 */
 
-    /* 绝色：优先取稀世立绘；已抽尽则降级为稀有 */
+    /* 绝色：优先取稀世立绘；已抽尽则降级为稀有（血仍按绝色 90%） */
     if(rarity === 'rare'){
       var pool = rareRemaining().filter(function(r){ return !usedRare || !usedRare[r.folder]; });
       if(pool.length){
@@ -425,7 +444,7 @@
 
     var lo = rarity === 'uncommon' ? (G.UNCOMMON_MIN || 70) : (G.COMMON_MIN || 30);
     var hi = rarity === 'uncommon' ? (G.UNCOMMON_MAX || 120) : (G.COMMON_MAX || 90);
-    var c = makeCandidate(used);
+    var c = makeCandidate(used, bloodTier);
     c.yan = randInt(lo, hi);
     c.ti  = randInt(lo, hi);
     c.cai = randInt(lo, hi);
@@ -600,7 +619,7 @@
     return used;
   }
 
-  function makeCandidate(used){
+  function makeCandidate(used, tier){
     var name = '';
     for(var i = 0; i < 200; i++){
       name = pick(X.SURNAMES) + pick(X.GIVEN);
@@ -610,7 +629,7 @@
     var F = QZD.config.FAVOR;
     var initFavor = randInt(F.INIT_MIN != null ? F.INIT_MIN : F.INIT,
                             F.INIT_MAX != null ? F.INIT_MAX : F.INIT);
-    return {
+    var c = {
       id: 'xiu-' + Date.now().toString(36) + '-' + randInt(100000, 999999).toString(36),
       name: name,
       yan: randInt(X.ATTR_MIN, X.ATTR_MAX),
@@ -622,12 +641,14 @@
       hometown: pick(X.HOMETOWNS),                       /* 籍贯 */
       origin: pick(X.ORIGINS),                           /* 出身 */
       trait: pick(X.TRAITS),                             /* 特长 */
-      blood: rollBlood(false),                           /* 普通秀女 10% 带血脉 */
+      blood: rollBlood(tier || 'common'),                /* 血脉概率按档位：普通10% / 稀有30% */
       veil: false,                                       /* 血脉默认隐藏 */
       favor: initFavor,                                  /* 入宫初始喜爱度（随机） */
       dote: (QZD.config.DOTE ? QZD.config.DOTE.INIT : 0),/* 入宫初始宠爱度（帝→妃） */
       createdAt: Date.now()
     };
+    if(QZD.bloodTalent) QZD.bloodTalent.initConsort(c);   /* 血脉天赋：初始属性整数点 */
+    return c;
   }
 
   /* 召幸：耗勤政值，提升喜爱度，生成性格对话；有孕者不可侍寝。
@@ -676,6 +697,7 @@
     var coef = personalityCoef(c.personality);
     var favorGain = isSleep ? Math.round(F.PER_SUMMON * coef) : Math.round((mode.favor || 0) * coef);
     var doteGain  = isSleep ? D.PER_SUMMON : (mode.dote || 0);
+    doteGain += QZD.bloodTalent ? QZD.bloodTalent.summonDoteBonus(c) : 0;
     c.favor = Math.max(0, Math.min(favorMaxOf(c), (c.favor || 0) + favorGain));
     c.dote = Math.max(0, Math.min(doteMaxOf(c), (c.dote || 0) + doteGain));
 

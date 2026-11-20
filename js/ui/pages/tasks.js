@@ -455,14 +455,28 @@
     '</div>';
   });
 
+  /* 歇一歇：随时可进的节拍呼吸（不依赖专注状态） */
+  function restCard(){
+    return '<section class="card rest-card">' +
+      '<div class="card-head"><span class="card-title">歇 一 歇</span>' +
+        '<span class="card-note">吸 4 秒 · 停 2 秒 · 呼 6 秒</span></div>' +
+      '<div class="rest-card-body">' +
+        '<div class="rest-card-ring"><i></i><b>呼</b></div>' +
+        '<div class="rest-card-txt"><p>脑子发热的时候，停下来按节奏呼吸几分钟。不记收益，只管放松。</p>' +
+          '<button type="button" class="btn primary" data-rest-open>进入呼吸</button></div>' +
+      '</div>' +
+    '</section>';
+  }
+
   /* 速行：快捷入口/按钮/跳转 —— 排序=最常用→次常用→工具类 */
   UI.register('quick', function(){
     var OV = QZD.ui._overviewParts || {};
     function G(fn){ try { return fn ? fn() : ''; } catch(e){ return ''; } }
     return '<div class="overview-page">' +
       G(OV.actionPanel) +       /* 1. 今日行动（最顶，每天第一件事）*/
-      G(OV.quickProgressCard) + /* 2. 速记进展（输入+提交）*/
-      G(OV.quickBar) +          /* 3. 网络快捷跳转（web/file/app 三类）*/
+      restCard() +              /* 2. 歇一歇：节拍呼吸放松 */
+      G(OV.quickProgressCard) + /* 3. 速记进展（输入+提交）*/
+      G(OV.quickBar) +          /* 4. 网络快捷跳转（web/file/app 三类）*/
     '</div>';
   });
 

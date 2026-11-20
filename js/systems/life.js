@@ -52,6 +52,7 @@
   }
   function addPoints(c, n){
     var l = L(c);
+    n = (Number(n) || 0) + (QZD.bloodTalent ? QZD.bloodTalent.hobbyPointBonus(c) : 0);
     l.points += n;
     l.weekPoints += n;
     l.level = Math.max(0, Math.min(CFG.MAX_LEVEL || 10,
