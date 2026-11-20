@@ -7,7 +7,8 @@ QZD.QUEEN_OUTFITS = {
       "name": "常服",
       "folder": "常服",
       "images": [
-        "enc:YXNzZXRzL2E4Zi9jZTVkZDRiNjRmYmU3YzYyLmpwZw=="
+        "enc:YXNzZXRzL2E4Zi9jZTVkZDRiNjRmYmU3YzYyLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi84YzU5MGVmN2FiMTA5NWE1LmpwZw=="
       ],
       "cover": "enc:YXNzZXRzL2E4Zi9jZTVkZDRiNjRmYmU3YzYyLmpwZw=="
     },
@@ -15,8 +16,6 @@ QZD.QUEEN_OUTFITS = {
       "name": "swim",
       "folder": "swim",
       "images": [
-        "enc:YXNzZXRzL2E4Zi9jN2IyYzk0N2U4OTVmYzhhLmpwZw==",
-        "enc:YXNzZXRzL2E4Zi9jMjc3MmQ1NDRjZjEwMmY0LmpwZw==",
         "enc:YXNzZXRzL2E4Zi85ODg2MmI4NGQ0MGEzNmIxLmpwZw==",
         "enc:YXNzZXRzL2E4Zi9iMjA3Yjg4YjM4MGUwMmRjLmpwZw==",
         "enc:YXNzZXRzL2E4Zi80NWZjNWYwZWZhMjE3NGVlLmpwZw==",
@@ -25,7 +24,7 @@ QZD.QUEEN_OUTFITS = {
         "enc:YXNzZXRzL2E4Zi9hMjA1ZWE3OGY0MmJlOGFiLmpwZw==",
         "enc:YXNzZXRzL2E4Zi8zMmEwNTVkMzE4YTE4NmRiLmpwZw=="
       ],
-      "cover": "enc:YXNzZXRzL2E4Zi9jN2IyYzk0N2U4OTVmYzhhLmpwZw=="
+      "cover": "enc:YXNzZXRzL2E4Zi85ODg2MmI4NGQ0MGEzNmIxLmpwZw=="
     }
   ]
 };
