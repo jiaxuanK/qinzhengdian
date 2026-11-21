@@ -28,7 +28,9 @@
       var cur = groupTab[gid];
       var bar = '<div class="tab-row wrap page-tabs">' + tabs.map(function(t){
         return '<button class="tab' + (t.id === cur ? ' active' : '') +
-          '" data-gtab="' + t.id + '">' + t.name + '</button>';
+          '" data-gtab="' + t.id + '">' +
+          (t.icon ? '<span class="tab-icon">' + t.icon + '</span>' : '') +
+          '<span>' + t.name + '</span></button>';
       }).join('') + '</div>';
       var fn = pages[cur];
       return bar + (fn ? fn() : '<div class="empty">页面不存在</div>');
@@ -79,7 +81,9 @@
   function buildNav(){
     var nav = document.getElementById('nav');
     nav.innerHTML = CFG.NAV.map(function(item){
-      return '<button class="nav-item" data-page="' + item.id + '">' + item.name + '</button>';
+      return '<button class="nav-item" data-page="' + item.id + '">' +
+        (item.icon ? '<span class="nav-icon">' + item.icon + '</span>' : '') +
+        '<span>' + item.name + '</span></button>';
     }).join('');
     nav.addEventListener('click', function(e){
       var btn = e.target.closest('[data-page]');
@@ -171,6 +175,91 @@
     for(var j = 0; j < nodes.length; j++) portraitObserver.observe(nodes[j]);
   }
 
+  /* 11-21 图标体系：给卡片标题自动配图，位于 :before 竖标之后、文字之前。
+     按「去空格标题」查表，命中即插入图标 span；不影响布局（竖标与文字间距已预留）。 */
+  var TITLE_ICONS = {
+    '今日治学':'📖', '江山':'🏯', '国势':'🏯', '批阅中的奏折':'📋', '今日行动':'⚡',
+    '本周进度':'📊', '速记进展':'✍️', '科研台账':'🗂️', '便捷门':'🔗',
+    '今日概览':'📊', '习惯打卡':'✅', '打卡热力图':'🔥', '本周三事':'🎯',
+    '科研成就':'🏆', '期限':'⏰', '期限前瞻·日历':'📅', '歇一歇':'☕',
+    '进行中的奏折':'📋', '近7天专注':'⏱️',
+    '名册':'👥', '科举':'🏛️', '待录人才':'📥', '在朝名臣':'🎓', '后宫':'🌸',
+    '选秀':'🎀', '在宫妃嫔':'🌺', '已致仕宗室':'👴', '皇子':'👶',
+    '课题管理':'📚', '本周星盘':'✨', '周内进度带':'📈', '专注趋势':'📉',
+    '勤政画像':'🛡️', '本周目标':'🎯', '计划vs实际':'⚖️', '中断原因':'⚠️',
+    '深度与碎片':'🧩', '中断时段':'⏳', '帝王四维成长':'📈', '本周日程网格':'🗓️',
+    '议事厅':'💬', '待办总览':'📝', '历次组会':'🗃️',
+    '灵感罐':'💡', '落笔':'✒️',
+    '文渊阁':'📚', '今日精读':'📖',
+    '营造概览':'🔨', '工程营造':'🏗️',
+    '期限前瞻':'📅', '畅想所':'🧠', '杂学':'📌', '珍宝阁':'💎',
+    '征服':'⚔️', '属地':'🗺️', '征伐':'⚔️', '营造':'🔨', '珍宝':'💎', '起居':'📜',
+    '数据导出':'📤', '完整存档':'💾', '今日时间轴':'🕐', '科研投入结构':'📊',
+    '效率时段分析':'⏱️', '批语':'✍️', '周几×时辰':'🗓️', '单场时长分布':'⏳',
+    '兵势':'⚔️', '贡赋':'💰', '已归版图':'🗺️', '归档起居注':'📜',
+    '帝王设置':'⚙️', '存档信息':'💾', '自动备份':'🔄', '立绘素材':'🖼️',
+    '测试工具':'🔧', '历代年表':'📜', '立书':'📖', '货架':'🛒', '我的珍藏':'💎'
+  };
+  /* 关键词兜底：标题含这些词时配图（顺序即优先级） */
+  var TITLE_HINTS = [
+    ['奏折','📋'], ['专注','⏱️'], ['打卡','✅'], ['日历','📅'], ['趋势','📈'],
+    ['目标','🎯'], ['灵感','💡'], ['文献','📖'], ['精读','📖'], ['组会','💬'],
+    ['方向','🗺️'], ['热区','🔥'], ['热力','🔥'], ['大计','🎯'], ['课题','📚']
+  ];
+  function decorateTitles(root){
+    if(!root || !root.querySelectorAll) return;
+    var nodes = root.querySelectorAll('.card-title');
+    for(var i = 0; i < nodes.length; i++){
+      var el = nodes[i];
+      if(el.getAttribute('data-ico')) continue;               /* 已装饰 */
+      var raw = (el.textContent || '').trim();
+      var key = raw.replace(/\s+/g, '');
+      var icon = TITLE_ICONS[key];
+      if(!icon){
+        for(var j = 0; j < TITLE_HINTS.length; j++){
+          if(key.indexOf(TITLE_HINTS[j][0]) >= 0){ icon = TITLE_HINTS[j][1]; break; }
+        }
+      }
+      if(!icon) continue;
+      el.setAttribute('data-ico', '1');
+      var span = document.createElement('span');
+      span.className = 'title-ico';
+      span.textContent = icon;
+      /* 插到第一个文本节点前（:before 竖标由 CSS 生成，不受影响） */
+      el.insertBefore(span, el.firstChild);
+    }
+  }
+
+  /* 11-21 按钮图标：仅对明确的高频动作词加图标，保守 lists 避免满屏 emoji。
+     只装饰纯文字按钮（含空格的中文短语），已有图标的不动。 */
+  var BTN_ICONS = [
+    ['新建奏折','📝'], ['立奏折','📝'], ['编辑','✏️'], ['删除','🗑️'], ['移除','✕'],
+    ['继续专注','▶️'], ['开始专注','▶️'], ['办结','✓'], ['记一句','✍️'],
+    ['保存','💾'], ['取消','↩️'], ['确认','✓'], ['详情','🔍'], ['购买','🛒'],
+    ['采纳为下周三事','✅'], ['记录组会','💬'], ['读完了','📖'], ['设为今日','📌']
+  ];
+  function decorateButtons(root){
+    if(!root || !root.querySelectorAll) return;
+    var btns = root.querySelectorAll('button');
+    for(var i = 0; i < btns.length; i++){
+      var el = btns[i];
+      if(el.getAttribute('data-ico')) continue;
+      var raw = (el.textContent || '').trim();
+      var key = raw.replace(/\s+/g, '');
+      if(/[^\u4e00-\u9fa5]/.test(key)) continue;   /* 只处理纯中文按钮，跳过已带符号/emoji的 */
+      var icon = null;
+      for(var j = 0; j < BTN_ICONS.length; j++){
+        if(key === BTN_ICONS[j][0]){ icon = BTN_ICONS[j][1]; break; }
+      }
+      if(!icon) continue;
+      el.setAttribute('data-ico', '1');
+      var span = document.createElement('span');
+      span.className = 'btn-ico';
+      span.textContent = icon;
+      el.insertBefore(span, el.firstChild);
+    }
+  }
+
   UI.renderPage = function(){
     var root = document.getElementById('page-root');
     var fn = pages[current];
@@ -185,6 +274,8 @@
        金銮殿随时辰换色；纯 SVG + CSS，热区点击由 scenes.js 委托处理。 */
     var banner = (QZD.scenes && QZD.scenes.banner) ? QZD.scenes.banner(current) : '';
     root.innerHTML = banner + html;
+    decorateTitles(root);
+    decorateButtons(root);
     watchPortraits(root);
     var key = currentKey();
     if(hooks[current]) hooks[current](root);

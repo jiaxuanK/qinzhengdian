@@ -76,6 +76,8 @@
   border:0;border-radius:0;background:transparent;
   padding:5px 3px;margin-right:16px;
   border-bottom:2px solid transparent;
+  display:inline-flex;align-items:center;gap:5px;
+  white-space:nowrap;
   color:var(--ink2);
 }
 .page-tabs .tab:hover{color:var(--ink)}
@@ -94,6 +96,7 @@
 /* 链接样式的按钮不要下划线 */
 a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
 .tab.active{background:var(--daiqing);border-color:var(--daiqing);color:var(--card)}
+.tab-icon{font-size:14px;line-height:1}
 
 /* ---------- M3 名臣 / 立绘 ---------- */
 .talent-list{display:flex;flex-direction:column;gap:10px}
