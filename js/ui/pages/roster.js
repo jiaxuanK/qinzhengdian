@@ -619,13 +619,18 @@
 
   function rankChips(all){
     var titles = (CFG.RANK && CFG.RANK.TITLES) || ['才人'];
-    var counts = {};
+    var counts = {}, queenCount = 0;
     all.forEach(function(c){
+      if(c && c.isQueen){ queenCount++; return; }  /* 皇后位极中宫，不计入贵妃等普通位分 */
       var r = Math.max(0, Math.min(titles.length - 1, c.rank || 0));
       counts[r] = (counts[r] || 0) + 1;
     });
     var chips = ['<button class="tab' + (rankFilter === 'all' ? ' active' : '') +
       '" data-rfilter="all">全部 ' + all.length + '</button>'];
+    if(queenCount){
+      chips.push('<button class="tab' + (rankFilter === 'queen' ? ' active' : '') +
+        '" data-rfilter="queen">皇后 ' + queenCount + '</button>');
+    }
     titles.forEach(function(t, i){
       if(!counts[i]) return;
       chips.push('<button class="tab' + (rankFilter === 'r' + i ? ' active' : '') +
@@ -646,9 +651,13 @@
     var bar = rankChips(all);
     var list = all;
     if(rankFilter !== 'all'){
-      var idx = parseInt(String(rankFilter).slice(1), 10);
-      if(isNaN(idx)) idx = 0;
-      list = all.filter(function(c){ return (c.rank || 0) === idx; });
+      if(rankFilter === 'queen'){
+        list = all.filter(function(c){ return !!(c && c.isQueen); });
+      }else{
+        var idx = parseInt(String(rankFilter).slice(1), 10);
+        if(isNaN(idx)) idx = 0;
+        list = all.filter(function(c){ return !(c && c.isQueen) && (c.rank || 0) === idx; });
+      }
       if(!list.length){ rankFilter = 'all'; list = all; }  /* 该位分无人时自动回到全部 */
     }
     var note = '共 ' + all.length + ' 人 · 有孕 ' + QZD.harem.pregnantCount() +
