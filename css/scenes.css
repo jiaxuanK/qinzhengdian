@@ -21,6 +21,15 @@
   background:rgba(255,255,255,.14);
   box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.55);
 }
+/* 热区悬停标签：让入口一眼可辨 */
+.sc-hot-label{
+  position:absolute;left:50%;bottom:calc(100% + 4px);transform:translateX(-50%);
+  white-space:nowrap;font-size:11px;line-height:1.4;font-weight:500;
+  padding:3px 8px;border-radius:6px;color:#fff;background:rgba(30,26,20,.88);
+  opacity:0;pointer-events:none;transition:opacity .15s ease;
+}
+.scene-banner .sc-hot:hover .sc-hot-label{opacity:1}
+.scene-banner .sc-hot:focus-visible .sc-hot-label{opacity:1}
 
 /* ---------- 金銮殿 · 时辰调色 ----------
    图片本身是白天版，用 filter 模拟晨/昼/暮/夜整体光线变化。

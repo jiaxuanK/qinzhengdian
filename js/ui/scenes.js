@@ -44,7 +44,7 @@
     return list.map(function(h){
       return '<div class="sc-hot" data-scene-go="' + h[0] + '"' +
         ' style="left:' + h[1] + '%;top:' + h[2] + '%;width:' + h[3] + '%;height:' + h[4] + '%"' +
-        ' title="' + h[5] + '"></div>';
+        ' title="' + h[5] + '"><span class="sc-hot-label">' + h[5] + '</span></div>';
     }).join('');
   }
 
@@ -62,12 +62,12 @@
   /* 舆图动态叠层：城池旗帜 / 营造地物 / 计数文字随游戏进度变化。
      用户只要求舆图去掉时辰天气，进度反馈属数据展示，保留。 */
   var WORK_MARKS = [
-    { id:'hegong',    name:'河工堤防', shape:'levee',   color:'#4C7A8C', pos:[22,74] },
-    { id:'changping', name:'常平仓',   shape:'granary', color:'#9A7B36', pos:[30,84] },
-    { id:'yantie',    name:'盐铁司',   shape:'forge',   color:'#A85A32', pos:[38,70] },
-    { id:'junxie',    name:'军械监',   shape:'arsenal', color:'#7A4A38', pos:[55,82] },
-    { id:'yichuan',   name:'驿传所',   shape:'post',    color:'#4C6E8C', pos:[62,70] },
-    { id:'zhuqian',   name:'铸钱局',   shape:'mint',    color:'#3E6B5C', pos:[70,80] }
+    { id:'hegong',    name:'河工堤防', shape:'levee',   color:'#4C7A8C', pos:[190,150] },
+    { id:'changping', name:'常平仓',   shape:'granary', color:'#9A7B36', pos:[258,170] },
+    { id:'yantie',    name:'盐铁司',   shape:'forge',   color:'#A85A32', pos:[327,142] },
+    { id:'junxie',    name:'军械监',   shape:'arsenal', color:'#7A4A38', pos:[473,166] },
+    { id:'yichuan',   name:'驿传所',   shape:'post',    color:'#4C6E8C', pos:[533,142] },
+    { id:'zhuqian',   name:'铸钱局',   shape:'mint',    color:'#3E6B5C', pos:[602,162] }
   ];
   function workLevel(id){
     var w = QZD.state && QZD.state.works;
@@ -91,27 +91,30 @@
     var ownedN = territories.length;
     var builtN = WORK_MARKS.filter(function(w){ return workLevel(w.id) > 0; }).length;
     var out = '';
-    /* 工程地物：按百分比定位（SVG 用 viewBox 0 0 100 100 百分比坐标系） */
+    /* 工程地物：viewBox 与图片同为 860×200，坐标不拉伸不变形 */
     WORK_MARKS.forEach(function(w){
       var lv = workLevel(w.id);
       if(!lv) return;
-      out += '<g class="sc-work" transform="translate(' + w.pos[0] + ',' + w.pos[1] + ') scale(.5)">' +
+      out += '<g class="sc-work" transform="translate(' + w.pos[0] + ',' + w.pos[1] + ')">' +
         workShape(w) +
-        '<circle cx="10" cy="-9" r="5" fill="#F3EFD8" stroke="' + w.color + '"/>' +
-        '<text x="10" y="-6" text-anchor="middle" font-size="9" font-family="serif" fill="'+w.color+'">'+lv+'</text>' +
+        '<circle cx="12" cy="-11" r="6" fill="#F3EFD8" stroke="' + w.color + '" stroke-width="1"/>' +
+        '<text x="12" y="-7.5" text-anchor="middle" font-size="9" font-family="serif" fill="'+w.color+'">'+lv+'</text>' +
         '<title>'+w.name+' · Lv.'+lv+'</title></g>';
     });
-    /* 已控城池旗帜 */
+    /* 已控城池旗帜：带旗杆，立在大陆上方天空区，正常比例 */
     var flags = '';
     for(var i=0;i<Math.min(ownedN,8);i++){
-      var x = 44 + i*2.2;
-      flags += '<path d="M'+x+' 34 v-8 l5 1.5 l-5 2 Z"/>';
+      var x = 400 + i*16;
+      flags += '<g transform="translate(' + x + ',54)">' +
+        '<path d="M0 26 V0" stroke="#6E4E28" stroke-width="1.6" fill="none"/>' +
+        '<path d="M0 1 L14 4 L0 8 Z" fill="#A8573F"/>' +
+        '<circle cy="-1" r="1.4" fill="#C9A45C"/></g>';
     }
-    out += '<g class="sc-flags" fill="#A8573F" transform="scale(1 1)"><title>已控城池旗帜 '+ownedN+'</title>'+flags+'</g>';
-    /* 计数文字 */
-    out += '<text x="3" y="92" class="sc-map-count" fill="#6E6858" font-size="4" font-family="serif">' +
+    out += '<g class="sc-flags"><title>已控城池旗帜 '+ownedN+'</title>'+flags+'</g>';
+    /* 计数文字：正常字号，带描边保证在浅底上可读 */
+    out += '<text x="16" y="184" class="sc-map-count" fill="#6E6858" font-size="12" font-family="serif">' +
       '已控城池 ' + ownedN + ' · 营造 ' + builtN + '/6 · 后宫 ' + consorts.length + '</text>';
-    return '<svg class="sc-map-overlay" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' + out + '</svg>';
+    return '<svg class="sc-map-overlay" viewBox="0 0 860 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' + out + '</svg>';
   }
 
   function build(kind){
