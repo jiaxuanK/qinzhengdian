@@ -53,9 +53,9 @@
   function skyLayer(){
     return '<svg class="sc-sky-svg" viewBox="0 0 860 200" preserveAspectRatio="xMidYMid slice"' +
       ' aria-hidden="true">' +
-      '<circle class="sc-sun" cx="690" cy="42" r="17" fill="#F5C34E"/>' +
-      '<circle class="sc-sun-halo" cx="690" cy="42" r="27" fill="#F5C34E" opacity=".18"/>' +
-      '<path class="sc-moon" d="M716 26 A17 17 0 1 0 716 58 A13.5 13.5 0 1 1 716 26 Z" fill="#F3EFD8"/>' +
+      '<circle class="sc-sun" cx="625" cy="40" r="17" fill="#F5C34E"/>' +
+      '<circle class="sc-sun-halo" cx="625" cy="40" r="27" fill="#F5C34E" opacity=".18"/>' +
+      '<path class="sc-moon" d="M655 24 A17 17 0 1 0 655 56 A13.5 13.5 0 1 1 655 24 Z" fill="#F3EFD8"/>' +
       '</svg>';
   }
 
