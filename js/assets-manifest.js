@@ -344,14 +344,6 @@ QZD.ASSETS = {
       ]
     },
     {
-      "folder": "特殊/验证妃",
-      "name": "验证妃",
-      "personality": "qing",
-      "poses": [
-        "enc:YXNzZXRzL2E4Zi8zNzNkZTY4NDA1NTFhNzVkLmpwZw=="
-      ]
-    },
-    {
       "folder": "__video__000",
       "name": "霓裳",
       "personality": "mei",
