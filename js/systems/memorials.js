@@ -130,6 +130,20 @@
     findSubById: findSubById,
     subsOf: subsOf, subChildrenOf: subChildrenOf, subDepth: subDepth,
     progress: progress,
+    /* 11-21 串线：按三事聚合挂靠奏折，算自动完成度
+       返回 { goalId: { total, done, focusMin, items } } */
+    byGoal: function(){
+      var grouped = {};
+      state().memorials.forEach(function(m){
+        if(!m || !m.goalId) return;
+        var g = grouped[m.goalId] = grouped[m.goalId] || { total:0, done:0, focusMin:0, items:[] };
+        g.total++;
+        if(m.status === 'banjie') g.done++;
+        g.focusMin += Math.round(m.focusMin || 0);
+        g.items.push(m);
+      });
+      return grouped;
+    },
     normTag: normTag, normPrio: normPrio, quadrantOf: quadrantOf,
     tagName: function(key){ key = normTag(key); var m = metaOf(C.TAGS, key); return m ? m.name : key; },
     priorityName: function(key){ key = normPrio(key); var m = metaOf(C.PRIORITIES, key); return m ? m.name : key; },
@@ -175,6 +189,8 @@
         tag: draft.tag,
         priority: draft.priority,
         subjectId: draft.subjectId || null,
+        /* 11-21 串线：奏折挂靠本周三事（周主线的具体战役） */
+        goalId: draft.goalId || null,
         dueAt: parseDue(draft.dueAt),
         status: 'daipi',
         createdAt: now,
@@ -211,6 +227,8 @@
       if(draft.dueAt !== undefined) m.dueAt = parseDue(draft.dueAt);
       var newSubject = (draft.subjectId !== undefined) ? (draft.subjectId || null) : oldSubject;
       m.subjectId = newSubject;
+      /* 11-21 串线：挂靠本周三事（undefined=不改，null=取消挂靠） */
+      if(draft.goalId !== undefined) m.goalId = draft.goalId || null;
       m.updatedAt = Date.now();
 
       var moved = 0;

@@ -57,8 +57,9 @@
     /* 本周三事 / 专注进展 / 组会待办 / 精读（模块缺失时降级为空） */
     var goals = (QZD.plan && QZD.plan.goals) ? QZD.plan.goals() : [];
     var progress = (QZD.plan && QZD.plan.recent) ? QZD.plan.recent(7) : [];
-    /* 11-21 串线：进展按三事分组，供"本周计划(三事)"段逐件对账 */
+    /* 11-21 串线：进展 + 奏折都按三事分组，供"本周计划(三事)"段逐件对账 */
     var progressByGoal = (QZD.plan && QZD.plan.progressByGoal) ? QZD.plan.progressByGoal(7) : {};
+    var memByGoal = (QZD.memorials && QZD.memorials.byGoal) ? QZD.memorials.byGoal() : {};
     var pendingTodos = (QZD.meetings && QZD.meetings.pendingTodos) ? QZD.meetings.pendingTodos() : [];
     var readingDone = (QZD.reading && QZD.reading.doneThisWeek) ? QZD.reading.doneThisWeek() : [];
 
@@ -100,7 +101,7 @@
     return { days: days, focus: focus, bestDay: bestDay, bestMin: bestMin,
              ckDays: ckDays, ckScoreSum: ckScoreSum, ckFull: ckFull,
              done: done, streak: streak,
-             goals: goals, progress: progress, progressByGoal: progressByGoal,
+             goals: goals, progress: progress, progressByGoal: progressByGoal, memByGoal: memByGoal,
              pendingTodos: pendingTodos, readingDone: readingDone,
              subjWeek: subjWeek, running: running,
              abandons: abandons, abandonByReason: abandonByReason };
@@ -153,16 +154,27 @@
     L.push('四、本周计划（三事）· 目标与进展对账');
     if(c.goals && c.goals.length){
       var pg = c.progressByGoal || {};
+      var mg = c.memByGoal || {};
       c.goals.forEach(function(g){
-        L.push('· ' + (g.done ? '[已完成] ' : '[未完成] ') + g.text);
+        var mb = mg[g.id] || { total:0, done:0, focusMin:0, items:[] };
+        var autoDone = mb.total > 0 && mb.done === mb.total;
+        var marked = g.done || autoDone;
+        L.push('· ' + (marked ? '[已完成] ' : '[未完成] ') + g.text +
+          (mb.total ? '（挂靠奏折 ' + mb.done + '/' + mb.total + ' · 专注 ' + mb.focusMin + ' 分）' : ''));
+        if(mb.items.length){
+          mb.items.slice(0, 5).forEach(function(m){
+            L.push('    ▸ ' + (m.status === 'banjie' ? '[办结] ' : '') + m.title);
+          });
+          if(mb.items.length > 5) L.push('    ▸ ……另有 ' + (mb.items.length - 5) + ' 折');
+        }
         var gp = pg[g.id] || [];
         if(gp.length){
           gp.slice(0, 5).forEach(function(p){
             L.push('    ↳ ' + fmtMD(new Date(p.at)) + ' ' + p.text + (p.minutes ? '（' + p.minutes + ' 分）' : ''));
           });
           if(gp.length > 5) L.push('    ↳ ……另有 ' + (gp.length - 5) + ' 条');
-        }else{
-          L.push('    ↳ 本周暂无进展记录');
+        }else if(!mb.items.length){
+          L.push('    ↳ 本周暂无挂靠奏折与进展');
         }
       });
       var unhooked = (c.progress || []).filter(function(p){ return !p.goalId; });
@@ -287,7 +299,10 @@
       plan: {
         goals: (c.goals || []).map(function(g){
           var gp = (c.progressByGoal || {})[g.id] || [];
-          return { text: g.text, done: !!g.done,
+          var mb = (c.memByGoal || {})[g.id] || { total:0, done:0, focusMin:0, items:[] };
+          return { text: g.text, done: !!g.done || (mb.total > 0 && mb.done === mb.total),
+                   memTotal: mb.total, memDone: mb.done, memFocusMin: mb.focusMin,
+                   memorials: mb.items.map(function(m){ return { title: m.title, status: m.status, focusMin: m.focusMin }; }),
                    progressCount: gp.length,
                    progress: gp.map(function(p){ return { at: p.at, text: p.text, minutes: p.minutes }; }) };
         }),

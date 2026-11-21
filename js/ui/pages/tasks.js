@@ -116,19 +116,29 @@
   function planCard(){
     var goals = QZD.plan ? QZD.plan.goals() : [];
     var esc = UI.fmt.escape;
-    /* 11-21 串线：每件三事显示挂靠的速记条数，让"目标→记录"可见 */
+    /* 11-21 串线：三事升格「周主线」，自动聚合挂靠奏折 + 速记，算完成度 */
     var byGoal = (QZD.plan && QZD.plan.progressByGoal) ? QZD.plan.progressByGoal(7) : {};
+    var memByGoal = (QZD.memorials && QZD.memorials.byGoal) ? QZD.memorials.byGoal() : {};
     var body;
     if(goals.length){
       body = '<div class="plan-goals">' + goals.map(function(g){
-        var n = (byGoal[g.id] || []).length;
-        var note = n ? '<em class="plan-gprog">' + n + ' 条进展</em>' : '';
-        return '<label class="plan-goal' + (g.done ? ' done' : '') + '">' +
-          '<input type="checkbox" data-plan-toggle="' + g.id + '"' + (g.done ? ' checked' : '') + '>' +
+        var mb = memByGoal[g.id] || { total:0, done:0, focusMin:0 };
+        var notes = (byGoal[g.id] || []).length;
+        var pct = mb.total ? Math.round(mb.done / mb.total * 100) : 0;
+        var autoDone = mb.total > 0 && mb.done === mb.total;
+        var isDone = g.done || autoDone;   /* 手动勾选 OR 挂靠奏折全办结 */
+        var note = (mb.total || notes)
+          ? '<em class="plan-gprog">' + mb.done + '/' + mb.total + ' 折' +
+            (mb.focusMin ? ' · ' + mb.focusMin + '分' : '') +
+            (notes ? ' · ' + notes + '进展' : '') + '</em>'
+          : '<em class="plan-gprog plain">未挂靠奏折</em>';
+        return '<label class="plan-goal' + (isDone ? ' done' : '') + '">' +
+          '<input type="checkbox" data-plan-toggle="' + g.id + '"' + (isDone ? ' checked' : '') + '>' +
           '<span>' + esc(g.text) + '</span>' + note +
+          (mb.total ? '<i class="plan-gbar"><b style="width:' + pct + '%"></b></i>' : '') +
         '</label>';
       }).join('') + '</div>' +
-      '<p class="card-note" style="margin:6px 0 0">在总览「速记进展」记一句并挂到三事，进展数与周报会同步。</p>' +
+      '<p class="card-note" style="margin:6px 0 0">新建/修订奏折时「挂到本周三事」，进度自动汇总；勾满是给没挂折的目标手动收尾。</p>' +
       '<div class="btn-row" style="margin-top:8px">' +
         '<button class="chip sm" data-plan-reset>重设本周三事</button>' +
       '</div>';

@@ -182,6 +182,7 @@
       ? (st.login.lastDate === t)
       : (d.lastLoginDate === t);
     var focusMet = focusMin >= target;
+    var exceptionalLine = target * (CFG.EXCEPTIONAL_MULT || 1.5);
     var ck = (QZD.checkin && QZD.checkin.todayStat) ? QZD.checkin.todayStat() : { total:0, allDone:false };
     var ckAll = ck.total > 0 && ck.allDone;
     function tier(k){ return { key:k, delta:tierDelta(k) }; }
@@ -189,6 +190,7 @@
     if(!focusMin) return tier('idle');
     if(focusMin < veryLowLine) return tier('verylow');
     if(!focusMet) return tier('low');
+    if(ckAll && focusMin >= exceptionalLine) return tier('exceptional'); /* 超额：≥1.5倍日目标 */
     return ckAll ? tier('full') : tier('partial');
   }
 
@@ -264,6 +266,11 @@
     }
     var r = applyDelta(totalDelta);
     var pen = applyPeriodPenalty();
+    /* 11-21 超额成就：当日达 exceptional 档，记起居注 + toast（每代不重复刷屏，按日期去重） */
+    if(!first && tierKey === 'exceptional'){
+      log('今日勤政倍于常课，龙精虎猛。安定度大涨，朝野称颂。');
+      toast('勤政卓异 · 超额达标 · 安定 +' + tierDelta('exceptional'));
+    }
     QZD.stateIO.save();
     return { ok:true, first:first, tier:tierKey, hadDeeds:hadDeeds,
       delta:r.delta, level:r.level, penalty:pen, gap:gap, missedDays:missedDays };

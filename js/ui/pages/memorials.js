@@ -130,6 +130,19 @@
     return '<select id="' + selectId + '">' + opts + '</select>' + hint;
   }
 
+  /* 11-21 串线：本周三事下拉，供新建/修订奏折挂靠到周主线 */
+  function goalOptions(selected, selectId){
+    selectId = selectId || 'mem-goal';
+    var list = (QZD.plan && QZD.plan.goals) ? QZD.plan.goals() : [];
+    if(!list.length) return '';
+    var opts = '<option value="">不挂靠（独立奏折）</option>' + list.map(function(g){
+      return '<option value="' + UI.fmt.escape(g.id) + '"' + (g.id === selected ? ' selected' : '') + '>' +
+        UI.fmt.escape(g.text) + '</option>';
+    }).join('');
+    return '<div class="field"><label for="' + selectId + '">挂到本周三事（周主线）</label>' +
+      '<select id="' + selectId + '">' + opts + '</select></div>';
+  }
+
   function subjectName(id){
     var hit = '';
     ((QZD.study && QZD.study.subjects && QZD.study.subjects()) || []).forEach(function(s){
@@ -483,6 +496,7 @@
           subjectOptions() + '</div>' +
         '<div class="field"><label for="mem-priority">紧急性</label>' +
           '<select id="mem-priority">' + optionList(C.PRIORITIES, C.PRIORITIES[0].key) + '</select></div>' +
+        goalOptions('', 'mem-goal') +
         '<div class="field"><label for="mem-due">截止日（可选）</label>' +
           '<input id="mem-due" type="date"></div>' +
         '<div class="field"><label for="mem-note">备注（可选）</label>' +
@@ -496,6 +510,7 @@
           tag: mask.querySelector('#mem-tag').value,
           priority: mask.querySelector('#mem-priority').value,
           subjectId: mask.querySelector('#mem-subject').value,
+          goalId: (mask.querySelector('#mem-goal') || {}).value || null,
           dueAt: (mask.querySelector('#mem-due') || {}).value || null,
           note: mask.querySelector('#mem-note').value
         });
@@ -527,6 +542,7 @@
           subjectOptions(m.subjectId || '', 'ed-subject') + '</div>' +
         '<div class="field"><label for="ed-priority">紧急性</label>' +
           '<select id="ed-priority">' + optionList(C.PRIORITIES, m.priority) + '</select></div>' +
+        goalOptions(m.goalId || '', 'ed-goal') +
         '<div class="field"><label for="ed-due">截止日（留空即取消）</label>' +
           '<input id="ed-due" type="date" value="' + dateInputVal(m.dueAt) + '"></div>' +
         '<div class="field"><label for="ed-note">备注</label>' +
@@ -539,6 +555,7 @@
           tag: mask.querySelector('#ed-tag').value,
           priority: mask.querySelector('#ed-priority').value,
           subjectId: mask.querySelector('#ed-subject').value,
+          goalId: (mask.querySelector('#ed-goal') || {}).value || null,
           dueAt: mask.querySelector('#ed-due').value || null,
           note: mask.querySelector('#ed-note').value
         });

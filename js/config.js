@@ -1975,9 +1975,11 @@ QZD.config = {
       { key:'verylow',   delta: -26, need:'focusUnder2h' },          /* 专注<2h：工作很少 */
       { key:'low',       delta: -10, need:'focus2toTarget' },        /* 2h~日目标：偏低 */
       { key:'partial',   delta: +6,  need:'focusMetCheckinNotAll' }, /* 专注达标但打卡没全 */
-      { key:'full',      delta: +20, need:'focusMetCheckinAll' }     /* 专注达标+打卡全 */
+      { key:'full',      delta: +20, need:'focusMetCheckinAll' },    /* 专注达标+打卡全 */
+      { key:'exceptional', delta: +35, need:'focusOver15xCheckinAll' } /* 11-21 超额档：≥1.5倍日目标+打卡全 */
     ],
     VERYLOW_LINE_MIN: 120,    /* verylow 与 low 的分界：低于 2h 算「工作很少」 */
+    EXCEPTIONAL_MULT: 1.5,    /* 超额档门槛：日目标×1.5（8h×1.5=12h） */
     FOCUS_GAIN_PER_MIN: 0.1,  /* 即时回补（专注收工），按分钟线性；11-21 从0.4降到0.1 */
     FOCUS_GAIN_CAP: 4,        /* 每日即时回补封顶；11-21 从12降到4，避免盖过日结算扣减 */
     MEMORIAL_GAIN: 2,         /* 办结奏折即时回补 /封（每日封顶 +6） */
