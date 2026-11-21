@@ -418,6 +418,12 @@
   /* 概览：顶部 tab 切换 今日 / 本周 / 钦天 */
   var _ovTab = 'today';
   UI.register('ov', function(){
+    /* 外部入口（御书房烛台）请求切到某个概览 tab：消费一次性标记，
+       避免之后每次进概览都被强制切走。 */
+    if(UI.pendingOvTab === 'chronos' || UI.pendingOvTab === 'today' || UI.pendingOvTab === 'week'){
+      _ovTab = UI.pendingOvTab;
+      UI.pendingOvTab = null;
+    }
     var s = QZD.state;
     var OV = QZD.ui._overviewParts || {};
     function G(fn){ try { return fn ? fn() : ''; } catch(e){ return ''; } }

@@ -143,6 +143,13 @@
     if(!t) return;
     var go = t.getAttribute('data-scene-go');
     if(!go || !UI.show) return;
+    /* 烛台→钦天：跳到概览页(带导航)并请求切到"钦天"tab，
+       而不是跳独立 chronos 页（那页没有上方导航条）。 */
+    if(go === 'chronos'){
+      UI.pendingOvTab = 'chronos';
+      UI.show('ov');
+      return;
+    }
     UI.show(go);
   });
 
