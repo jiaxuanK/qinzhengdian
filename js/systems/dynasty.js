@@ -1,7 +1,8 @@
 /* ============================================================
    systems/dynasty.js · 11-19 国运系统（原 F1/F2/F3 温和国势的升级版）
    - 安定度 0–80 系、无上下限（可为负、可 >80），取消旧 MIN/MAX 钳制
-   - 每日表现分档扣减：没登录 −12 / 零专注 −6 / 没达标 −4 / 达标打卡没全 +2 / 全达标 +10
+   - 11-21 校准：每日分档改为五档(未登录/零专注/<2h/2h~8h/达标)，回补削弱，
+     让"每天工作很少"也能在一代7天内走完亡国→复国。数值全在 config.DYNASTY.DAILY_TIERS。
    - 各级惩罚叠加：持续型比例(战力/贡赋/回补) + 周期型资源罚(每12h，停留越久罚越多)
    - 潜邸(安定<10)：帝阶归零 + 持续侵略 + 掳妃(按位分递进，保底留1)
    - 复国：安定回 80 光复，属地归还 + 复国库银，每代限一次奖励
@@ -163,23 +164,32 @@
     return { before: before, after: d.stability, level: newId, delta: delta };
   }
 
-  /* 11-19 每日表现分档：按当天"登录/专注/打卡"三维定档，替代旧的 gap 衰减 */
+  /* 11-21 每日表现分档：按当天"登录/专注/打卡"三维定档，数值从 DAILY_TIERS 读。
+     五档：absent/idle/verylow(<2h)/low(2h~目标)/partial(达标没打卡全)/full(全达标)。
+     目的：让"每天工作很少"也能在一代7天内走完亡国→复国（旧值太温和永不亡国）。 */
+  function tierDelta(key){
+    var list = CFG.DAILY_TIERS || [];
+    for(var i = 0; i < list.length; i++) if(list[i] && list[i].key === key) return list[i].delta;
+    return 0;
+  }
   function todayTier(){
     var st = QZD.state, d = S(), t = today();
     var focusMin = (st.study && st.study.date === t) ? (st.study.doneMin || 0) : 0;
-    var target = (QZD.config.STUDY && QZD.config.STUDY.DAILY_TARGET_MIN) || 120;
-    /* 11-19：今日登录以「登录打卡」为准（state.login.lastDate），
-       旧档/测试桩无该字段时退回 dynasty.lastLoginDate */
+    var target = (QZD.config.STUDY && QZD.config.STUDY.DAILY_TARGET_MIN) || 480;
+    var veryLowLine = CFG.VERYLOW_LINE_MIN || 120;
+    /* 今日登录以「登录打卡」为准（state.login.lastDate），旧档/测试桩退回 dynasty.lastLoginDate */
     var loggedIn = (st.login && typeof st.login.lastDate === 'string')
       ? (st.login.lastDate === t)
       : (d.lastLoginDate === t);
     var focusMet = focusMin >= target;
     var ck = (QZD.checkin && QZD.checkin.todayStat) ? QZD.checkin.todayStat() : { total:0, allDone:false };
     var ckAll = ck.total > 0 && ck.allDone;
-    if(!loggedIn && !hasDeedsToday()) return { key:'absent', delta:-12 };
-    if(!focusMin) return { key:'idle', delta:-6 };
-    if(!focusMet) return { key:'under', delta:-4 };
-    return ckAll ? { key:'full', delta:+10 } : { key:'partial', delta:+2 };
+    function tier(k){ return { key:k, delta:tierDelta(k) }; }
+    if(!loggedIn && !hasDeedsToday()) return tier('absent');
+    if(!focusMin) return tier('idle');
+    if(focusMin < veryLowLine) return tier('verylow');
+    if(!focusMet) return tier('low');
+    return ckAll ? tier('full') : tier('partial');
   }
 
   /* 11-19 周期罚：资源损失类每 12h 判定一次，停留越久罚越多。
@@ -239,7 +249,7 @@
       tierKey = 'full'; totalDelta = 0;               /* 旧档首次不追溯惩罚 */
     }else{
       if(missedDays > 0){
-        totalDelta += missedDays * (-12);              /* 缺席档：−12/天 */
+        totalDelta += missedDays * tierDelta('absent'); /* 缺席档：按 config 的 absent delta/天 */
         tierKey = 'absent×' + missedDays;
       }
       d.lastLoginDate = t;                             /* 今天登录：todayTier 前设，避免今天被误判缺席 */

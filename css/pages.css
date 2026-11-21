@@ -1477,6 +1477,34 @@ body.zen .sidebar{display:none}
 .dfl-names{flex:none;width:46%;font-size:11px;color:var(--ink2,#6b6862);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dfl-empty{color:var(--ink3,#b8b5ae)}
+
+/* ---------- 期限前瞻 · 苹果日历式月历 ---------- */
+.dfl-month{font-size:13px;font-weight:600;color:var(--ink,#2d3142);margin:2px 0 8px}
+.dfl-cal{border:1px solid var(--line,rgba(90,80,60,.16));border-radius:10px;overflow:hidden;background:var(--paper2,rgba(255,255,255,.4))}
+.dfl-weekhead{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--line,rgba(90,80,60,.16))}
+.dfl-weekhead span{padding:5px 0;text-align:center;font-size:11px;color:var(--ink2,#6b6862)}
+.dfl-weekhead span:nth-child(6),.dfl-weekhead span:nth-child(7){color:var(--ink3,#9a9790)}
+.dfl-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.dfl-cell{position:relative;min-height:60px;padding:5px 6px;border-right:1px solid var(--line,rgba(90,80,60,.12));
+  border-bottom:1px solid var(--line,rgba(90,80,60,.12));display:flex;flex-direction:column;gap:3px}
+.dfl-cell:nth-child(7n){border-right:0}
+.dfl-cell.out{opacity:.35}
+.dfl-cell.weekend{background:rgba(90,80,60,.03)}
+.dfl-cell.today{background:rgba(62,107,92,.09);box-shadow:inset 0 0 0 2px var(--daiqing)}
+.dfl-cell:hover{background:rgba(62,107,92,.06)}
+.dfl-d{font-size:11px;color:var(--ink,#2d3142);font-variant-numeric:tabular-nums;line-height:1}
+.dfl-cell.today .dfl-d{color:var(--daiqing);font-weight:600}
+.dfl-cell.out .dfl-d{color:var(--ink3,#9a9790)}
+.dfl-cell .dfl-bar{height:15px;min-width:0;width:auto;max-width:100%;font-size:9px;padding:0 4px;
+  border-radius:3px;display:block;line-height:15px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap}
+.dfl-marks{display:flex;align-items:center;gap:4px;margin-top:auto;min-height:12px}
+.dfl-ck{font-size:9px;color:var(--qing,#3e6b5c);line-height:1}
+.dfl-min{font-size:9px;color:var(--ink2,#6b6862);font-variant-numeric:tabular-nums;line-height:1}
+@media(max-width:560px){
+  .dfl-cell{min-height:48px;padding:3px 4px}
+  .dfl-cell .dfl-bar{font-size:8px;height:13px;line-height:13px}
+  .dfl-min{font-size:8px}
+}
 @media(max-width:560px){
   .dfl-names{width:34%}
   .pva-note{width:64px}
@@ -1574,6 +1602,17 @@ body.zen .sidebar{display:none}
 .qp-row i{flex:1;min-width:0;font-style:normal;color:var(--ink);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .qp-row b{flex:none;color:var(--ink2);font-weight:500;font-size:11px}
+/* 11-21 串线：速记挂靠三事 + 三事进展数 */
+.qp-goal{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.qp-goal label{flex:none;font-size:11.5px;color:var(--ink2)}
+.qp-goal select{flex:1;min-width:0;height:32px;padding:0 9px;border:1px solid var(--line);
+  border-radius:8px;background:var(--card);color:var(--ink);font-size:12px;outline:none}
+.qp-goal select:focus{border-color:var(--daiqing)}
+.qp-tag{flex:none;font-style:normal;font-size:10.5px;color:var(--daiqing);
+  background:rgba(62,107,92,.08);border-radius:5px;padding:2px 6px;max-width:40%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plan-gprog{margin-left:auto;flex:none;font-style:normal;font-size:10.5px;color:var(--daiqing);
+  background:rgba(62,107,92,.08);border-radius:5px;padding:2px 6px}
 
 /* 文献卡详情 */
 .card-block{margin:11px 0;padding:9px 11px;border-left:3px solid var(--daiqing);

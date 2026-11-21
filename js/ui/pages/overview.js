@@ -285,21 +285,36 @@
     '</section>';
   }
 
-  /* ---------- 速记进展：在总览直接记一句本周进展 ---------- */
+  /* ---------- 速记进展：挂到本周三事，串成「目标→记录→周报」一条线 ---------- */
   function quickProgressCard(){
+    var esc = UI.fmt.escape;
+    var goals = (QZD.plan && QZD.plan.goals) ? QZD.plan.goals() : [];
     var recent = (QZD.plan && QZD.plan.recent) ? QZD.plan.recent(7).slice(0, 3) : [];
+    var goalName = {};
+    goals.forEach(function(g){ goalName[g.id] = g.text; });
+    /* 挂靠下拉：只在有三事时出现，让每句进展明确归属哪件目标 */
+    var goalSelect = goals.length
+      ? '<div class="qp-goal"><label for="qp-goal-sel">挂在三事</label>' +
+        '<select id="qp-goal-sel"><option value="">不挂靠</option>' +
+        goals.map(function(g){
+          return '<option value="' + esc(g.id) + '">' + esc(g.text) + '</option>';
+        }).join('') + '</select></div>'
+      : '<p class="card-note">先在「本周三事」定目标，记录就能挂到目标下、周报自动对账</p>';
     var list = recent.length
       ? '<div class="qp-list">' + recent.map(function(p){
           var d = new Date(p.at);
           var md = (d.getMonth() + 1) + '/' + d.getDate();
+          var tag = p.goalId && goalName[p.goalId]
+            ? '<em class="qp-tag">→ ' + esc(goalName[p.goalId]) + '</em>' : '';
           return '<div class="qp-row"><span>' + md + '</span><i>' +
-            UI.fmt.escape(p.text) + '</i>' +
+            UI.fmt.escape(p.text) + '</i>' + tag +
             (p.minutes ? '<b>' + Math.round(p.minutes) + '分</b>' : '') + '</div>';
         }).join('') + '</div>'
       : '<p class="card-note">还没有进展记录 · 写完一项就记一句，周报会自动带上</p>';
     return '<section class="card">' +
       '<div class="card-head"><span class="card-title">速 记 进 展</span>' +
-        '<span class="card-note">记一句，周报自动带上</span></div>' +
+        '<span class="card-note">挂到三事 · 周报自动对账</span></div>' +
+      goalSelect +
       '<div class="qp-add">' +
         '<input id="qp-text" maxlength="200" placeholder="如：调通了行波电极的 S 参数仿真">' +
         '<button class="btn primary sm" data-qp-add>记 一 句</button>' +
@@ -717,9 +732,11 @@
       var input = document.getElementById('qp-text');
       var text = input ? input.value : '';
       if(!text || !text.trim()){ UI.toast('先写一句做了什么'); return; }
-      var r = QZD.plan.addProgress({ text: text, title: '' });
+      var gsel = document.getElementById('qp-goal-sel');
+      var goalId = gsel ? gsel.value : '';
+      var r = QZD.plan.addProgress({ text: text, title: '', goalId: goalId || null });
       if(!r.ok){ UI.toast(r.error); return; }
-      UI.toast('已记一句 · 周报会带上');
+      UI.toast(goalId ? '已记一句 · 挂到三事，周报自动对账' : '已记一句 · 周报会带上');
       UI.onStateChanged();
       return;
     }

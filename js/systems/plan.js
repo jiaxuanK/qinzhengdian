@@ -98,7 +98,9 @@
       minutes: Math.round((Number(o.minutes) || 0) * 10) / 10,
       memorialId: o.memorialId || null,
       subjectId: o.subjectId || null,
-      title: String(o.title || '').slice(0, 60)
+      title: String(o.title || '').slice(0, 60),
+      /* 11-21 串线：这条进展挂到哪件本周三事（目标→记录→周报对账） */
+      goalId: o.goalId || null
     });
     while(p.progress.length > 200) p.progress.shift();
     IO.save();
@@ -113,6 +115,16 @@
       .sort(function(a, b){ return b.at - a.at; });
   }
 
+  /* 11-21 串线：按三事分组的本周进展。返回 { goalId: [progress,...] }，未挂靠的不入组。 */
+  function progressByGoal(days){
+    var list = recent(days || 7), grouped = {};
+    list.forEach(function(x){
+      if(!x.goalId) return;
+      (grouped[x.goalId] = grouped[x.goalId] || []).push(x);
+    });
+    return grouped;
+  }
+
   QZD.plan = {
     weekKey: weekKey,
     goals: goals,
@@ -123,6 +135,7 @@
     toggleGoal: toggleGoal,
     addProgress: addProgress,
     progress: function(){ return P().progress; },
-    recent: recent
+    recent: recent,
+    progressByGoal: progressByGoal
   };
 })();

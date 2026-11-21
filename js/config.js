@@ -333,7 +333,9 @@ QZD.config = {
 
   /* ---------- 学习目标（把游戏绑回专注） ---------- */
   STUDY: {
-    DAILY_TARGET_MIN: 120,   /* 默认每日专注目标（分钟） */
+    /* 11-21 校准：日目标 8h（480分），对齐 66h/周节奏（66÷7≈9.4h，留余量）。
+       此前 120 分过低，导致每天专注 10 分钟即靠即时回补锁死安定度、永不亡国。 */
+    DAILY_TARGET_MIN: 480,   /* 默认每日专注目标（分钟）：8h */
     TARGET_MIN: 30,
     TARGET_MAX: 900,        /* 11-19：原 600 顶死用户 10h=600 分 */
     PENALTY_MULT: 2,         /* 兼容旧值；分档改用 PENALTY_TIERS */
@@ -1963,16 +1965,21 @@ QZD.config = {
     /* 取消上下限：clamp 只做数值合法性，安定可为负、可 >80（见 dynasty.js） */
     DECAY_GRACE_DAYS: 1,      /* 保留字段兼容旧档；新逻辑按"每日表现分档"见 DAILY_TIERS */
 
-    /* 11-19 每日表现分档（日结算时按当天行为定档，替代旧的"距上次登录 gap"） */
+    /* 11-21 校准：让「每天工作很少」也能在一代(7天)内走完亡国→复国。
+       旧值(-12/-6/-4/+2/+10 + 回补0.4封顶12)太温和：每天专注10分钟回补就盖过扣减，
+       安定锁死80永不亡国。新口径：日目标8h(480分，见 STUDY.DAILY_TARGET_MIN)，
+       分5档+回补削弱，昨天荒废今天补，正好第3天亡国、第7天复国。 */
     DAILY_TIERS: [
-      { key:'absent',    delta: -12, need:'noLogin' },              /* 完全没登录 */
-      { key:'idle',      delta: -6,  need:'loginNoFocus' },          /* 登录但零专注 */
-      { key:'under',     delta: -4,  need:'focusUnderTarget' },      /* 有专注但没达标 */
-      { key:'partial',   delta: +2,  need:'focusMetCheckinNotAll' }, /* 专注达标但打卡没全 */
-      { key:'full',      delta: +10, need:'focusMetCheckinAll' }     /* 专注达标+打卡全 */
+      { key:'absent',    delta: -30, need:'noLogin' },              /* 完全没登录 */
+      { key:'idle',      delta: -28, need:'loginNoFocus' },          /* 登录但零专注 */
+      { key:'verylow',   delta: -26, need:'focusUnder2h' },          /* 专注<2h：工作很少 */
+      { key:'low',       delta: -10, need:'focus2toTarget' },        /* 2h~日目标：偏低 */
+      { key:'partial',   delta: +6,  need:'focusMetCheckinNotAll' }, /* 专注达标但打卡没全 */
+      { key:'full',      delta: +20, need:'focusMetCheckinAll' }     /* 专注达标+打卡全 */
     ],
-    FOCUS_GAIN_PER_MIN: 0.4,  /* 即时回补（专注收工），按分钟线性 */
-    FOCUS_GAIN_CAP: 12,       /* 每日即时回补封顶（与 DAILY_TIERS 取其一，不叠加） */
+    VERYLOW_LINE_MIN: 120,    /* verylow 与 low 的分界：低于 2h 算「工作很少」 */
+    FOCUS_GAIN_PER_MIN: 0.1,  /* 即时回补（专注收工），按分钟线性；11-21 从0.4降到0.1 */
+    FOCUS_GAIN_CAP: 4,        /* 每日即时回补封顶；11-21 从12降到4，避免盖过日结算扣减 */
     MEMORIAL_GAIN: 2,         /* 办结奏折即时回补 /封（每日封顶 +6） */
     MEMORIAL_GAIN_CAP: 6,
 

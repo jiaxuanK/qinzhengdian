@@ -57,6 +57,8 @@
     /* 本周三事 / 专注进展 / 组会待办 / 精读（模块缺失时降级为空） */
     var goals = (QZD.plan && QZD.plan.goals) ? QZD.plan.goals() : [];
     var progress = (QZD.plan && QZD.plan.recent) ? QZD.plan.recent(7) : [];
+    /* 11-21 串线：进展按三事分组，供"本周计划(三事)"段逐件对账 */
+    var progressByGoal = (QZD.plan && QZD.plan.progressByGoal) ? QZD.plan.progressByGoal(7) : {};
     var pendingTodos = (QZD.meetings && QZD.meetings.pendingTodos) ? QZD.meetings.pendingTodos() : [];
     var readingDone = (QZD.reading && QZD.reading.doneThisWeek) ? QZD.reading.doneThisWeek() : [];
 
@@ -98,7 +100,7 @@
     return { days: days, focus: focus, bestDay: bestDay, bestMin: bestMin,
              ckDays: ckDays, ckScoreSum: ckScoreSum, ckFull: ckFull,
              done: done, streak: streak,
-             goals: goals, progress: progress,
+             goals: goals, progress: progress, progressByGoal: progressByGoal,
              pendingTodos: pendingTodos, readingDone: readingDone,
              subjWeek: subjWeek, running: running,
              abandons: abandons, abandonByReason: abandonByReason };
@@ -148,9 +150,23 @@
       L.push('· 本周暂无办结事项');
     }
     L.push('');
-    L.push('四、本周计划（三事）');
+    L.push('四、本周计划（三事）· 目标与进展对账');
     if(c.goals && c.goals.length){
-      c.goals.forEach(function(g){ L.push('· ' + (g.done ? '[已完成] ' : '[未完成] ') + g.text); });
+      var pg = c.progressByGoal || {};
+      c.goals.forEach(function(g){
+        L.push('· ' + (g.done ? '[已完成] ' : '[未完成] ') + g.text);
+        var gp = pg[g.id] || [];
+        if(gp.length){
+          gp.slice(0, 5).forEach(function(p){
+            L.push('    ↳ ' + fmtMD(new Date(p.at)) + ' ' + p.text + (p.minutes ? '（' + p.minutes + ' 分）' : ''));
+          });
+          if(gp.length > 5) L.push('    ↳ ……另有 ' + (gp.length - 5) + ' 条');
+        }else{
+          L.push('    ↳ 本周暂无进展记录');
+        }
+      });
+      var unhooked = (c.progress || []).filter(function(p){ return !p.goalId; });
+      if(unhooked.length) L.push('· 另有 ' + unhooked.length + ' 条未挂靠三事的进展（见第五节）');
       L.push('· 完成 ' + c.goals.filter(function(g){ return g.done; }).length + ' / ' + c.goals.length);
     }else{
       L.push('· 本周未设定计划');
@@ -269,12 +285,17 @@
         return { title: m.title, focusMin: m.focusMin, sessions: m.sessions, at: m.at };
       }),
       plan: {
-        goals: (c.goals || []).map(function(g){ return { text: g.text, done: !!g.done }; }),
+        goals: (c.goals || []).map(function(g){
+          var gp = (c.progressByGoal || {})[g.id] || [];
+          return { text: g.text, done: !!g.done,
+                   progressCount: gp.length,
+                   progress: gp.map(function(p){ return { at: p.at, text: p.text, minutes: p.minutes }; }) };
+        }),
         goalsDone: (c.goals || []).filter(function(g){ return g.done; }).length,
         goalsTotal: (c.goals || []).length
       },
       progress: (c.progress || []).map(function(p){
-        return { at: p.at, text: p.text, minutes: p.minutes, title: p.title };
+        return { at: p.at, text: p.text, minutes: p.minutes, title: p.title, goalId: p.goalId || null };
       }),
       meetings: {
         pendingTodos: (c.pendingTodos || []).map(function(t){

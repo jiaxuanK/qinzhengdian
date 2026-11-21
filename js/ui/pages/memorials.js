@@ -730,11 +730,27 @@
       if(subRen){
         var pr = pairOf(subRen.getAttribute('data-sub-rename'));
         var hitR = M.findSubById(pr.sub);
-        var newTitle = window.prompt('重命名小目标：', hitR ? hitR.sub.title : '');
-        if(newTitle === null) return;
-        var rr = M.renameSub(pr.mem, pr.sub, newTitle);
-        if(!rr.ok){ UI.toast(rr.error); return; }
-        UI.onStateChanged();
+        if(!hitR) return;
+        /* 与「修订奏折」同款完整编辑：标题 + 截止日一起改 */
+        UI.modal({
+          title: '修订小目标',
+          body:
+            '<div class="field"><label for="sr-title">目标名（≤ ' + (F.SUB_TITLE_MAX || 24) + ' 字）</label>' +
+              '<input id="sr-title" maxlength="' + (F.SUB_TITLE_MAX || 24) + '" value="' + UI.fmt.escape(hitR.sub.title) + '"></div>' +
+            '<div class="field"><label for="sr-due">截止日（留空即取消）</label>' +
+              '<input id="sr-due" type="date" value="' + dateInputVal(hitR.sub.dueAt) + '"></div>' +
+            '<p class="card-note">标题和截止日可一起改。子目标、专注记录不受影响。</p>',
+          ok: true, okText: '保存修订',
+          onOk: function(mask){
+            var res = M.updateSub(pr.mem, pr.sub, {
+              title: mask.querySelector('#sr-title').value,
+              dueAt: mask.querySelector('#sr-due').value || null
+            });
+            if(!res.ok){ UI.toast(res.error); return false; }
+            UI.toast('小目标已修订');
+            UI.onStateChanged();
+          }
+        });
         return;
       }
 

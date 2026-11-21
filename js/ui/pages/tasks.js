@@ -116,14 +116,19 @@
   function planCard(){
     var goals = QZD.plan ? QZD.plan.goals() : [];
     var esc = UI.fmt.escape;
+    /* 11-21 串线：每件三事显示挂靠的速记条数，让"目标→记录"可见 */
+    var byGoal = (QZD.plan && QZD.plan.progressByGoal) ? QZD.plan.progressByGoal(7) : {};
     var body;
     if(goals.length){
       body = '<div class="plan-goals">' + goals.map(function(g){
+        var n = (byGoal[g.id] || []).length;
+        var note = n ? '<em class="plan-gprog">' + n + ' 条进展</em>' : '';
         return '<label class="plan-goal' + (g.done ? ' done' : '') + '">' +
           '<input type="checkbox" data-plan-toggle="' + g.id + '"' + (g.done ? ' checked' : '') + '>' +
-          '<span>' + esc(g.text) + '</span>' +
+          '<span>' + esc(g.text) + '</span>' + note +
         '</label>';
       }).join('') + '</div>' +
+      '<p class="card-note" style="margin:6px 0 0">在总览「速记进展」记一句并挂到三事，进展数与周报会同步。</p>' +
       '<div class="btn-row" style="margin-top:8px">' +
         '<button class="chip sm" data-plan-reset>重设本周三事</button>' +
       '</div>';
@@ -222,77 +227,95 @@
     '</section>';
   }
 
-  /* ---------- 未来两周 DDL 前瞻：按日期分桶，看哪天任务撞车（奏折 + 大计 deadline 一起算） ---------- */
+  /* ---------- 期限前瞻：苹果日历式月历，格子内叠 DDL / 打卡 / 专注 ---------- */
   function ddlForecastCard(){
     var esc = UI.fmt.escape;
     var today = new Date(); today.setHours(0, 0, 0, 0);
-    var end = new Date(today.getTime()); end.setDate(end.getDate() + 13);
 
-    /* 1. 奏折 dueList（旧逻辑） */
+    /* 1. 收集 deadline（奏折 + 大计） */
     var all = [];
     if(QZD.memorials && QZD.memorials.dueList){
       var memAll = QZD.memorials.dueList(365).all || [];
       memAll.forEach(function(x){ all.push({ dueAt: x.dueAt, title: x.title, _src: '奏折' }); });
     }
-
-    /* 2. 大计 deadline（新增）：把 YYYY-MM-DD / YYYY-MM 转成 ms */
     if(QZD.goals && QZD.goals.list){
       QZD.goals.list().forEach(function(g){
         if(!g.deadline) return;
         var dlStr = g.deadline;
-        /* 补全 YYYY-MM → YYYY-MM-01 */
         if(/^\d{4}-\d{2}$/.test(dlStr)) dlStr = dlStr + '-01';
         var dlMs = new Date(dlStr + 'T23:59:59').getTime();
         if(isNaN(dlMs)) return;
         all.push({ dueAt: dlMs, title: g.title, _src: '大计' });
       });
     }
+    if(!all.length) return '';
 
-    if(!all.length) return '';   /* 没有任何 deadline 就不显示 */
-
-    /* 按日分桶 */
+    /* 按日分桶 + 逾期 */
     var buckets = {}, overdue = [];
     all.forEach(function(x){
       if(x.dueAt < today.getTime()){ overdue.push(x); return; }
       var d = new Date(x.dueAt); d.setHours(0, 0, 0, 0);
-      if(d > end) return;
       var key = QZD.stateIO.todayStr(d);
       (buckets[key] = buckets[key] || []).push(x);
     });
 
-    var WEEK = ['日', '一', '二', '三', '四', '五', '六'];
-    var rows = '', maxN = 1;
-    for(var i = 0; i < 14; i++){
-      var d = new Date(today.getTime()); d.setDate(d.getDate() + i);
+    /* 打卡 / 专注历史 */
+    var ckHist = (QZD.state.checkin && QZD.state.checkin.history) || {};
+    var stHist = (QZD.state.study && QZD.state.study.history) || {};
+
+    /* 月历：覆盖今天所在月（含前后补齐到整周） */
+    var y = today.getFullYear(), m = today.getMonth();
+    var first = new Date(y, m, 1);
+    var lead = (first.getDay() + 6) % 7;              /* 周一为首列 */
+    var gridStart = new Date(y, m, 1 - lead);
+    var todayKey = QZD.stateIO.todayStr(today);
+    var WEEK = ['一', '二', '三', '四', '五', '六', '日'];
+    var head = '<div class="dfl-weekhead">' + WEEK.map(function(w){ return '<span>'+w+'</span>'; }).join('') + '</div>';
+
+    var cells = '', maxN = 1;
+    Object.keys(buckets).forEach(function(k){ if(buckets[k].length > maxN) maxN = buckets[k].length; });
+    for(var i = 0; i < 42; i++){
+      var d = new Date(gridStart.getTime()); d.setDate(d.getDate() + i);
       var key = QZD.stateIO.todayStr(d);
+      var inMonth = d.getMonth() === m;
       var items = buckets[key] || [];
-      if(items.length > maxN) maxN = items.length;
-      var isToday = i === 0, isWeekend = (d.getDay() === 0 || d.getDay() === 6);
-      var w = items.length ? Math.max(8, Math.round(items.length / maxN * 100)) : 0;
-      var titles = items.map(function(x){
-        var srcTag = x._src === '大计' ? '【计】' : '';
-        return srcTag + x.title;
-      }).join('、');
-      rows += '<div class="dfl-row' + (isToday ? ' today' : '') + (isWeekend ? ' weekend' : '') + '">' +
-        '<span class="dfl-date">'+ (d.getMonth() + 1) + '/' + d.getDate() + ' 周' + WEEK[d.getDay()] + '</span>' +
-        '<div class="dfl-track">' +
-          (items.length ? '<div class="dfl-bar' +
-            (items.length >= 3 ? ' busy' : (items.length === 2 ? ' warn' : '')) +
-            '" style="width:' + w + '%" title="' + esc(titles) + '">' + items.length + ' 项</div>' : '') +
-        '</div>' +
-        '<span class="dfl-names" title="' + esc(titles) + '">' +
-          (items.length ? esc(titles) : '<span class="dfl-empty">—</span>') + '</span>' +
-      '</div>';
+      var isToday = key === todayKey;
+      var isWeekend = (d.getDay() === 0 || d.getDay() === 6);
+      var ck = ckHist[key];
+      var min = Math.round(stHist[key] || 0);
+      var cls = 'dfl-cell' + (inMonth ? '' : ' out') + (isToday ? ' today' : '') + (isWeekend ? ' weekend' : '');
+
+      /* DDL 条：沿用 dfl-bar + busy/warn 三档，保留撞车语义 */
+      var bar = '';
+      if(items.length){
+        var titles = items.map(function(x){
+          return (x._src === '大计' ? '【计】' : '') + x.title;
+        }).join('、');
+        var lv = items.length >= 3 ? ' busy' : (items.length === 2 ? ' warn' : '');
+        var w = Math.max(34, Math.round(items.length / maxN * 100));
+        bar = '<div class="dfl-bar' + lv + '" style="width:'+w+'%" title="'+esc(titles)+'">' +
+          esc(items[0].title) + '</div>';
+      }
+      var marks = '';
+      if(ck && (ck.score > 0 || ck.done)){
+        marks += '<span class="dfl-ck" title="打卡 '+ (ck.score||'') +'分">●</span>';
+      }
+      if(min > 0) marks += '<span class="dfl-min" title="专注 '+min+' 分">'+min+'m</span>';
+      var tipText = (d.getMonth()+1)+'/'+d.getDate() +
+        (items.length ? ' · '+items.length+' 项期限' : '') +
+        (min ? ' · 专注'+min+'分' : '') + (ck ? ' · 已打卡' : '');
+
+      cells += '<div class="'+cls+'" title="'+esc(tipText)+'">' +
+        '<span class="dfl-d">'+d.getDate()+'</span>' + bar +
+        '<span class="dfl-marks">'+marks+'</span></div>';
     }
 
-    var head = '';
+    var overdueHead = '';
     if(overdue.length){
-      head = '<div class="dfl-overdue"><b>' + overdue.length + ' 项已逾期</b> · ' +
+      overdueHead = '<div class="dfl-overdue"><b>' + overdue.length + ' 项已逾期</b> · ' +
         esc(overdue.slice(0, 3).map(function(x){
-          var srcTag = x._src === '大计' ? '【计】' : '';
-          return srcTag + x.title;
-        }).join('、')) +
-        (overdue.length > 3 ? ' 等' : '') + '</div>';
+          return (x._src === '大计' ? '【计】' : '') + x.title;
+        }).join('、')) + (overdue.length > 3 ? ' 等' : '') + '</div>';
     }
     var busyDays = Object.keys(buckets).filter(function(k){ return buckets[k].length >= 3; }).length;
     var tip = busyDays
@@ -302,10 +325,11 @@
     if(goalsCount) tip += '（含 ' + goalsCount + ' 项大计 deadline）';
 
     return '<section class="card tint-qing">' +
-      '<div class="card-head"><span class="card-title">未来两周期限前瞻</span>' +
-        '<span class="card-note">奏折 + 大计 deadline 一起看</span></div>' +
-      head +
-      '<div class="dfl-list">' + rows + '</div>' +
+      '<div class="card-head"><span class="card-title">期限前瞻 · 日历</span>' +
+        '<span class="card-note">期限 / 打卡 / 专注 一眼看</span></div>' +
+      overdueHead +
+      '<div class="dfl-month">' + (m+1) + ' 月</div>' +
+      '<div class="dfl-cal">' + head + '<div class="dfl-grid">' + cells + '</div></div>' +
       '<p class="pva-verdict">' + tip + '</p>' +
     '</section>';
   }

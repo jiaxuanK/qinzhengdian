@@ -363,6 +363,22 @@
       return { ok: true, sub: hit.sub };
     },
 
+    /* 一次修订小目标：名称 + 截止日（与「修订奏折」同款编辑体验） */
+    updateSub: function(id, subId, fields){
+      var hit = findSubById(subId);
+      if(!hit || hit.memorial.id !== id) return { ok: false, error: '小目标不存在' };
+      var f = fields || {};
+      if(f.title != null){
+        var name = String(f.title).trim().slice(0, F.SUB_TITLE_MAX || 24);
+        if(!name) return { ok: false, error: '标题不能为空' };
+        hit.sub.title = name;
+      }
+      if('dueAt' in f) hit.sub.dueAt = parseDue(f.dueAt);
+      hit.memorial.updatedAt = Date.now();
+      QZD.stateIO.save();
+      return { ok: true, sub: hit.sub };
+    },
+
     /* 删除小目标：连其所有子小目标一起删（多级） */
     removeSub: function(id, subId){
       var m = find(id);
