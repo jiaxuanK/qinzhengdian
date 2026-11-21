@@ -100,14 +100,20 @@
       lit: c.lit,
       createdAt: Date.now(),
       fielded: false,
-      tourLeft: M.TOUR_LIMIT || 8    /* 11-19 消耗回路：可出征次数 */
+      tourLeft: M.TOUR_LIMIT || 8,  /* 11-19 消耗回路：可出征次数 */
+      origin: 'exam'                /* 出身差异：科举治世，皇子统兵 */
     };
+    /* 科举名臣：入朝即带治世加成，直接计入三维；
+       旧档无 origin 不加成，老玩家不会被追溯改数值。 */
+    var ob = (M.ORIGIN_BONUS && M.ORIGIN_BONUS.exam) || {};
+    m.gov += (ob.gov || 0);
     ministers().push(m);
     keju().candidates = [];
     if(gain > 0) QZD.resources.add({ shengWang: gain });
 
-    QZD.stateIO.pushLog('keju', '钦点「' + c.name + '」入朝 · 用兵 ' + c.war +
-      ' · 理政 ' + c.gov + ' · 文采 ' + c.lit + (gain > 0 ? ' · 声望 +' + gain : ''));
+    QZD.stateIO.pushLog('keju', '钦点「' + c.name + '」入朝（科举·' +
+      (ob.desc || '治世长才') + '）· 用兵 ' + m.war +
+      ' · 理政 ' + m.gov + ' · 文采 ' + m.lit + (gain > 0 ? ' · 声望 +' + gain : ''));
     QZD.stateIO.save();
     return { ok: true, minister: m, shengWang: gain };
   }
@@ -158,8 +164,12 @@
       motherId: meta.motherId || '',
       motherName: meta.motherName || '生母不详',
       bornAt: meta.bornAt || m.createdAt || Date.now(),
-      war: m.war || 0, gov: m.gov || 0, lit: m.lit || 0,
+      war: (meta.baseWar != null ? meta.baseWar : (m.war || 0)),
+      gov: (meta.baseGov != null ? meta.baseGov : (m.gov || 0)),
+      lit: (meta.baseLit != null ? meta.baseLit : (m.lit || 0)),
       trainCount: meta.trainCount || 0,
+      growthEdu: meta.growthEdu || {},
+      stage: 'adult',             /* 入朝者必已成年，归宗后不再走幼年门槛 */
       retired: true, retiredAt: Date.now(),
       retireRefunded: 0,          /* 回归时未领皇子致仕返还；如再致仕不重复 */
       wasMinister: true

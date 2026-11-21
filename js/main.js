@@ -34,12 +34,22 @@
 
   /* 11-19 传代检查：跨周（周日24:00）自动改元继统、归档年表、周期和亲。
      须先于其他结算，让新代的帝阶/质子态就位。 */
-  if(QZD.regime && QZD.regime.checkGeneration) QZD.regime.checkGeneration();
+  var genR = null;
+  if(QZD.regime && QZD.regime.checkGeneration) genR = QZD.regime.checkGeneration();
+  /* 御极纪：7 天传代本身也是一章；新代起每条帝王线重新可演 */
+  if(genR && genR.ok && QZD.emperorStory)
+    QZD.emperorStory.onEvent('generation', { generation: genR.generation });
 
   /* 11-19 登录打卡：每日首次打开自动签到（须先于国势结算，
      让 settle 的今日登录分档读得到 state.login.lastDate） */
   var loginR = null;
   if(QZD.checkin && QZD.checkin.onLogin) loginR = QZD.checkin.onLogin();
+  /* 御极纪：登录给帝王自己的剧情，与妃子线并行、共用弹窗队列 */
+  if(QZD.emperorStory && loginR && loginR.ok){
+    QZD.emperorStory.onEvent('login', {
+      streak: loginR.streak, total: loginR.total
+    });
+  }
 
   /* F1/F2/F3：国势日结算（缺席缓降 / 分级事件 / 拨乱反正，只给 toast） */
   if(QZD.dynasty) QZD.dynasty.onLaunch();

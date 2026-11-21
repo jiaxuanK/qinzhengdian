@@ -10,7 +10,8 @@
     return !!(x && (x.conclusion || x.abstract || x.takeaway || x.keyNumbers ||
       x.why || x.how || x.what || x.innovation || x.limitations ||
       (Array.isArray(x.keyFigures) && x.keyFigures.length) ||
-      (Array.isArray(x.highlights) && x.highlights.length)));
+      (Array.isArray(x.highlights) && x.highlights.length) ||
+      (QZD.reading && QZD.reading.graph && !!QZD.reading.graph(x))));
   }
   function oneLine(s){ return String(s || '').replace(/\s+/g, ' ').slice(0, 120); }
   var DEPTH_LABEL = { 'full-text':'全文精读', 'abstract-only':'仅摘要', 'secondhand-notes':'二手笔记' };
@@ -93,6 +94,148 @@
     var text = Array.isArray(arr) ? arr.map(function(x){ return '· ' + x; }).join('\n') : String(arr);
     return '<div class="card-block card-warn"><b>易误读点</b><p>' +
       highlight(text, kws).replace(/\n/g, '<br>') + '</p></div>';
+  }
+
+  /* ============================================================
+     论证网络：把节点按「问题→假设→方法→证据→机制→结果→局限→结论→创新→课题」
+     分列排布，箭头写清关系。图下再列节点全文与连边清单，手机上不必横向拖也能读。
+     ============================================================ */
+  var LG_NODE_COLOR = {
+    question:'#8B6FC5', hypothesis:'#B07A9E', method:'#3E7B8C', evidence:'#587B4A',
+    mechanism:'#9C6B1E', result:'#3E6B5C', limitation:'#A45B4B', conclusion:'#B8862C',
+    innovation:'#6D6BB5', relevance:'#9A6B8C'
+  };
+  var LG_EDGE_COLOR = {
+    addresses:'#3E7B8C', supports:'#587B4A', causes:'#9C6B1E', contrasts:'#A45B4B',
+    refutes:'#B14141', extends:'#6D6BB5', limits:'#A45B4B', evidences:'#8A94A6'
+  };
+  function wrapText(s, per, maxLines){
+    var lines = [], line = '', w = 0;
+    function flush(){ if(line){ lines.push(line); line = ''; w = 0; } }
+    for(var i = 0; i < s.length; i++){
+      var ch = s.charAt(i);
+      var cw = /[\x00-\xff]/.test(ch) ? 0.55 : 1;
+      if(w + cw > per) flush();
+      line += ch; w += cw;
+    }
+    flush();
+    if(lines.length > maxLines){
+      lines = lines.slice(0, maxLines);
+      var last = lines[maxLines - 1];
+      lines[maxLines - 1] = last.slice(0, Math.max(1, per - 1)) + '…';
+    }
+    return lines;
+  }
+  function logicGraphHtml(item, kws){
+    if(!QZD.reading || !QZD.reading.graph) return '';
+    var g = QZD.reading.graph(item);
+    if(!g || !g.nodes || !g.nodes.length) return '';
+    var meta = QZD.reading.graphMeta ? QZD.reading.graphMeta() : { nodeTypes:{}, nodeOrder:[], edgeTypes:{} };
+    var NODE_W = 186, GAP = 42, PAD = 18, LINE = 15, per = 15;
+    var groups = {}, byId = {}, byLabel = {};
+    g.nodes.forEach(function(n){
+      (groups[n.type] = groups[n.type] || []).push(n);
+      byId[n.id] = n;
+      byLabel[n.id] = n.label;
+    });
+    var order = (meta.nodeOrder || []).slice();
+    Object.keys(groups).forEach(function(t){ if(order.indexOf(t) < 0) order.push(t); });
+    var cols = order.filter(function(t){ return groups[t] && groups[t].length; });
+    var boxes = [], maxY = PAD;
+    cols.forEach(function(type, ci){
+      var x = PAD + ci * (NODE_W + GAP), y = PAD;
+      groups[type].forEach(function(n){
+        var lines = wrapText(n.text || '（无正文）', per, 5);
+        var h = Math.max(58, 48 + (lines.length - 1) * LINE);
+        boxes.push({ n:n, x:x, y:y, w:NODE_W, h:h, lines:lines });
+        y += h + 16;
+      });
+      maxY = Math.max(maxY, y);
+    });
+    var W = Math.max(320, PAD * 2 + cols.length * NODE_W + Math.max(0, cols.length - 1) * GAP);
+    var H = Math.max(190, maxY + PAD);
+    var paths = [];
+    g.edges.forEach(function(e){
+      var a = boxes.filter(function(b){ return b.n.id === e.from; })[0];
+      var b = boxes.filter(function(b){ return b.n.id === e.to; })[0];
+      if(!a || !b) return;
+      var sx = a.x + a.w, sy = a.y + Math.min(a.h / 2, 30);
+      var tx = b.x, ty = b.y + Math.min(b.h / 2, 30);
+      var color = LG_EDGE_COLOR[e.type] || '#8A94A6', midX, midY;
+      var d;
+      if(tx > sx + 12){
+        var c = Math.max(26, (tx - sx) / 2);
+        d = 'M' + sx + ' ' + sy + ' C' + (sx + c) + ' ' + sy + ',' + (tx - c) + ' ' + ty + ',' + tx + ' ' + ty;
+        midX = (sx + tx) / 2; midY = (sy + ty) / 2 - 5;
+      }else{
+        var lift = Math.min(64, 20 + Math.abs(tx - sx) * 0.4);
+        d = 'M' + sx + ' ' + sy + ' C' + (sx + 55) + ' ' + (sy - lift) + ',' +
+            (tx - 55) + ' ' + (ty - lift) + ',' + tx + ' ' + ty;
+        midX = (sx + tx) / 2; midY = Math.min(sy, ty) - lift / 2 - 4;
+      }
+      paths.push('<path d="' + d + '" fill="none" stroke="' + color +
+        '" stroke-width="1.5" marker-end="url(#lgArrow)" opacity=".85"/>');
+      paths.push('<text x="' + midX + '" y="' + midY + '" text-anchor="middle" font-size="9" ' +
+        'style="fill:' + color + ';paint-order:stroke;stroke:var(--card);stroke-width:3px">' +
+        ESC((e.label || '').slice(0, 6)) + '</text>');
+    });
+    var rects = boxes.map(function(b){
+      var color = LG_NODE_COLOR[b.n.type] || '#8A94A6';
+      var name = b.n.label || meta.nodeTypes[b.n.type] || b.n.type;
+      var body = b.lines.map(function(ln, i){
+        return '<tspan x="' + (b.x + 11) + '" dy="' + (i ? LINE : 0) + '">' + ESC(ln) + '</tspan>';
+      }).join('');
+      return '<g><title>' + ESC(b.n.text) + (b.n.evidence ? '｜' + ESC(b.n.evidence) : '') + '</title>' +
+        '<rect x="' + b.x + '" y="' + b.y + '" width="' + b.w + '" height="' + b.h + '" rx="8" ' +
+          'style="fill:var(--card);stroke:' + color + '" stroke-width="1.4"/>' +
+        '<rect x="' + b.x + '" y="' + (b.y + 8) + '" width="3" height="' + (b.h - 16) + '" rx="1.5" fill="' + color + '"/>' +
+        '<text x="' + (b.x + 11) + '" y="' + (b.y + 19) + '" font-size="10" font-weight="700" style="fill:' + color + '">' +
+          ESC(name) + '</text>' +
+        '<text x="' + (b.x + 11) + '" y="' + (b.y + 38) + '" font-size="11" style="fill:var(--ink2)">' + body + '</text>' +
+        '</g>';
+    });
+    var svg = '<svg class="lg-svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H +
+      '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="文献论证网络">' +
+      '<defs><marker id="lgArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" ' +
+        'orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#9A9790"/></marker></defs>' +
+      paths.join('') + rects.join('') + '</svg>';
+    var legend = cols.map(function(t){
+      return '<span><i style="background:' + (LG_NODE_COLOR[t] || '#8A94A6') + '"></i>' +
+        ESC(meta.nodeTypes[t] || t) + '</span>';
+    }).join('');
+    var nodesHtml = g.nodes.map(function(n){
+      var color = LG_NODE_COLOR[n.type] || '#8A94A6';
+      return '<li><span class="lg-dot" style="background:' + color + '"></span>' +
+        '<b>' + ESC(n.label) + '</b>' +
+        (n.evidence ? '<span class="lg-ev">' + ESC(n.evidence) + '</span>' : '') +
+        '<p>' + highlight(n.text, kws) + '</p></li>';
+    }).join('');
+    var edgesHtml = g.edges.length ? g.edges.map(function(e){
+      var color = LG_EDGE_COLOR[e.type] || '#8A94A6';
+      return '<li>' + ESC(byLabel[e.from] || e.from) +
+        ' <span style="color:' + color + '">—' + ESC(e.label) + '→</span> ' +
+        ESC(byLabel[e.to] || e.to) + '</li>';
+    }).join('') : '<li class="lg-none">这张卡还没有显式连边，上面是按字段顺序生成的骨架。</li>';
+    return '<div class="logic-graph">' +
+      '<p class="card-note">从左到右是论证推进方向；箭头上的小字是两件事之间的关系。' +
+        (g.auto ? '本图由卡片字段自动生成，点开原文核对后再由 qzd-paper-import 生成完整版。' : '') + '</p>' +
+      '<div class="lg-scroll">' + svg + '</div>' +
+      '<div class="lg-legend">' + legend + '</div>' +
+      '<div class="lg-detail"><div class="lg-col"><b>节点全文</b><ol>' + nodesHtml + '</ol></div>' +
+      '<div class="lg-col"><b>关系连边</b><ul>' + edgesHtml + '</ul></div></div>' +
+      '</div>';
+  }
+  function openGraph(id){
+    var item = null;
+    (QZD.reading.list() || []).forEach(function(x){ if(x.id === id) item = x; });
+    if(!item) return;
+    var g = QZD.reading.graph(item);
+    if(!g || !g.nodes || !g.nodes.length){ UI.toast('这张卡还没有结构化内容，画不出逻辑图'); return; }
+    UI.modal({
+      title: '逻辑图谱 · ' + String(item.title || '').slice(0, 34),
+      body: logicGraphHtml(item, keywordsOf(item)),
+      ok: false, cancelText: '关闭', wide: true
+    });
   }
 
   /* 问 DeepSeek：把题目/DOI/结论拼成提问模板，复制后开网页。
@@ -220,9 +363,10 @@
       rows.push('<p class="card-note"><a href="zotero://select/items/' + ESC(item.zoteroKey) +
         '">在 Zotero 中打开 ↗</a></p>');
     }
-    var askUrl = (QZD.config && QZD.config.DEEPSEEK_URL) || 'https://chat.deepseek.com/';
-    rows.push('<p class="card-ask"><button class="btn ghost" data-card-ask="' + ESC(item.id) +
-      '">问 DeepSeek ↗</button>' +
+    rows.push('<p class="card-ask">' +
+      (QZD.reading.graph(item) ? '<button class="btn primary sm" data-card-graph="' + ESC(item.id) +
+        '">看逻辑图 ↗</button>' : '') +
+      '<button class="btn ghost" data-card-ask="' + ESC(item.id) + '">问 DeepSeek ↗</button>' +
       '<span class="card-ask-hint">弹出提问模板，复制后开网页（本机剪贴板可能被拦，见弹窗内提示）</span></p>');
     UI.modal({
       title: item.title,
@@ -358,6 +502,10 @@
     /* 看文献卡详情 */
     var cv = e.target.closest('[data-card-view]');
     if(cv){ openCard(cv.getAttribute('data-card-view')); return; }
+
+    /* 论证网络：整篇文章的逻辑关联图 */
+    var gv = e.target.closest('[data-card-graph]');
+    if(gv){ openGraph(gv.getAttribute('data-card-graph')); return; }
 
     /* 问 DeepSeek：摊开模板（可选中复制）+ 跳转按钮 */
     var ask = e.target.closest('[data-card-ask]');

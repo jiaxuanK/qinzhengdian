@@ -2325,3 +2325,26 @@ body.zen .sidebar{display:none}
   .sm-legend,.eg-legend{grid-template-columns:1fr}
   .pace-wrap .pace-svg,.dc-wrap .dc-svg{max-height:none}
 }
+/* 文献论证网络：横向可拖的逻辑图 + 图下全文与连边清单 */
+.dialog.wide .dialog-body>.logic-graph{grid-column:1 / -1}
+.logic-graph>.card-note{margin:0 0 8px;line-height:1.5}
+.lg-scroll{overflow-x:auto;overflow-y:hidden;border:1px solid var(--line);border-radius:10px;
+  background:var(--soft);padding:6px}
+.lg-svg{display:block;max-width:none;font-family:inherit}
+.lg-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:9px 0 12px;font-size:10.5px;color:var(--ink3)}
+.lg-legend span{display:inline-flex;align-items:center;gap:5px}
+.lg-legend i{display:inline-block;width:9px;height:9px;border-radius:3px;flex:none}
+.lg-detail{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.lg-col{min-width:0;border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:var(--card)}
+.lg-col>b{display:block;font-size:11px;color:var(--ink);margin-bottom:7px}
+.lg-col ol,.lg-col ul{margin:0;padding-left:18px}
+.lg-col li{font-size:11px;line-height:1.5;color:var(--ink2);margin-bottom:7px}
+.lg-col li>b{font-size:11px;color:var(--ink)}
+.lg-col li p{margin:2px 0 0}
+.lg-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+.lg-ev{font-size:10px;color:var(--ink3);margin-left:6px}
+.lg-none{color:var(--ink3)}
+@media(max-width:640px){
+  .lg-detail{grid-template-columns:1fr}
+  .lg-scroll{padding:4px}
+}

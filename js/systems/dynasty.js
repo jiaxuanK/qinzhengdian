@@ -137,6 +137,9 @@
       if(CFG.SHALLOW_RESTORE_LOG) log(CFG.SHALLOW_RESTORE_LOG);
       toast(CFG.SHALLOW_RESTORE_TOAST || '朝议渐息');
     }
+    /* 御极纪：拨乱反正比普通跨级更值得记一章 */
+    if(QZD.emperorStory)
+      QZD.emperorStory.onEvent('restore', { level: d.level, worthy: worthy });
     return true;
   }
 
@@ -154,6 +157,11 @@
     }
     if(newIdx > oldIdx) fireDown(oldIdx, newIdx);   /* 下降：触发分级事件 */
     d.level = newId;
+    /* 御极纪：安定跨级才讲一段，不把每天的微小涨跌都变成弹窗 */
+    if(QZD.emperorStory && newId !== oldId)
+      QZD.emperorStory.onEvent('stability', {
+        before: before, after: d.stability, level: newId, delta: delta
+      });
     /* 11-19 首次跌入潜邸：帝阶归零（一次性，交给 regime 系统；未建时跳过） */
     if(newId === 'refuge' && oldIdx < levelIndex('refuge') && d.levelEnteredRefuge !== true){
       d.levelEnteredRefuge = true;

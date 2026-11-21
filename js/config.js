@@ -288,6 +288,12 @@ QZD.config = {
     RETIRE: {                /* 致仕遣散：按三维合计返还，给多余大臣一个去处 */
       JIN_PER_POINT: 1.2,    /* 每点三维 → 金钱 */
       SW_PER_POINT: 0.15     /* 每点三维 → 声望 */
+    },
+    /* 出身差异：科举名臣长于治世（理政 +20），皇子名臣长于统兵（用兵 +20、
+       文采 +10）。直接落进入朝三维，上阵加成自然分化，旧档不受影响。 */
+    ORIGIN_BONUS: {
+      exam:   { label: '科举', desc: '治世长才', gov: 20 },
+      prince: { label: '宗室', desc: '龙子统兵', war: 20, lit: 10 }
     }
   },
 
@@ -375,7 +381,12 @@ QZD.config = {
     CONCEPTION_CAP: 0.35,    /* 受孕率上限（原 0.65，再度下调，降低整体受孕） */
     RENXIN_PER_LEVEL: 0.005, /* 仁心每级 +0.5% 受孕率（原 0.8%，再降） */
     TI_BASE: 0.30,           /* 体质系数：体质百分比 × 此值为基础受孕率（原 0.75） */
-    PREGNANCY_MIN: 30        /* 孕期真实分钟，到期自动临盆 */
+    /* 孕期 10 小时（原 30 分钟）。分早/中/晚三段，探视可影响皇子先天。
+       同时把「动辄有孕」的节奏降下来：10h 内不会重复受孕，体感更稳。 */
+    PREGNANCY_MIN: 600,
+    VISIT_COST_QIN: 8,       /* 探视一次耗勤政值 */
+    VISIT_MAX: 6,            /* 单次妊娠最多探视 6 次 */
+    VISIT_ATTR_BONUS: 3,     /* 每次探视，皇子对应属性 +3（分三段各引导一个维度） */
   },
 
   /* ---------- 位份（册封） ---------- */
@@ -800,6 +811,15 @@ QZD.config = {
                                   设 false 回到纯随机 */
     MINISTER_COST_SW: 30,    /* 皇子入朝为臣耗声望 */
     RETIRE_REFUND_RATIO: 0.5,/* 致仕返还：累计培养投入的五成（向下取整） */
+    /* 出生后按真实时间成长：三段共 24h（6h 襁褓 / 8h 孩童 / 10h 少年），
+       成年之前不可培养、不可入朝；每段可教养一次，花金钱换一项先天。 */
+    GROWTH: [
+      { key: 'infant', name: '襁褓', min: 360, attr: 'lit' },
+      { key: 'child',  name: '孩童', min: 480, attr: 'gov' },
+      { key: 'youth',  name: '少年', min: 600, attr: 'war' }
+    ],
+    GROW_EDU_COST: [60, 100, 140], /* 襁褓 / 孩童 / 少年各一次的教养金钱 */
+    GROW_EDU_ATTR: 3,              /* 每次教养对应属性 +3 */
     GIVEN: [
       '承煜', '弘熙', '永瑞', '景昭', '祐安', '允恭',
       '载文', '思远', '明澈', '怀瑾', '今朝', '晏清'
@@ -858,15 +878,29 @@ QZD.config = {
      稀世之物与关键节点仍由玩家赠予 / 在场（玩家始终不可替代）。 */
   LIFE: {
     POINTS_PER_LEVEL: 10,     /* 每 10 点升 1 级 */
-    MAX_LEVEL: 10,
+    MAX_LEVEL: 20,            /* 才艺上限 20 级（留足成长空间，初始多为 0–2 级） */
     ONLINE_DAILY: 1,          /* 页面在线：每日首次登录 +1 */
-    FOCUS_BASE: 1,            /* 专注收工：每场 +1（累计 2） */
-    COMPANION_BONUS: 1,       /* 陪伴那位再 +1（累计 3） */
+    FOCUS_BASE: 1,            /* 专注收工：保底 +1（短场也有进益） */
+    FOCUS_MIN_PER_POINT: 25,  /* 练习点按专注时长：每满 25 分钟 +1 点（与番茄时长对齐） */
+    FOCUS_MAX_POINTS: 4,      /* 单场练习点上限，防止超长场一次灌满 */
+    COMPANION_BONUS: 1,       /* 陪伴那位再 +1（累计） */
     OFFLINE_WEEKLY: 1,        /* 整周没上线：周结算保底 +1 */
     RUSTINESS_MAX: 7,         /* 生疏上限：离线每日 +1 */
     RUSTINESS_CLEAR: 2,       /* 每场陪伴专注 −2 */
     GRANT_BONUS: 2,           /* 玩家代付心愿：额外练习点（你的在场比她自己买更有效） */
     GRANT_FAVOR: 3,           /* 玩家代付心愿：喜爱 +3 */
+    /* 成长：才艺不止一样，用她自己的私房钱学。每项才艺绑定一个属性，
+       练习到新等级时该属性 +1（封顶 120）—— 打扮变美、习舞强身、诗书增才情。
+       ★ 只动妃子三维，绝不碰专注经济与帝王四维。 */
+    LEARN_COST: 30,           /* 学一样新才艺：从她私房钱扣（非国库） */
+    LEARN_START_POINTS: 2,    /* 入门即送几点，学完马上有进度可见 */
+    SKILL_ATTR: {
+      '善琴': 'cai', '善棋': 'cai', '善书': 'cai', '善画': 'cai',
+      '能诗': 'cai', '精绣': 'cai', '通医': 'ti', '善舞': 'ti', '善扮': 'yan'
+    },
+    SKILL_NAMES: ['善琴', '善棋', '善书', '善画', '善舞', '能诗', '通医', '精绣', '善扮'],
+    ATTR_PER_LEVEL: 2,        /* 每升 1 级才艺，绑定属性 +2（20级满 = +40，成长明显） */
+    ATTR_MAX: 200,            /* 后天成长上限 200（高于选秀初始 120，培养可超越先天） */
     ITEMS: [
       { id: 'qinxian', trait: '善琴', name: '琴弦',   cost: 12, practice: 2 },
       { id: 'qizi',    trait: '善棋', name: '棋子',   cost: 10, practice: 2 },
@@ -875,7 +909,10 @@ QZD.config = {
       { id: 'wuxie',   trait: '善舞', name: '舞鞋',   cost: 12, practice: 2 },
       { id: 'jianzhi', trait: '能诗', name: '笺纸',   cost: 8,  practice: 2 },
       { id: 'yaocai',  trait: '通医', name: '药材',   cost: 12, practice: 2 },
-      { id: 'sixian',  trait: '精绣', name: '丝线',   cost: 10, practice: 2 }
+      { id: 'sixian',  trait: '精绣', name: '丝线',   cost: 10, practice: 2 },
+      { id: 'zhifen',  trait: '善扮', name: '脂粉',   cost: 12, practice: 2 },
+      { id: 'xianggao',trait: '善扮', name: '香膏',   cost: 16, practice: 3 },
+      { id: 'yishan',  trait: '善扮', name: '新衣衫', cost: 20, practice: 3 }
     ]
   },
 
@@ -886,6 +923,7 @@ QZD.config = {
      when 支持的因子（全部读现成数据，不新增字段）：
        trait / notTrait / personality / origin / hometown
        hobbyLevelMin / pointsMin / purchasesMin / lastPurchaseId
+       skillLevel:{才艺:级} / skillMin+skill / attrMin:{yan|ti|cai:值} / attrMax:{...}
        purseMin / purseMax / hasWish
        favorMin / doteMin / rankMin / rankMax / pregnant / linesOwnedMin
        streakMin / gapDaysMin / gapDaysMax / returning / focusDone / hour
@@ -1281,8 +1319,277 @@ QZD.config = {
           reward: { address: '阿隐', phrase: '陛下别问。', pose: '斟茶前先把灯挪远半寸' },
           text: '她终于没再遮掩，却也没说破，只把那盏灯又挪远了半寸。「陛下不问，臣妾便当不知道您瞧见了。」声气很轻。案上茶还温着，两个人就这么坐到天将明。窗纱一点点白起来，灯芯积了长长一截，谁都没去剪。' }
       ]
+    },
+    /* 成长线：用新的数值条件筛选——才艺等级 + 属性门槛。
+       练什么长什么，练到一定程度才遇得上这些际遇，进度感能被剧情接住。 */
+    {
+      id: 'dress_mirror', name: '对镜', kind: 'side', maxOwners: 1,
+      intro: '她开始日日对着镜子多停一会儿',
+      nodes: [
+        { id: 'n1', claim: true, when: { skillLevel: { '善扮': 2 } },
+          reason: '善扮练到二境，她自己先瞧出了变化',
+          text: '她换新膏子已经有一段日子。这夜陛下进来，见她对着铜镜正把一缕发别到耳后，手上动作停了，像是在镜里认自己。听见脚步，她才回神，指尖还搭在鬓边，笑意里带一点心虚：「臣妾只是试试这新膏子。」烛火在镜面上跳了一下，照得她颊色比从前润些。案头那盒香膏敞着盖，还没来得及合。' },
+        { id: 'n2', ownerOnly: true, when: { attrMin: { yan: 100 } },
+          reason: '容貌精进到十分，她肯让你看她梳妆了',
+          text: '她索性不避了。陛下坐在一旁，看她把篦子一点点通开发丝，稳稳绾了个髻，又拿指尖在鬓角抹了半下。镜里那张脸比初入宫时亮了些，她自己也知道，偏要装作不知：「陛下看什么呢，臣妾脸上沾了粉？」窗纱透进薄光，梳妆盒里一排小瓶罐挨得整齐，最边上那盒是新添的。' },
+        { id: 'n3', ownerOnly: true, when: { attrMin: { yan: 120 }, favorMin: 40 },
+          reason: '镜中人已非当日模样，她留了一句给你',
+          reward: { address: '妆卿', phrase: '臣妾今日，是为您梳的。',
+                    pose: '把镜匣转向你，指尖在鬓边停一停再放下' },
+          text: '她把镜匣转过来，让你也照见那张脸，自己却垂了眼。「臣妾今日，是为您梳的。」说完耳根微红，忙低头去收那排小瓶罐，手指却把盖子扣错了一侧。窗外月色正好，镜里两个人的影挨在一处，谁也没先移开。案上烛芯长了一截，也没人去剪。' }
+      ]
+    },
+    /* 事件线：由 onEvent 在确切事件发生时强推，不进每日随机池。
+       怀孕 30 分钟真实时间，靠 random 判定几乎必错过——事件驱动才能接住。 */
+    {
+      id: 'event_conceive', name: '有孕', kind: 'event', event: 'conceive', maxOwners: 99,
+      intro: '她察觉身子有了变化',
+      nodes: [
+        { id: 'n1', claim: true, when: { event: 'conceive' },
+          reason: '侍寝之后，她先察觉了',
+          text: '她这几日总在掩口，晨起对着铜镜按一按腹部，又若无其事放下。陛下问起，她把帕子往袖里收了收，眼睫垂着，声气比平日轻：「臣妾也说不准……只是这几日，总是犯困。」窗纱透进薄光，案上那盏茶凉了也没喝。她指尖在袖口绞了一下，终究没把那句话说完。' }
+      ]
+    },
+    {
+      id: 'event_birth', name: '诞麟', kind: 'event', event: 'birth', maxOwners: 99,
+      intro: '皇子落地那一刻',
+      nodes: [
+        { id: 'n1', claim: true, when: { event: 'birth' },
+          reason: '临盆之后，她第一眼先看向你',
+          reward: { address: '麟卿', phrase: '像你。', pose: '把襁褓稍稍托高，抬眼看你一下' },
+          text: '内间的声音歇了，宫人抱着襁褓出来，她躺在榻上，鬓发被汗浸着贴在颊边。见陛下进来，她没先问是男是女，只把手往襁褓上虚虚搭了一下，眼睫还湿着：「像你。」说完便阖了眼，手指却仍搭在那小小衣襟上。窗外的天光刚亮，榻边那盏灯还亮着，芯子积了长长一截。' }
+      ]
+    },
+    {
+      id: 'event_promote', name: '晋封', kind: 'event', event: 'promote', maxOwners: 99,
+      intro: '册封诏下那一夜',
+      nodes: [
+        { id: 'n1', claim: true, when: { event: 'promote' },
+          reason: '位分晋了，她先把旧牌子收了起来',
+          reward: { address: '卿卿', phrase: '臣妾还是从前那个。', pose: '把旧腰牌收进匣底，再抬眼时站得比从前直' },
+          text: '册封的诏书还摊在案上，她却先把挂了许久的旧腰牌摘下来，用帕子擦了擦，收进匣底。「从今儿起，是新的了。」她说得很轻,手指在匣盖上停了一停。陛下唤她新位分，她应了,应完却笑：「臣妾还是从前那个。」案上烛火映着诏书上的朱印，红得沉。窗外更漏一声，她站得比从前直了些。' }
+      ]
+    },
+    {
+      id: 'many_arts', name: '诸艺', kind: 'side', maxOwners: 1,
+      intro: '她不再只守着入宫时那一门旧艺',
+      nodes: [
+        { id: 'n1', claim: true, when: { skillLevel: { '善琴': 1, '善书': 1 } },
+          reason: '琴与书都到了一境，她自己铺开了两张案',
+          text: '案上一边摊着琴谱，一边压着半幅字。她原本只弹琴，近来不知何时也临起帖来，两样轮着来，倒也不乱。陛下翻那幅字，笔锋还嫩，却写得认真。「臣妾怕只一样，日子久了会闷。」她把琴弦拨了一下，声音很轻。窗外的风翻动谱页，案角那方镇纸压着墨迹未干的一角。' },
+        { id: 'n2', ownerOnly: true, when: { skillLevel: { '善琴': 3, '善书': 3 } },
+          reason: '两样都精了，她弹一段、写一行给你看',
+          text: '她先抚了一段，指法比从前稳了，收尾时抬眼看你一眼，又低头铺纸写了行小字，把两样搁在一处端详。「您说，是先有琴声还是先有字？」陛下没答，她自己先笑了，把字卷塞进你手里。烛火在弦上和墨上各映一点光，两样并排搁着，竟也相称。' },
+        { id: 'n3', ownerOnly: true, when: { skillMin: 5 },
+          reason: '主修已到五境，她说这一手是练给你的',
+          reward: { address: '艺卿', phrase: '这一手，臣妾练了许多遍。',
+                    pose: '把字卷与琴谱并排推到你面前，指尖在弦上轻拨一下' },
+          text: '夜深她还在练，见陛下来了也不停，只把最后一遍收完才起身。「这一手，臣妾练了许多遍。」她说得很淡，眼却亮。案上两样物件都旧了些，琴弦换过，字纸积了厚厚一叠。窗纱外月色淡淡，她把字卷与琴谱并排推过来，指尖在弦上轻拨一下，余音散在殿里。' }
+      ]
+    },
+    /* 血脉专属线：不写身份、不打斗，只让不同血脉在相同的夜里留下不同痕迹。
+       凡俗旧档进不来；veil:true 表示须等那条线自己藏够章数才露。 */
+    {
+      id: 'blood_old_scripture', name: '旧祭文', kind: 'side', maxOwners: 1,
+      intro: '那几个字，不像今人写得出的',
+      nodes: [
+        { id: 'n1', claim: true, when: { blood:['shen','xue'], veil:true },
+          reason: '藏够了章数，纸上那点古怪才被看见',
+          text: '她临帖时你站在身后，忽然觉得那一行不对。笔画是今人的，气息却像从旧祭文里拓下来的，冷得干净。她自己也在看，搁了笔，说昨夜梦里有人念了半句，醒来只剩这几个字。砚里的墨寒天也不太凝，她拿指背碰了碰，笑说许是水太凉了。' },
+        { id: 'n2', ownerOnly: true, when: { favorMin:30, hour:'night' },
+          reason: '她把那半句留到了你面前',
+          text: '夜里她又铺开那张纸，却没再写，只把前半句指给你看。「臣妾试着续过，续不上。」灯芯爆了一下，她的影子在纸上晃了晃，那半句倒像更旧了。你问她怕不怕，她摇头，把纸卷起来收进匣底：「怕的是忘了，不是写着它。」' },
+        { id: 'n3', ownerOnly: true, when: { favorMin:55 },
+          reason: '她终于把那半阕念完，声音轻得像雪落',
+          reward: { address: '砚卿', phrase: '这几个字，不是我写的。',
+                    pose: '把纸卷推到你手边，指尖在砚沿轻轻一点' },
+          text: '她把纸卷摊平，从头念了一遍，末了才抬眼：「这几个字，不是臣妾写的。」说完也没有惊慌，只把手搁在砚边，像在等一句信或不信。窗外的雪压着竹枝，一折一声。你把纸卷收进袖里，她看着，没拦，只说了一句「陛下收着罢」。' }
+      ]
+    },
+    {
+      id: 'blood_tide_string', name: '弦上潮', kind: 'side', maxOwners: 1,
+      intro: '她收尾时，总多出一点没教过的余音',
+      nodes: [
+        { id: 'n1', claim: true, when: { blood:['hu','jiao'], veil:true },
+          reason: '藏够了章数，那一点余音才不再躲',
+          text: '她弹完一段照例收指，弦上却还拖着一道尾音，像水面被什么划过。你问她这首改过没有，她想了想，说没有，是自己听岔了。案上那幅画的水痕一夜未干，她拿帕子按了按，反而更湿了一小块，索性把画纸翻过去，耳根有点红。' },
+        { id: 'n2', ownerOnly: true, when: { favorMin:30, skillMin:2 },
+          reason: '练得更熟，那道尾音反倒更清楚了',
+          text: '第二回听，你特意等最后一个音落尽。它果然又多绕了一圈，像潮水退回时带走了什么。她自己也听见了，手指按在弦上不动，半晌才说：「臣妾小时候在水边住过。」这话她从前没提过，说完就把琴推开，去替你添茶，壶盖却扣歪了。' },
+        { id: 'n3', ownerOnly: true, when: { favorMin:55 },
+          reason: '她不再把那点潮声藏起来',
+          reward: { address: '潮卿', phrase: '您听见了，是不是？',
+                    pose: '把琴弦轻拨一下，等余音散尽才抬眼看你' },
+          text: '这一夜她弹完没有急着收手，等那道余音自己散了。殿里静得能听见更漏。「您听见了，是不是？」她问得很轻，眼睛却没躲。你点头，她才笑了，把琴谱翻到空白那页，写下两个水字，又在旁边画了一道歪歪的潮线。窗纱外月色落进来，像水。' }
+      ]
+    },
+    {
+      id: 'blood_four_seasons', name: '四时绣', kind: 'side', maxOwners: 1,
+      intro: '她绣的花，总比节气早一步',
+      nodes: [
+        { id: 'n1', claim: true, when: { blood:['cao','shan'], veil:true },
+          reason: '藏够了章数，那点不合时令才被认出来',
+          text: '她绷架上绣的是秋菊，可你分明记得前日还是春桃。问她何时换的稿，她低头看了看，自己也怔住：「臣妾……许是记错了节令。」窗外风过檐角，像从山里来的，带着一点松针气。她把针别回鬓边，说是宫里太静，手指自己就换了花样。' },
+        { id: 'n2', ownerOnly: true, when: { favorMin:30, purseMin:40 },
+          reason: '她自己掏钱添了新线，颜色却更怪了',
+          text: '她拿私房钱买了几缕新线，回来却绣出一段不属于这个月的颜色。你看了一眼，说这像是深山里的绿。她手一顿，笑说陛下连山里都知道。说完把线团收进盒里，盒盖上还沾着一片不知从哪儿带来的小叶，她没注意，你替她拈掉了。' },
+        { id: 'n3', ownerOnly: true, when: { favorMin:55 },
+          reason: '她说这花样原是随你走的',
+          reward: { address: '绣卿', phrase: '您走到哪儿，我便绣到哪儿。',
+                    pose: '把绷架转向你，指尖在那片新叶上停一停' },
+          text: '她把绷架转过来，上面已是四样花并在一处，春桃、夏荷、秋菊、冬梅，针脚各不相同。「臣妾原先只会一样，后来想，您走到哪儿，我便绣到哪儿。」她说完低头继续走针，耳尖却慢慢红了。窗外的风又过一次，绷架上的线轻轻晃，像真有四季在里面。' }
+      ]
+    },
+    {
+      id: 'blood_mirror_divination', name: '镜中卦', kind: 'side', maxOwners: 1,
+      intro: '她摆的残局，原来另有用意',
+      nodes: [
+        { id: 'n1', claim: true, when: { blood:['wu','jing'], veil:true },
+          reason: '藏够了章数，镜里那重影才被你看见',
+          text: '案上摆着一盘残局，她自己同自己下。你走过时，镜里竟比人多出一重影，低头看棋盘，又只剩她一个。她把一枚子推回原处，说这局不算，方才那步走错了。灯花落在棋枰边，她用指尖拂掉，动作慢得像在等你看清。' },
+        { id: 'n2', ownerOnly: true, when: { favorMin:30, doteMin:30 },
+          reason: '她肯让你替她落一子',
+          text: '第二回她把棋子递到你手里，说陛下落罢，臣妾这回不改。你随手放了一子，她盯着看了很久，忽然笑：「原来是这样。」你问哪样，她不说，只把棋盘上的子全收进盒里，连镜里的影子也像跟着收了回去。她替你斟茶，袖口扫过镜面，镜里只剩一个她。' },
+        { id: 'n3', ownerOnly: true, when: { favorMin:55 },
+          reason: '她说镜里那一个，早先就认得你',
+          reward: { address: '卦卿', phrase: '臣妾早算着您会来。',
+                    pose: '把棋盒推到你面前，抬眼时先看了镜一眼' },
+          text: '她把棋盒合上，推到你手边。「臣妾早算着您会来。」说完自己先笑了，像是说了一句玩笑。可她抬眼时先看了镜子，镜里那重影也在笑，慢了半拍。殿里灯很稳，没有风。你没有追问，她也没有再解释，只把茶盏往你手边挪了挪。' }
+      ]
+    },
+    {
+      id: 'blood_sleeve_wind', name: '袖底风', kind: 'side', maxOwners: 1,
+      intro: '她的广袖垂着，却总有风',
+      nodes: [
+        { id: 'n1', claim: true, when: { blood:['yizu','yu','long'], veil:true },
+          reason: '藏够了章数，那阵不合殿内的风才被认出',
+          text: '殿里窗扇都关着，她一抬腕，檐外的雨却忽然密了一阵。广袖垂着不动，袖底却像有风。她跳的那段你没见过，不是宫里教的路数，落脚轻得几乎没声。收势后她行礼，说这是家乡的小调，随手把袖口抚平，像把那阵风也按了回去。' },
+        { id: 'n2', ownerOnly: true, when: { favorMin:30, hour:'night' },
+          reason: '夜里她又跳了一次，这一回没有收',
+          text: '夜里她独自在廊下比划，见你来了也不停，只把一个转身做完。广袖带起一片落叶，绕着灯转了一圈才落地。她说从前族里人都在火边跳，如今只剩她一个。你说这里也算一处火，她站住，过了会儿才把袖子放下：「那臣妾就在这里跳罢。」' },
+        { id: 'n3', ownerOnly: true, when: { favorMin:55 },
+          reason: '她把那阵风留给你',
+          reward: { address: '袖卿', phrase: '这阵风，臣妾只给您看。',
+                    pose: '抬腕让广袖垂下，等风过后再抬眼' },
+          text: '她在你面前站定，没有乐，也没有旁人。只一抬腕，袖底那阵风就起来了，檐外的雨跟着密了又疏。收势时她没有行礼，只把广袖垂下，看着你：「这阵风，臣妾只给您看。」灯影在袖口晃了一下，廊下很静，雨声却像很远。' }
+      ]
+    },
+    /* 其它空白：出身与国势也是故事，不只才艺与血脉。 */
+    {
+      id: 'origin_humble_gate', name: '旧门第', kind: 'side', maxOwners: 1,
+      intro: '她进宫后，仍改不了从前的习惯',
+      nodes: [
+        { id: 'n1', claim: true, when: { origin:['商贾之家','民间采选','乐坊出身'] },
+          reason: '不是书香门第，却另有一身本事',
+          text: '她入宫后仍习惯把银钱按枚数清楚，算盘拨得比内侍还快。你瞧见她把赏赐的小锭分成几堆，一堆留着，一串串起来，说是给娘家捎信用。问她怎么不置办首饰，她笑说首饰戴给旁人看，铜钱能救命。说完自己也有点不好意思，把算盘往袖里藏。' },
+        { id: 'n2', ownerOnly: true, when: { favorMin:30, purseMin:60 },
+          reason: '她攒下钱，却先替宫人补了亏空',
+          text: '她攒够了钱，第一件事不是添衣裳，而是替一个犯了错的小宫人补上亏空。你问她图什么，她说从前她也这样被人帮过。「那时臣妾什么都没有，有人替我垫了一回，才熬到今日。」灯下她把账册翻给你看，最后一页画了个歪歪的圈，说这样就算清了。' },
+        { id: 'n3', ownerOnly: true, when: { favorMin:55 },
+          reason: '她终于肯让你看那封没寄出的信',
+          reward: { address: '算卿', phrase: '臣妾不是不懂规矩，是懂得太早。',
+                    pose: '把那封信折好收进袖里，先把算盘推到你面前' },
+          text: '她从匣底取出一封没寄出的信，纸都磨毛了。「臣妾不是不懂规矩，是懂得太早。」她念给你听，无非是家里平安、钱够用、别惦记。念完把信折好，先推过来那把旧算盘：「这个给您拨着玩罢。」烛火照着算珠，一颗一颗都亮。' }
+      ]
+    },
+    {
+      id: 'crisis_lamp_keep', name: '乱世灯', kind: 'side', maxOwners: 1,
+      intro: '外头不太平，她反倒比从前安静',
+      nodes: [
+        { id: 'n1', claim: true, when: { stabilityMax:45, dynastyLevel:['omen','border','mourn','refuge'] },
+          reason: '国势一坏，她先把灯挑亮了些',
+          text: '边报送到案头那几日，她没问一句战事，只每晚把你的灯挑亮半分，又把茶换得更温。你问她怎么不问，她说问了也替不上忙，倒不如让你少费些眼。窗外风紧，檐铃响得乱，她坐在灯影里缝一件旧袍，针脚比平日更密。' },
+        { id: 'n2', ownerOnly: true, when: { focusDone:true, stabilityMax:45 },
+          reason: '你熬夜料理国事，她把旧袍改成了披风',
+          text: '你批完折子抬头，她正把那件旧袍改出个披风来。「夜里冷，您出去看舆图时用得上。」她说得很轻，像怕惊动什么。你把披风披上，肩头还带着她手心的温度。案上边报压着镇纸，她看了一眼，没翻，只把灯又挑亮了一点。' },
+        { id: 'n3', ownerOnly: true, when: { favorMin:55, stabilityMin:60 },
+          reason: '风波过去，她才说那几夜自己也没睡',
+          reward: { address: '灯卿', phrase: '灯亮着，我就知道您还在。',
+                    pose: '把灯芯剪短一截，再替你拢好披风' },
+          text: '局势回稳那夜，她终于肯说那几日自己也没怎么睡。「灯亮着，我就知道您还在。」她拿剪刀把灯芯剪短一截，火光反而稳了。你替她拢好披风，她没有躲，只把额头在你肩上靠了一瞬，很快就抬起来，像什么都没发生过。窗外风已经小了。' }
+      ]
     }
   ],
+
+  /* ---------- 御极纪：帝王自己的事件剧情 ----------
+     与妃子线分开：登录 / 奏折办结 / 帝阶晋升 / 7 天传代时强推。
+     每条线【每一代只演一次】，传代后重新可演；条件直接读帝王四维与本周勤政。
+     when 支持：dayIndexMin/Max、generationMin、streakMin、rankMin、memorialsMin、
+     attrMin:{ningShen|yuLue|mingDe|renXin}、dynastyLevel。
+     reward.resources 是「属性被用上」的落点，都是每代一次的小额正反馈，不碰 66h 主经济。 */
+  EMPEROR_STORY: {
+    ENABLED: true,
+    LINES: [
+      {
+        id: 'emp_login_open', event: 'login', name: '新元第一日',
+        when: { dayIndexMax: 2 },
+        reason: '改元之后，第一道晨光落在御案上',
+        text: '新代的头一日，殿里比往常安静。你把昨夜留下的折子摞齐，纸角还压着上一代的旧印。内侍进来添炭，见你已坐直了，没敢多问。窗纱一点一点白起来，像这一朝才刚摊开。' },
+      {
+        id: 'emp_login_streak', event: 'login', name: '连朝不倦',
+        when: { dayIndexMin: 3, streakMin: 3, attrMin: { ningShen: 1 } },
+        reason: '凝神已入门，连日早起不再靠硬撑',
+        reward: { resources: { qinZheng: 5 }, log: '凝神有得，早起反而省了几分心力。' },
+        text: '你比内侍更早到案前。过去要按着太阳穴缓一会儿才能看字，如今一口气读完三本折子，眼底仍是清的。你提笔在页脚点了一朱，忽然明白那点沉住气的东西，原是可以练出来的。殿外天光正好。' },
+      {
+        id: 'emp_login_ren', event: 'login', name: '先问仓储',
+        when: { dayIndexMin: 5, attrMin: { renXin: 2 } },
+        reason: '仁心见诸日常，先问的是人不是账',
+        reward: { resources: { jinQian: 30 }, log: '仁心及物，内库按旧例拨下抚恤。' },
+        text: '签到之后你没有先翻奏章，倒问了一句各处炭米够不够。户部回得迟了些，你就着窗光把那本旧账又看了一遍，末了批了三十金，说先给最冷的那几处。内侍记下这笔时，笔尖顿了顿——这样的吩咐，这一代还是头回。' },
+      {
+        id: 'emp_memorial_yulue', event: 'memorial', name: '一笔定边',
+        when: { memorialsMin: 1, attrMin: { yuLue: 1 } },
+        reason: '御略在胸，边策落笔比从前果断',
+        reward: { resources: { guoJin: 3 }, log: '边策一笔而定，国力稍振。' },
+        text: '那份边策在案上压了两日，你今夜终于落了朱。不是狠，是知道哪一处该守、哪一处可让。写完把笔搁回架上，你对着舆图看了片刻，烛火在关隘上晃，像那里真有人替你守着。' },
+      {
+        id: 'emp_memorial_mingde', event: 'memorial', name: '留中不发',
+        when: { memorialsMin: 3, attrMin: { mingDe: 2 } },
+        reason: '明德渐厚，懂得有些折子不必立刻批复',
+        reward: { resources: { shengWang: 3 }, log: '处事留余地，朝议称稳。' },
+        text: '弹劾的折子写得刺耳，你读完却没有动怒，只把它留中不发。第二日那位被参的官员照旧办事，反倒比从前谨慎。你想起明德二字原不是宽纵，是让人知道自己被看见——殿外鸦雀无声，朱笔却在砚边搁得很稳。' },
+      {
+        id: 'emp_memorial_ning', event: 'memorial', name: '夜批不倦',
+        when: { memorialsMin: 5, attrMin: { ningShen: 3 } },
+        reason: '凝神三境，夜深仍能一字不漏',
+        reward: { resources: { qinZheng: 8 }, log: '夜批不倦，次日临朝精神反足。' },
+        text: '更漏过了三刻，案上的折子还剩最后一本。你本可以搁到明日，却把灯芯挑亮，一字一字看完。收笔时窗外已经发白，你竟不觉得困，只觉得这一夜的力气用得其所。内侍端进热水，你接过来，指尖还是稳的。' },
+      {
+        id: 'emp_focus_week', event: 'focus', name: '一周六十时',
+        when: { focusWeekMinMin: 3600, attrMin: { ningShen: 2 } },
+        reason: '周内专注近六十小时，凝神二境方撑得住',
+        reward: { resources: { guoJin: 5 }, log: '周课将满，国库因久治稍盈。' },
+        text: '这一周的时辰堆在一起，竟将近六十个钟头。换作从前，人早该散了；如今你只是把砚台里的水添满，继续写。窗外的天亮了又暗，案头的册页越摞越薄——不是事少了，是你更知道从哪一本先下手。' },
+      {
+        id: 'emp_focus_first', event: 'focus', name: '四百分钟',
+        when: { focusMinMin: 400 },
+        reason: '本代专注满四百分钟，恰是亲政之阶',
+        reward: { resources: { qinZheng: 5 }, log: '专注初成，勤政值稍有余裕。' },
+        text: '你抬头时，案上的计时已经过了四百分钟。这个数字和帝阶册上的门槛一样，像一道无声的界：从此不再只是嗣位，而是真的亲政。你活动了一下手腕，把下一本折子翻开，纸页声比先前稳些。' },
+      {
+        id: 'emp_stability_fall', event: 'stability', name: '风雨入殿',
+        when: { stabilityMax: 45, dynastyLevel: ['omen','border','mourn','refuge'] },
+        reason: '安定跌破灾异线，殿外的风声终于进来了',
+        text: '奏报一封接一封，字迹都写着同一种急。你把舆图摊开，发现原先标着太平的几处，如今都换了颜色。殿里炭火烧得旺，却有人悄悄把窗掩紧了些——不是怕冷，是怕听见外头的动静。' },
+      {
+        id: 'emp_stability_restore', event: 'restore', name: '复国一纸',
+        when: { attrMin: { mingDe: 1 } },
+        reason: '拨乱反正，明德之君懂得留人余地',
+        reward: { resources: { shengWang: 4 }, log: '拨乱反正，朝野归心。' },
+        text: '风波过去，你没有追究那些摇摆过的人，只把旧诏重写了一遍，字里留了退路。第二日朝会，平日最会观望的几位也站得比先前直。你明白安定不是压出来的，是让人相信回来仍有位置。' },
+      {
+        id: 'emp_rank_up', event: 'rank', name: '阶前回头',
+        when: { rankMin: 3 },
+        reason: '帝阶再进，回头才看见来路',
+        text: '新阶的册文送入内库，你却先翻了本代头一天的起居注。那时字写得急，账也算得粗，连一句像样的评语都没有。如今再看，倒觉得那点笨拙比什么庙号都真。你把册文合上，吩咐照旧办事，不必铺张。' },
+      {
+        id: 'emp_generation', event: 'generation', name: '付诸史册',
+        when: {},
+        reason: '七日一代，旧事归档，新元又起',
+        text: '年表添了新的一行，上一代的功过都被收进去，连最狼狈那几日也写得端端正正。你站在殿前看天，风从旧的一年吹过来，又吹向新的一周。这一代能攒下什么，此刻还不知道，但纸已经铺好了。' }
+    ]
+  },
 
   /* ---------- S2 情感浓度四档 ----------
      合成公式在 formulas.intimacyOf()：喜爱 / 宠爱 / 里程碑 / 重逢。

@@ -37,11 +37,14 @@
       if(!ev) return;
       if(ev.type === 'finished'){
         /* L2：专注收工给妃子练习点（含陪伴加成） */
-        if(QZD.life) QZD.life.onFocusEnd(ev.companionId);
+        if(QZD.life) QZD.life.onFocusEnd(ev.companionId, ev.minutes);
         /* F1：专注收工回补国势安定度（危机时这是「回朝平乱」的主要路径） */
         if(QZD.dynasty) QZD.dynasty.onFocusEnd(ev.minutes);
         /* S1：收工也是剧情情境（内部按每日一次 + focusQuiet 自行约束） */
         if(QZD.story) QZD.story.onFocusEnd();
+        /* 御极纪：本代专注分钟 / 周专注达到门槛时，讲帝王自己的长进 */
+        if(QZD.emperorStory)
+          QZD.emperorStory.onEvent('focus', { minutes: ev.minutes });
         var cnt = QZD.study ? QZD.study.bumpSession() : 0;
         var mins = (Math.round((ev.minutes || 0) * 10) / 10);
         var text = ev.mode === 'open'
@@ -54,7 +57,7 @@
           QZD.ui.toast('已连续专注 ' + cnt + ' 场 · 起身活动 5 分钟');
         }
       }else if(ev.type === 'abandoned'){
-        if(QZD.life) QZD.life.onFocusEnd(ev.companionId);
+        if(QZD.life) QZD.life.onFocusEnd(ev.companionId, ev.minutes);
         if(QZD.dynasty) QZD.dynasty.onFocusEnd(ev.minutes);
         if(QZD.story) QZD.story.onFocusEnd();
         QZD.ui.toast('专注中止 · 按五成结算' + (ev.auto ? '（暂停超时）' : ''));
@@ -66,6 +69,9 @@
         if(ev.finishedMemorial && ev.memorial){
           /* F1：办结奏折回补国势安定度 */
           if(QZD.dynasty) QZD.dynasty.onMemorialDone();
+          /* 御极纪：奏折办结是帝王线入口（专注中不弹，由 announce 的 quiet 门控） */
+          if(QZD.emperorStory)
+            QZD.emperorStory.onEvent('memorial', { memorialId: ev.memorial.id });
           QZD.ui.toast('奏折「' + ev.memorial.title + '」已办结');
         }
       }else if(ev.type === 'birth'){

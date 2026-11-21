@@ -30,7 +30,21 @@
     if(typeof l.wish !== 'string') l.wish = '';
     if(typeof l.rustiness !== 'number') l.rustiness = 0;
     if(typeof c.purse !== 'number') c.purse = 0;
+
+    /* 成长：多项才艺，每项独立 points/level。旧档只有 hobby+points+level，
+       一次性迁到 skills[hobby]，之后所有练习都走 skills，主 hobby 仍保留兼容旧显示。 */
+    if(!l.skills || typeof l.skills !== 'object' || Array.isArray(l.skills)) l.skills = {};
+    if(!l.skills[l.hobby]){
+      l.skills[l.hobby] = { points: l.points || 0, level: l.level || 0 };
+    }
+    /* 主修：专注/陪伴只练这一项，练什么长什么（默认主 hobby）。
+       旧档无此字段时补上，不影响既有进度。 */
+    if(typeof l.primary !== 'string' || !l.skills[l.primary]) l.primary = l.hobby;
     return l;
+  }
+  function levelOfPoints(n){
+    return Math.max(0, Math.min(CFG.MAX_LEVEL || 10,
+      Math.floor((n || 0) / (CFG.POINTS_PER_LEVEL || 10))));
   }
   function today(){ return QZD.stateIO.todayStr(); }
   function list(){
@@ -45,18 +59,49 @@
     if(!isFinite(x) || !isFinite(y)) return 0;
     return Math.max(0, Math.round((y - x) / 86400000));
   }
-  function itemFor(c){
-    var arr = CFG.ITEMS || [], i;
-    for(i = 0; i < arr.length; i++) if(arr[i].trait === L(c).hobby) return arr[i];
-    return null;
+  function itemFor(c, skillName){
+    var arr = CFG.ITEMS || [], i, best = null;
+    var name = skillName || L(c).hobby;
+    /* 同一才艺可能有多档小物（如善扮：脂粉/香膏/新衣衫）。
+       选她私房钱买得起、且练习收益最高的那件；都买不起就返回最便宜的记心愿。 */
+    for(i = 0; i < arr.length; i++){
+      if(arr[i].trait !== name) continue;
+      if((c.purse || 0) + 1e-9 >= arr[i].cost &&
+         (!best || (arr[i].practice || 0) > (best.practice || 0))) best = arr[i];
+      if(!best && arr[i].cost != null) best = arr[i];   /* 兜底：最便宜那件用于心愿 */
+    }
+    return best;
   }
-  function addPoints(c, n){
+  function addPoints(c, n, skillName){
     var l = L(c);
+    var name = skillName || l.primary || l.hobby;
     n = (Number(n) || 0) + (QZD.bloodTalent ? QZD.bloodTalent.hobbyPointBonus(c) : 0);
+    if(n <= 0) return;
+    /* 总点（兼容旧字段） */
     l.points += n;
     l.weekPoints += n;
-    l.level = Math.max(0, Math.min(CFG.MAX_LEVEL || 10,
-      Math.floor(l.points / (CFG.POINTS_PER_LEVEL || 10))));
+    /* 该项才艺点 + 升级 → 绑定属性 +1 */
+    var sk = l.skills[name] || (l.skills[name] = { points: 0, level: 0 });
+    sk.points += n;
+    var newLevel = levelOfPoints(sk.points);
+    if(newLevel > sk.level){
+      sk.level = newLevel;
+      var attr = (CFG.SKILL_ATTR || {})[name];
+      if(attr && c[attr] != null){
+        var cap = CFG.ATTR_MAX || 120;
+        var before = c[attr];
+        c[attr] = Math.min(cap, (c[attr] || 0) + (CFG.ATTR_PER_LEVEL || 1));
+        if(c[attr] !== before){
+          QZD.stateIO.pushLog('life', '「' + c.name + '」' + name + ' 精进至 ' + newLevel +
+            ' 级 · ' + attrName(attr) + ' ' + before + '→' + c[attr]);
+        }
+      }
+    }
+    /* 主 hobby 的 level 仍同步，兼容旧显示 */
+    if(name === l.hobby) l.level = sk.level;
+  }
+  function attrName(k){
+    return ({ yan:'容貌', ti:'体质', cai:'才情' })[k] || k;
   }
 
   /* 周结算：离线保底 + 她自己买东西（只在换周时跑一次） */
@@ -91,10 +136,17 @@
     return { ok: true, week: wk, n: cs.length, bought: bought };
   }
 
-  /* 专注收工：所有妃子 +1，陪伴那位再 +1 并消解生疏 */
-  function onFocusEnd(companionId){
-    var cs = list();
-    cs.forEach(function(c){ addPoints(c, CFG.FOCUS_BASE || 1); });
+  /* 专注收工：按本场时长给练习点（每满 25 分钟 +1，封顶 4），保底 1。
+     陪伴那位再 +1 并消解生疏。★ 时长来自 pomodoro 的 ev.minutes，
+     与专注经济同源但不改任何产出——只喂养妃子成长。 */
+  function focusPoints(minutes){
+    var per = CFG.FOCUS_MIN_PER_POINT || 25, cap = CFG.FOCUS_MAX_POINTS || 4;
+    var byTime = Math.floor((Number(minutes) || 0) / per);
+    return Math.max(CFG.FOCUS_BASE || 1, Math.min(cap, byTime));
+  }
+  function onFocusEnd(companionId, minutes){
+    var cs = list(), pts = focusPoints(minutes);
+    cs.forEach(function(c){ addPoints(c, pts); });
     if(companionId){
       for(var i = 0; i < cs.length; i++){
         if(cs[i].id !== companionId) continue;
@@ -105,7 +157,7 @@
       }
     }
     QZD.stateIO.save();
-    return { ok: true, n: cs.length, companionId: companionId || null };
+    return { ok: true, n: cs.length, points: pts, companionId: companionId || null };
   }
 
   /* 回归小结：挑一位有痕迹的妃子，说一句具体的话 */
@@ -124,6 +176,41 @@
     if(last) txt += '，还添了' + last.name;
     else if(l.wish) txt += '，仍攒着钱想买' + l.wish;
     return txt + '。';
+  }
+
+  /* 学艺：用她自己的私房钱学一样新才艺（不动国库）。已会的不能重复学。
+     ★ 只扣 consort.purse —— 陛下先前拨给她的钱，玩家是「引导」而非另掏腰包。 */
+  function learnSkill(id, skillName){
+    var cs = list(), c = null, i;
+    for(i = 0; i < cs.length; i++) if(cs[i].id === id){ c = cs[i]; break; }
+    if(!c) return { ok: false, error: '妃嫔不在后宫' };
+    var l = L(c);
+    var names = CFG.SKILL_NAMES || [];
+    if(names.indexOf(skillName) < 0) return { ok: false, error: '并无这门才艺' };
+    if(l.skills[skillName]) return { ok: false, error: '「' + c.name + '」已习得' + skillName };
+    var cost = CFG.LEARN_COST || 30;
+    if((c.purse || 0) + 1e-9 < cost)
+      return { ok: false, error: '她私房钱不足（需 ' + cost + '，请先开殿拨银）' };
+    c.purse -= cost;
+    l.skills[skillName] = { points: 0, level: 0 };
+    addPoints(c, CFG.LEARN_START_POINTS || 2, skillName);   /* 入门送几点，立刻见 0 级→有进度 */
+    QZD.stateIO.pushLog('life', '「' + c.name + '」以私房钱 ' + cost + ' 从师习' + skillName +
+      '（' + attrName((CFG.SKILL_ATTR || {})[skillName] || '') + '之道）');
+    QZD.stateIO.save();
+    return { ok: true, name: c.name, skill: skillName, cost: cost,
+             level: l.skills[skillName].level, purse: Math.floor(c.purse) };
+  }
+
+  /* 定主修：专注时只练这一门，练什么长什么。免费切换，不花钱。 */
+  function setPrimary(id, skillName){
+    var cs = list(), c = null, i;
+    for(i = 0; i < cs.length; i++) if(cs[i].id === id){ c = cs[i]; break; }
+    if(!c) return { ok: false, error: '妃嫔不在后宫' };
+    var l = L(c);
+    if(!l.skills[skillName]) return { ok: false, error: '她尚未习得' + skillName };
+    l.primary = skillName;
+    QZD.stateIO.save();
+    return { ok: true, name: c.name, primary: skillName };
   }
 
   /* 心愿：她攒不够钱的那件小物，由陛下从国库代付（关键节点玩家在场） */
@@ -163,8 +250,21 @@
   /* 只读视图：给名册卡片用（不写入状态） */
   function of(c){
     var l = L(c), last = l.purchases.length ? l.purchases[l.purchases.length - 1] : null;
+    var skills = [];
+    Object.keys(l.skills).forEach(function(name){
+      var sk = l.skills[name];
+      if(sk && (sk.points > 0 || sk.level > 0)){
+        skills.push({ name: name, level: sk.level, points: sk.points,
+                      attr: (CFG.SKILL_ATTR || {})[name] || '',
+                      attrName: attrName((CFG.SKILL_ATTR || {})[name] || '') });
+      }
+    });
+    skills.sort(function(a, b){ return b.level - a.level || b.points - a.points; });
     return {
-      hobby: l.hobby, level: l.level, points: l.points,
+      hobby: l.hobby, level: l.level, points: l.points, skills: skills,
+      primary: l.primary || l.hobby,
+      learnCost: CFG.LEARN_COST || 30,
+      learnable: (CFG.SKILL_NAMES || []).filter(function(n){ return !l.skills[n]; }),
       purse: Math.floor(c.purse || 0), purchases: l.purchases.length,
       last: last, wish: l.wish, rustiness: l.rustiness,
       wishCost: (l.wish ? (wishItem(c) || {}).cost : 0) || 0
@@ -207,6 +307,9 @@
     settleWeek: settleWeek,
     summary: summary,
     grantWish: grantWish,
+    learnSkill: learnSkill,
+    setPrimary: setPrimary,
+    focusPoints: focusPoints,
     of: of,
     state: S
   };

@@ -105,12 +105,17 @@
     var action = m.fielded
       ? '<button class="btn ghost" data-field="' + m.id + '">撤 下</button>'
       : '<button class="btn primary" data-field="' + m.id + '">上 阵</button>';
+    var ob = (M.ORIGIN_BONUS || {})[m.origin];
+    var originBadge = ob
+      ? ' <span class="badge rank" title="' + UI.fmt.escape(ob.desc || '') + '">' +
+          UI.fmt.escape(ob.label || m.origin) + '</span>' : '';
 
     return '<div class="talent-card' + (m.fielded ? ' fielded' : '') + '">' +
       '<div class="portrait-wrap">' + QZD.portrait.svg(m.id, m.name) + '</div>' +
       '<div class="talent-main">' +
         '<div class="talent-name">' + UI.fmt.escape(m.name) +
           (m.fromPrince ? ' <span class="badge rank">皇子</span>' : '') +
+          originBadge +
           (m.fielded ? ' <span class="badge ok">上阵中</span>' : '') + '</div>' +
         '<div class="attr-row">' +
           attrItem('用兵', m.war, 'war') +
@@ -354,13 +359,17 @@
   function pregnancyLine(c){
     var p = c.pregnant;
     if(!p) return '';
-    var now = Date.now();
-    var total = Math.max(1, p.dueAt - p.conceivedAt);
-    var pct = Math.max(0, Math.min(100, Math.floor((now - p.conceivedAt) / total * 100)));
-    var remain = Math.max(0, Math.ceil((p.dueAt - now) / 60000));
+    var st = QZD.harem.pregnancyStage ? QZD.harem.pregnancyStage(p, Date.now()) : null;
+    var pct = st ? st.pct : 0, remain = st ? st.remainMin : 0;
+    var H = QZD.config.HAREM;
+    var visits = (p.visits || []).length;
+    var guide = ({ 初孕:'文采', 中期:'理政', 临盆:'用兵' })[st ? st.name : ''] || '';
+    var hours = Math.floor(remain / 60), mins = remain % 60;
     return '<div class="preg-line">' +
       '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
-      '<span>孕期 · 约 ' + remain + ' 分钟后临盆</span>' +
+      '<span>' + (st ? st.name : '孕期') + ' · 约 ' + hours + '时' + mins + '分后临盆' +
+        (guide ? ' · 此刻探视长' + guide : '') +
+        ' · 已探视 ' + visits + '/' + (H.VISIT_MAX || 6) + '</span>' +
     '</div>';
   }
 
@@ -410,11 +419,17 @@
     return '<div class="blood-talent-line">' + UI.fmt.escape(t) + '</div>';
   }
 
-  /* L2 可见性：她自己的日子（爱好 / 私房钱 / 自购 / 心愿） */
+  /* L2 可见性：她自己的日子（才艺成长 / 私房钱 / 自购 / 心愿） */
   function lifeLine(c){
     if(!QZD.life) return '';
     var d = QZD.life.of(c), bits = [];
-    bits.push('习 ' + d.hobby + ' · ' + d.level + ' 级');
+    if(d.skills && d.skills.length){
+      bits.push('习 ' + d.skills.map(function(s){
+        return s.name + ' ' + s.level + '级' + (s.name === d.primary ? '（主修）' : '');
+      }).join('、'));
+    }else{
+      bits.push('习 ' + d.hobby + ' · ' + d.level + ' 级');
+    }
     bits.push('私房钱 ' + d.purse);
     if(d.last){
       bits.push('自购 ' + d.last.name + (d.last.byEmperor ? '（陛下所添）' : ''));
@@ -565,8 +580,33 @@
           (enough ? '' : ' disabled') + '>偿心愿 · ' + lv.wishCost + ' 金</button>';
       }
     }
+    /* 孕期探视：花她的勤政值，按阶段引导皇子先天 */
+    var visitBtn = '';
+    if(c.pregnant && QZD.harem.visitPregnant){
+      var vp = QZD.harem.pregnancyStage(c.pregnant, Date.now());
+      var vmax = (QZD.config.HAREM && QZD.config.HAREM.VISIT_MAX) || 6;
+      var vcost = (QZD.config.HAREM && QZD.config.HAREM.VISIT_COST_QIN) || 8;
+      var vfull = (c.pregnant.visits || []).length >= vmax;
+      var vGuide = ({ 初孕:'文采', 中期:'理政', 临盆:'用兵' })[vp ? vp.name : ''] || '先天';
+      visitBtn = '<button class="btn ghost" data-visit="' + c.id + '"' +
+        ((vfull || jin + 1e-9 < vcost) ? ' disabled' : '') + ' title="' +
+        (vfull ? '探视已足' : ('花 ' + vcost + ' 勤政，此刻长' + vGuide)) +
+        '">探 视</button>';
+    }
     var storyBtn = QZD.story
       ? '<button class="btn ghost" data-story="' + c.id + '">她的故事</button>' : '';
+    /* 成长：用她自己的私房钱学新才艺（打扮→容貌、习舞→体质、诗书→才情） */
+    var learnBtn = '';
+    if(QZD.life){
+      var ln = QZD.life.of(c);
+      if(ln.learnable && ln.learnable.length){
+        var canLearn = ln.purse + 1e-9 >= ln.learnCost;
+        learnBtn = '<button class="btn ghost" data-learn="' + c.id + '"' +
+          (canLearn ? '' : ' disabled') + ' title="' +
+          (canLearn ? '用她的私房钱习一门新才艺' : '她私房钱不足，先开殿拨银') +
+          '">习 艺</button>';
+      }
+    }
     /* 唯一主入口：12 种相处方式（含侍寝）都从这里进 */
     var modeBtn = (QZD.story && QZD.config.SUMMON_MODES)
       ? '<button class="btn primary" data-modes="' + c.id + '" ' +
@@ -608,7 +648,7 @@
         (isHostage
           ? rescueBtn + storyBtn     /* 质子：只给迎归 + 她的故事，其余相处动作隐去 */
           : (isQueen ? '<button class="btn ghost" data-queen-outfit>更 衣</button>' : '') +
-            modeBtn + action + rankBtn +
+            modeBtn + action + rankBtn + visitBtn + learnBtn +
             '<button class="btn ghost" data-gift="consort:' + c.id + '">赏 赐</button>' +
             wishBtn + storyBtn) + '</div>' +
     '</div>';
@@ -686,14 +726,38 @@
     var trainCost = R.TRAIN_COST + n * R.TRAIN_STEP;
     var jin = QZD.state.resources.jinQian;
     var sw = QZD.state.resources.shengWang;
+    var g = QZD.harem.princeGrowth ? QZD.harem.princeGrowth(p, Date.now())
+      : { key:'adult', name:'成年', pct:100, remainMin:0, eduDone:true, idx:-1 };
+    var adult = g.key === 'adult';
+    var growWhy = adult ? '' : ('皇子尚在' + g.name + '，约 ' + g.remainMin + ' 分钟后成年');
     var trainBtn = '<button class="btn ghost" data-train-prince="' + p.id + '"' +
-      (jin + 1e-9 < trainCost ? ' disabled' : '') + '>培养 · ' + trainCost + ' 金</button>';
+      ((!adult || jin + 1e-9 < trainCost) ? ' disabled' : '') +
+      (adult ? '' : ' title="' + UI.fmt.escape(growWhy) + '"') +
+      '>培养 · ' + trainCost + ' 金</button>';
     var minBtn = '<button class="btn primary" data-prince-minister="' + p.id + '"' +
-      (sw + 1e-9 < (R.MINISTER_COST_SW || 0) ? ' disabled' : '') + '>入朝 · ' +
+      ((!adult || sw + 1e-9 < (R.MINISTER_COST_SW || 0)) ? ' disabled' : '') +
+      (adult ? '' : ' title="' + UI.fmt.escape(growWhy) + '"') + '>入朝 · ' +
       (R.MINISTER_COST_SW || 0) + ' 望</button>';
+    /* 成年前每阶段一次教养：这是等待期的可玩动作，成年后才能培养/入朝 */
+    var eduBtn = '';
+    if(!adult){
+      var eduCost = ((R.GROW_EDU_COST || [])[g.idx]) || (60 + Math.max(0, g.idx) * 40);
+      var eduName = ({ lit:'文采', gov:'理政', war:'用兵' })[g.attr] || '资质';
+      eduBtn = '<button class="btn ghost" data-educate-prince="' + p.id + '"' +
+        ((g.eduDone || jin + 1e-9 < eduCost) ? ' disabled' : '') + ' title="' +
+        (g.eduDone ? '此阶段已教养过' : ('花 ' + eduCost + ' 金，长' + eduName)) +
+        '">' + (g.eduDone ? '已教养' : ('教养 · ' + eduCost + ' 金')) + '</button>';
+    }
     /* 致仕按钮：醒目的独立入口，资质不合意时一眼能找到 */
     var retireBtn = '<button class="btn danger sm" data-prince-retire="' + p.id +
       '" title="资质不合意可致仕归宗，按已投入培养金返还五成，之后可复起">致仕归宗</button>';
+    var growLine = '<div class="preg-line prince-growth">' +
+      '<div class="bar"><i style="width:' + g.pct + '%"></i></div>' +
+      '<span>' + g.name +
+        (adult ? ' · 已成年前往朝堂' : (' · 约 ' + g.remainMin + ' 分钟后入' +
+          (g.next === '成年' ? '成年' : g.next) + ' · 此阶段可教养' +
+          (g.eduDone ? '（已教养）' : '一次'))) +
+      '</span></div>';
 
     return '<div class="talent-card">' +
       '<div class="portrait-wrap">' + QZD.portrait.svg(p.id, p.name, { kind: 'prince' }) + '</div>' +
@@ -707,8 +771,10 @@
         '</div>' +
         '<div class="talent-foot">生母 ' + UI.fmt.escape(p.motherName) +
           ' · 诞于 ' + UI.fmt.time(p.bornAt) + ' · 已培养 ' + n + ' 次</div>' +
+        growLine +
       '</div>' +
-      '<div class="talent-action prince-actions">' + trainBtn + minBtn + retireBtn + '</div>' +
+      '<div class="talent-action prince-actions">' +
+        eduBtn + trainBtn + minBtn + retireBtn + '</div>' +
     '</div>';
   }
 
@@ -864,6 +930,23 @@
       return;
     }
 
+    /* 孕期探视：花勤政值，按当前阶段给皇子先天引导 */
+    var visitEl = e.target.closest('[data-visit]');
+    if(visitEl){
+      if(visitEl.disabled) return;
+      var vc = QZD.harem.consortById(visitEl.getAttribute('data-visit'));
+      if(!vc || !QZD.harem.visitPregnant) return;
+      var vr = QZD.harem.visitPregnant(vc.id);
+      if(!vr.ok){ UI.toast(vr.error); return; }
+      var vname = ({ lit:'文采', gov:'理政', war:'用兵' })[vr.attr] || '先天';
+      var vbonus = (QZD.config.HAREM && QZD.config.HAREM.VISIT_ATTR_BONUS) || 3;
+      var vmax = (QZD.config.HAREM && QZD.config.HAREM.VISIT_MAX) || 6;
+      UI.toast('探视「' + vr.name + '」· ' + vr.stage + ' · 皇子先天' + vname +
+        ' +' + vbonus + '（' + vr.visits + '/' + vmax + '）');
+      UI.onStateChanged();
+      return;
+    }
+
     /* 抽卡选秀：单抽 / 十连，抽出候选待玩家勾选入宫 */
     var gachaBtn = e.target.closest('[data-gacha]');
     if(gachaBtn){
@@ -963,6 +1046,63 @@
         },
         { title: '偿其心愿', okText: '准 · 由国库支 ' + wd.wishCost + ' 金' }
       );
+      return;
+    }
+
+    /* 成长：用她的私房钱习一门新才艺（打扮→容貌、习舞→体质、诗书→才情） */
+    var learnEl = e.target.closest('[data-learn]');
+    if(learnEl){
+      if(learnEl.disabled || !QZD.life) return;
+      var cid = learnEl.getAttribute('data-learn');
+      var lc = QZD.harem.consortById(cid);
+      if(!lc) return;
+      var ld = QZD.life.of(lc);
+      var attrLabel = { yan:'容貌', ti:'体质', cai:'才情' };
+      var skillAttr = (QZD.config.LIFE && QZD.config.LIFE.SKILL_ATTR) || {};
+      var rows = (ld.learnable || []).map(function(n){
+        var a = skillAttr[n] || '';
+        return '<button class="btn ghost" data-pick-skill="' + UI.fmt.escape(n) + '" ' +
+          'style="margin:3px 4px 3px 0">习 ' + UI.fmt.escape(n) +
+          (a ? '（长' + (attrLabel[a] || a) + '）' : '') + '</button>';
+      }).join('') || '<span class="card-note">六艺皆通，无可再学</span>';
+      var known = (ld.skills || []).map(function(s){
+        var on = s.name === ld.primary;
+        return '<button class="btn ' + (on ? 'primary' : 'ghost') + '" data-primary-skill="' +
+          UI.fmt.escape(s.name) + '" style="margin:3px 4px 3px 0">' +
+          (on ? '✓ ' : '') + UI.fmt.escape(s.name) + ' ' + s.level + '级</button>';
+      }).join('');
+      var mm = UI.modal({
+        title: '习艺 · ' + lc.name,
+        body:
+          '<p class="card-note">她现有私房钱 <b>' + ld.purse + '</b> 金；每学一门花 ' +
+            ld.learnCost + ' 金（从她的私房钱出，不动国库）。</p>' +
+          '<p class="card-note">专注时只练<b>主修</b>那一门：练什么长什么——打扮长容貌、' +
+            '习舞长体质、诗书长才情。点下方已学才艺可切换主修。</p>' +
+          '<div class="card-note" style="margin-top:10px">已习（点选主修）：</div>' +
+          '<div>' + known + '</div>' +
+          '<div class="card-note" style="margin-top:8px">可学新才艺：</div>' +
+          '<div style="margin-top:4px">' + rows + '</div>',
+        ok: false, cancelText: '算了'
+      });
+      mm.root.addEventListener('click', function(ev2){
+        var pick = ev2.target.closest && ev2.target.closest('[data-pick-skill]');
+        if(pick){
+          var r = QZD.life.learnSkill(cid, pick.getAttribute('data-pick-skill'));
+          if(!r.ok){ UI.toast(r.error); return; }
+          mm.close();
+          UI.toast('「' + r.name + '」习得' + r.skill + ' · 私房钱 −' + r.cost);
+          UI.onStateChanged();
+          return;
+        }
+        var pri = ev2.target.closest && ev2.target.closest('[data-primary-skill]');
+        if(pri){
+          var r2 = QZD.life.setPrimary(cid, pri.getAttribute('data-primary-skill'));
+          if(!r2.ok){ UI.toast(r2.error); return; }
+          mm.close();
+          UI.toast('「' + r2.name + '」改以' + r2.primary + '为主修');
+          UI.onStateChanged();
+        }
+      });
       return;
     }
 
@@ -1250,6 +1390,17 @@
         },
         { title: '册 封', okText: '册 封' }
       );
+      return;
+    }
+
+    var eduBtnEl = e.target.closest('[data-educate-prince]');
+    if(eduBtnEl){
+      if(eduBtnEl.disabled) return;
+      var ep = QZD.harem.educatePrince(eduBtnEl.getAttribute('data-educate-prince'));
+      if(!ep.ok){ UI.toast(ep.error); return; }
+      UI.toast('教养「' + ep.prince.name + '」· ' + ep.stage + ' · ' +
+        ep.attrName + ' +' + ep.gain + '（耗金 ' + ep.cost + '）');
+      UI.onStateChanged();
       return;
     }
 

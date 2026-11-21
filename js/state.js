@@ -50,6 +50,8 @@
       emperor: { ningShen: 0, yuLue: 0, mingDe: 0, renXin: 0 },
       /* 帝王四维成长日志：每次丹药真正生效记一点 { ts, key, v }，上限 200 条；旧档不追溯 */
       emperorGrowth: [],
+      /* 御极纪：帝王自己的事件剧情，每条线每代只演一次；传代后重置可再演 */
+      emperorStory: { version: 1, seen: {}, history: [] },
       emperorPortrait: (QZD.ASSETS && QZD.ASSETS.emperor && QZD.ASSETS.emperor[0]) || '',
       /* 皇帝立绘路径（king 文件夹中任选） */
       resources: { qinZheng: 0, jinQian: 0, guoJin: 0, shengWang: 0 },
@@ -496,6 +498,11 @@
     if(typeof LG.streak !== 'number' || LG.streak < 0) LG.streak = 0;
     if(typeof LG.total !== 'number' || LG.total < 0) LG.total = 0;
     if(!Array.isArray(LG.claimed)) LG.claimed = [];
+    /* 御极纪：旧档补默认；seen 的 value 是触发时代号，天然按代隔离 */
+    if(!obj.emperorStory || typeof obj.emperorStory !== 'object') obj.emperorStory = {};
+    if(typeof obj.emperorStory.version !== 'number') obj.emperorStory.version = 1;
+    if(!obj.emperorStory.seen || typeof obj.emperorStory.seen !== 'object') obj.emperorStory.seen = {};
+    if(!Array.isArray(obj.emperorStory.history)) obj.emperorStory.history = [];
     /* 网页快捷栏：旧档没有则从预置补；有则清洗字段 */
     if(!Array.isArray(obj.quickLinks)){
       obj.quickLinks = (CFG.QUICK_LINKS || []).map(function(x, i){

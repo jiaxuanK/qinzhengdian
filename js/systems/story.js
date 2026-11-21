@@ -86,9 +86,16 @@
       hobby: l.hobby || c.trait || '善琴',
       level: typeof l.level === 'number' ? l.level : 0,
       points: typeof l.points === 'number' ? l.points : 0,
+      primary: l.primary || l.hobby || c.trait || '善琴',
+      skills: (l.skills && typeof l.skills === 'object' && !Array.isArray(l.skills)) ? l.skills : {},
       purchases: Array.isArray(l.purchases) ? l.purchases : [],
       wish: typeof l.wish === 'string' ? l.wish : ''
     };
+  }
+  /* 某门才艺等级：多才艺后按名字取；旧档只主 hobby 有，其余视为 0 */
+  function skillLevel(l, name){
+    var sk = l.skills[name];
+    return sk && typeof sk.level === 'number' ? sk.level : 0;
   }
   function lineById(id){
     for(var i = 0; i < LINES.length; i++) if(LINES[i].id === id) return LINES[i];
@@ -137,6 +144,8 @@
   function matchWhen(when, c, ctx, st){
     if(!when) return true;
     var w = when, l = lifeOf(c), i;
+    /* 事件线只由 onEvent 强推，永不进每日随机候选池 */
+    if(w.event && w.event !== (ctx && ctx.event)) return false;
     if(w.isQueen != null && !!c.isQueen !== !!w.isQueen) return false;
     if(w.trait && !inList(w.trait, c.trait)) return false;
     if(w.notTrait && inList(w.notTrait, c.trait)) return false;
@@ -150,6 +159,31 @@
     if(w.origin && !inList(w.origin, c.origin)) return false;
     if(w.hometown && !inList(w.hometown, c.hometown)) return false;
     if(w.hobbyLevelMin != null && l.level < w.hobbyLevelMin) return false;
+    /* 多才艺筛选：skillLevel:{ '善扮':2 } —— 指定某门才艺达到对应级。
+       不指定名字时（skillMin）取主修那门，便于「练什么触发什么」。 */
+    if(w.skillLevel){
+      for(var sk in w.skillLevel){
+        if(!Object.prototype.hasOwnProperty.call(w.skillLevel, sk)) continue;
+        if(skillLevel(l, sk) < w.skillLevel[sk]) return false;
+      }
+    }
+    if(w.skillMin != null){
+      var which = w.skill || l.primary;
+      if(skillLevel(l, which) < w.skillMin) return false;
+    }
+    /* 属性筛选：成长后的 yan/ti/cai 也能当资格（如「容貌 +N 后才有的际遇」） */
+    if(w.attrMin){
+      for(var ak in w.attrMin){
+        if(!Object.prototype.hasOwnProperty.call(w.attrMin, ak)) continue;
+        if((c[ak] || 0) < w.attrMin[ak]) return false;
+      }
+    }
+    if(w.attrMax){
+      for(var am in w.attrMax){
+        if(!Object.prototype.hasOwnProperty.call(w.attrMax, am)) continue;
+        if((c[am] || 0) > w.attrMax[am]) return false;
+      }
+    }
     if(w.pointsMin != null && l.points < w.pointsMin) return false;
     if(w.purchasesMin != null && l.purchases.length < w.purchasesMin) return false;
     if(w.lastPurchaseId){
@@ -225,6 +259,8 @@
   function candidates(ctx, st){
     var cs = list(), out = [];
     LINES.forEach(function(line){
+      /* 事件线只走 onEvent 强推，不参与每日随机 */
+      if(line.kind === 'event') return;
       var rec = st.lines[line.id];
       var node, pool, claimed;
       if(rec){
@@ -672,7 +708,11 @@
       var r = presentQueue.shift();
       draining = false;
       if(r){
-        if(r.kind === 'morning') presentMorning(r);
+        /* 御极纪是帝王自己的剧情，不用妃子立绘，走独立呈现层；
+           仍共用这条队列，避免和妃子剧情/侍寝过场叠窗。 */
+        if(r.kind === 'emperor' && QZD.emperorStory && QZD.emperorStory.present)
+          QZD.emperorStory.present(r);
+        else if(r.kind === 'morning') presentMorning(r);
         else present(r);
       }
       if(presentQueue.length) setTimeout(drain, 400);
@@ -963,13 +1003,48 @@
     return roll(ctx, Math.random, true);
   }
 
+  /* 事件型剧情：受孕 / 临盆 / 册封这类确切事件发生时强推，
+     不受「每日一次」限制，也不进随机候选池。每线只对该妃推一次（认领后按章推进）。 */
+  function onEvent(type, c, opts){
+    if(!c || !c.id) return { ok: false, reason: '事件无主角' };
+    opts = opts || {};
+    var st = S();
+    var line = null, i;
+    for(i = 0; i < LINES.length; i++){
+      if(LINES[i].kind === 'event' && LINES[i].event === type){ line = LINES[i]; break; }
+    }
+    if(!line) return { ok: false, reason: '无此事件剧情：' + type };
+    var rec = st.lines[line.id];
+    var node;
+    if(rec){
+      if(rec.ownerId !== c.id) return { ok: false, reason: '该线已属他人' };
+      node = line.nodes[rec.stage];
+      if(!node) return { ok: false, reason: '事件剧情已终章' };
+    }else{
+      node = line.nodes[0];
+      if(!node || !node.claim) return { ok: false, reason: '事件线首章缺 claim' };
+    }
+    var ctx = buildCtx('event:' + type, {
+      event: type, quiet: false, summonConsortId: c.id
+    });
+    if(!matchWhen(node.when, c, ctx, st)) return { ok: false, reason: '事件条件不符' };
+    var res = applyNode({
+      line: line, node: node,
+      claimed: !!rec, consort: c
+    }, ctx, st);
+    /* 专注中只落数据不弹窗（与 tick 的 focusQuiet 一致），记忆/历史不丢 */
+    if(!opts.quiet) queuePresent(res);
+    else res.queued = false;
+    return res;
+  }
+
   /* 旧档追认：给老妃子各认领一条支线（主线留给玩家真实触发，保持稀缺） */
   function retro(){
     var st = S();
     if(st.retroDone){ return { ok: false, reason: '已追认' }; }
     st.retroDone = true;
     var cs = list(), used = {}, count = 0;
-    var sides = LINES.filter(function(l){ return l.kind !== 'main'; });
+    var sides = LINES.filter(function(l){ return l.kind !== 'main' && l.kind !== 'event'; });
     cs.forEach(function(c){
       if(count >= (CFG.RETRO_MAX || 2)) return;
       var pick = null, i;
@@ -1093,6 +1168,7 @@
 
   QZD.story = {
     roll: roll, onLaunch: onLaunch, onFocusEnd: onFocusEnd, onSummon: onSummon,
+    onEvent: onEvent,
     retro: retro, of: of, show: show, state: S,
     /* S2 呈现层 */
     fragment: fragment, present: present, presentMode: presentMode,

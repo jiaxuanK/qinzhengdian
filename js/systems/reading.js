@@ -32,6 +32,117 @@
     return String(s || '').trim().replace(/^https?:\/\/(dx\.)?doi\.org\//i, '').replace(/\s+/g, '').toLowerCase();
   }
 
+  /* ============================================================
+     文献逻辑图谱（logicGraph）
+     - 节点：问题 / 假设 / 方法 / 证据 / 机制 / 结果 / 局限 / 结论 / 创新 / 课题关联
+     - 边：回应 / 支撑 / 导致 / 对比 / 反驳 / 延伸 / 限定 / 证据来源
+     - 新卡由 qzd-paper-import 显式输出；旧卡从五问字段自动补一张基础图
+     ============================================================ */
+  var NODE_TYPES = {
+    question:'研究问题', hypothesis:'假设', method:'方法', evidence:'数据证据',
+    mechanism:'机制', result:'结果', limitation:'局限', conclusion:'核心结论',
+    innovation:'创新点', relevance:'课题关联'
+  };
+  var NODE_ORDER = ['question','hypothesis','method','evidence','mechanism',
+                    'result','limitation','conclusion','innovation','relevance'];
+  var EDGE_TYPES = {
+    addresses:'回应', supports:'支撑', causes:'导致', contrasts:'对比',
+    refutes:'反驳', extends:'延伸', limits:'限定', evidences:'证据来源'
+  };
+  function cleanText(s, max){
+    return String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, max || 300);
+  }
+  /* 显式图归一化：限长、去重、过滤悬空边，保证渲染端不会吃到脏数据 */
+  function normGraph(g){
+    if(!g || typeof g !== 'object') return null;
+    var rawNodes = Array.isArray(g.nodes) ? g.nodes : [];
+    if(!rawNodes.length) return null;
+    var nodes = [], seen = {};
+    rawNodes.slice(0, 24).forEach(function(n, i){
+      if(!n || typeof n !== 'object') return;
+      var id = cleanText(n.id, 40) || ('n' + (i + 1));
+      if(seen[id]) return;
+      seen[id] = true;
+      var type = cleanText(n.type, 20).toLowerCase();
+      if(!NODE_TYPES[type]) type = 'mechanism';
+      nodes.push({
+        id: id,
+        type: type,
+        label: cleanText(n.label, 12) || NODE_TYPES[type],
+        text: cleanText(n.text, 300),
+        evidence: cleanText(n.evidence, 60)
+      });
+    });
+    if(!nodes.length) return null;
+    var ids = {}, edges = [], eseen = {};
+    nodes.forEach(function(n){ ids[n.id] = true; });
+    (Array.isArray(g.edges) ? g.edges : []).slice(0, 60).forEach(function(e){
+      if(!e || typeof e !== 'object') return;
+      var from = cleanText(e.from, 40), to = cleanText(e.to, 40);
+      if(!ids[from] || !ids[to] || from === to) return;
+      var type = cleanText(e.type, 20).toLowerCase();
+      if(!EDGE_TYPES[type]) type = 'supports';
+      var key = from + '>' + to + '|' + type;
+      if(eseen[key]) return;
+      eseen[key] = true;
+      edges.push({ from:from, to:to, type:type,
+                   label:cleanText(e.label, 16) || EDGE_TYPES[type] });
+    });
+    return { nodes:nodes, edges:edges, auto:g.auto === true };
+  }
+  /* 旧卡基础图：只连字段里真实存在的内容，不替作者编假设或机制 */
+  function buildAutoGraph(item){
+    var nodes = [];
+    function add(id, type, label, val, ev){
+      var text = Array.isArray(val)
+        ? val.map(function(x){ return typeof x === 'string' ? x : JSON.stringify(x); }).join('；')
+        : String(val == null ? '' : val);
+      text = cleanText(text, 300);
+      if(!text) return false;
+      nodes.push({ id:id, type:type, label:label, text:text, evidence:ev || '' });
+      return true;
+    }
+    add('q_why', 'question', '研究问题', item.why);
+    add('m_how', 'method', '方法', item.how);
+    add('e_num', 'evidence', '关键数字', item.keyNumbers, '关键数字');
+    add('e_fig', 'evidence', '关键图', item.keyFigures, '关键图');
+    add('k_concept', 'mechanism', '概念链', item.concepts);
+    add('r_what', 'result', '结果', item.what);
+    add('l_limit', 'limitation', '局限', item.limitations);
+    add('c_main', 'conclusion', '核心结论', item.conclusion);
+    add('i_new', 'innovation', '创新点', item.innovation);
+    add('x_rel', 'relevance', '课题关联', item.relevance);
+    add('x_take', 'relevance', '可借鉴', item.takeaway);
+    if(!nodes.length) return null;
+    var has = {}, edges = [];
+    nodes.forEach(function(n){ has[n.id] = true; });
+    function link(from, to, type, label){
+      if(has[from] && has[to]) edges.push({ from:from, to:to, type:type, label:label });
+    }
+    link('q_why', 'm_how', 'addresses', '用此法回应');
+    link('m_how', 'e_num', 'evidences', '产出');
+    link('m_how', 'e_fig', 'evidences', '产出');
+    link('k_concept', 'm_how', 'supports', '概念支撑');
+    link('e_num', 'r_what', 'supports', '数字支撑');
+    link('e_fig', 'r_what', 'supports', '图示支撑');
+    link('r_what', 'c_main', 'supports', '由此得出');
+    link('l_limit', 'c_main', 'limits', '限定边界');
+    link('c_main', 'i_new', 'extends', '凝为新意');
+    link('c_main', 'x_rel', 'extends', '迁移到课题');
+    link('x_rel', 'x_take', 'supports', '落成动作');
+    return { nodes:nodes, edges:edges, auto:true };
+  }
+  /* 显式图优先；自动图每次按当前字段重算，避免后补字段后图还是旧的 */
+  function graphOf(item){
+    if(!item || typeof item !== 'object') return null;
+    var explicit = normGraph(item.logicGraph);
+    if(explicit && !explicit.auto) return explicit;
+    return buildAutoGraph(item);
+  }
+  function graphMeta(){
+    return { nodeTypes:NODE_TYPES, nodeOrder:NODE_ORDER, edgeTypes:EDGE_TYPES };
+  }
+
   /* 解析粘贴文本：支持 Tab 分隔（Zotero 导出）或 "标题 | 链接"，也支持纯标题行 */
   function parseText(text){
     var out = [];
@@ -97,7 +208,9 @@
                   'why','how','what','innovation','limitations','keyFigures','evidence',
                   'readDepth','concepts','studyNext','resources',
                   /* 对照阅读三件套：路线 / 高光批注 / 易误读点 */
-                  'readingPath','highlights','pitfalls'];
+                  'readingPath','highlights','pitfalls',
+                  /* 论证网络：节点 + 关系边（单独归一化，见下方 logicGraph 分支） */
+                  'logicGraph'];
     var r = R(), byTitle = {}, byDoi = {}, added = 0, merged = 0;
     r.queue.forEach(function(x){
       byTitle[x.title] = x;
@@ -122,8 +235,15 @@
         merged++;
       }
       FIELDS.forEach(function(k){
+        if(k === 'logicGraph') return;   /* 图单独做结构校验，不能整块塞原文 */
         if(c[k] !== undefined && c[k] !== null && c[k] !== '') item[k] = c[k];
       });
+      /* 显式逻辑图覆盖自动图；未提供则按当前字段补一张，供旧卡也能看图 */
+      if(c.logicGraph){
+        var g = normGraph(c.logicGraph);
+        if(g){ g.auto = false; item.logicGraph = g; }
+      }
+      if(!item.logicGraph) item.logicGraph = buildAutoGraph(item);
     });
     if(!added && !merged) return { ok:false, error:'没有有效条目（标题必填）' };
     IO.save();
@@ -244,6 +364,8 @@
     parseText: parseText,
     importText: importText,
     importCards: importCards,
+    graph: graphOf,
+    graphMeta: graphMeta,
     list: all,
     queued: queued,
     done: done,

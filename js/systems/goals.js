@@ -13,7 +13,14 @@
     if(!Array.isArray(QZD.state.goalTree)) QZD.state.goalTree = [];
     return QZD.state.goalTree;
   }
-  function uid(){ return 'g' + Date.now().toString(36) + Math.floor(Math.random() * 1000).toString(36); }
+  /* 同一毫秒内连续建多个目标时，旧版三位随机数会撞号，级联删除可能自引用死循环。
+     加会话内递增序号，保证单次操作里每个节点 id 都不同；旧档 id 不需迁移。 */
+  var uidSeq = 0;
+  function uid(){
+    uidSeq++;
+    return 'g' + Date.now().toString(36) + '-' + uidSeq.toString(36) +
+      '-' + Math.floor(Math.random() * 1000000).toString(36);
+  }
 
   function find(id){
     var list = tree();

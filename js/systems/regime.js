@@ -84,6 +84,9 @@
     var toast = (R.RANK_UP_TOAST || '帝阶晋升 · {name}').replace('{name}', name).replace('{slots}', slots);
     try { QZD.stateIO.pushLog('regime', log); } catch(e){}
     try { QZD.ui.toast(toast); } catch(e){}
+    /* 御极纪：帝阶由本代累计专注推进，升阶时讲一段回头路 */
+    if(QZD.emperorStory)
+      QZD.emperorStory.onEvent('rank', { from: from, to: to });
   }
   function g_slots(){ try { return S().hostageSlots; } catch(e){ return 0; } }
 

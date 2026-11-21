@@ -3,7 +3,7 @@
    策略：预缓存关键文件 + cache-first 静态资源 + network-first 存档 API
    版本号每次改 SW 时递增，浏览器会自动更新。
    ============================================================ */
-var CACHE_NAME = 'qzd-20261121-1814';
+var CACHE_NAME = 'qzd-20261121-1954';
 
 /* 预缓存：首次安装就拉进缓存的核心文件 */
 var PRECACHE_URLS = [
@@ -26,6 +26,7 @@ var PRECACHE_URLS = [
   './js/systems/resources.js',
   './js/systems/harem.js',
   './js/systems/story.js',
+  './js/systems/emperor_story.js',
   './js/systems/dynasty.js',
   './js/systems/conquest.js',
   './js/systems/tasks.js',

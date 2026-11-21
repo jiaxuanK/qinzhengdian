@@ -189,6 +189,8 @@
     QZD.stateIO.pushLog('harem', '册封「' + c.name + '」为「' + rankTitle(c) +
       '」 · 耗金钱 ' + cost.jin + ' · 声望 ' + cost.sw);
     QZD.stateIO.save();
+    /* 事件剧情：册封当下强推，不随每日 roll */
+    if(QZD.story && QZD.story.onEvent) QZD.story.onEvent('promote', c);
     return { ok: true, consort: c, title: rankTitle(c), cost: cost };
   }
   /* 位份越高，召幸耗勤政越少（不低于 SUMMON_MIN）。
@@ -202,10 +204,82 @@
     return Math.round(base * mult * (QZD.study ? QZD.study.multiplier() : 1));
   }
 
+  /* ---------- 皇子成长：襁褓 → 孩童 → 少年 → 成年 ----------
+     按 bornAt + 真实分钟推算，离线照样长大；旧档无 bornAt 直接成年，
+     不让历史存档里的皇子突然被锁住。 */
+  function princeGrowth(p, now){
+    if(!p) return null;
+    var R = QZD.config.PRINCE || {};
+    var stages = Array.isArray(R.GROWTH) ? R.GROWTH : [];
+    var adult = { key:'adult', name:'成年', pct:100, remainMin:0, attr:'',
+                  idx:-1, next:'', eduDone:true, stages:stages };
+    if(!stages.length || !p.bornAt || p.retired) return adult;
+    var elapsed = Math.max(0, ((now || Date.now()) - Number(p.bornAt)) / 60000);
+    for(var i = 0; i < stages.length; i++){
+      var st = stages[i], need = Math.max(1, Number(st.min) || 0);
+      if(elapsed < need){
+        var done = p.growthEdu || {};
+        return { key:st.key, name:st.name, pct:Math.floor(elapsed / need * 100),
+                 remainMin:Math.ceil(need - elapsed), attr:st.attr, idx:i,
+                 next:(stages[i + 1] && stages[i + 1].name) || '成年',
+                 eduDone:!!done[st.key], stages:stages };
+      }
+      elapsed -= need;
+    }
+    return adult;
+  }
+
+  /* 主循环调用：阶段变化时落一次起居注，不弹窗 */
+  function settlePrinceGrowth(now){
+    now = now || Date.now();
+    var changed = [];
+    princes().forEach(function(p){
+      if(!p || p.retired) return;
+      var g = princeGrowth(p, now);
+      if(!p.stage){ p.stage = g.key; return; }   /* 旧档静默补字段 */
+      if(p.stage === g.key) return;
+      var from = p.stage;
+      p.stage = g.key;
+      changed.push({ prince:p, from:from, to:g.key });
+      QZD.stateIO.pushLog('harem', '皇子「' + p.name + '」长成' + g.name +
+        (g.key === 'adult' ? ' · 可培养、可入朝为臣' : ' · 可教养一次'));
+    });
+    if(changed.length) QZD.stateIO.save();
+    return changed;
+  }
+
+  /* 教养：成年前每阶段一次，花金钱换该阶段对应属性 +N */
+  function educatePrince(id){
+    var p = findById(activePrinces(), id);
+    if(!p) return { ok:false, error:'皇子不存在' };
+    var g = princeGrowth(p, Date.now());
+    if(g.key === 'adult') return { ok:false, error:'皇子已成年，改由培养精进' };
+    var done = p.growthEdu || (p.growthEdu = {});
+    if(done[g.key]) return { ok:false, error:'此阶段已教养过' };
+    var R = QZD.config.PRINCE || {};
+    var costs = R.GROW_EDU_COST || [60, 100, 140];
+    var cost = Number(costs[g.idx]) || (60 + g.idx * 40);
+    if((state().resources.jinQian || 0) + 1e-9 < cost)
+      return { ok:false, error:'金钱不足（教养需 ' + cost + '）' };
+    QZD.resources.remove({ jinQian:cost });
+    done[g.key] = true;
+    var gain = R.GROW_EDU_ATTR || 3, cap = R.ATTR_MAX || 120;
+    var attrName = ({ lit:'文采', gov:'理政', war:'用兵' })[g.attr] || '资质';
+    if(g.attr && p[g.attr] != null) p[g.attr] = Math.min(cap, (p[g.attr] || 0) + gain);
+    QZD.stateIO.pushLog('harem', '教养皇子「' + p.name + '」· ' + g.name +
+      ' · ' + attrName + ' +' + gain + ' · 耗金钱 ' + cost);
+    QZD.stateIO.save();
+    return { ok:true, prince:p, stage:g.name, attr:g.attr, attrName:attrName,
+             gain:gain, cost:cost };
+  }
+
   /* ---------- 皇子消耗：培养 / 入朝为臣 ---------- */
   function trainPrince(id){
     var p = findById(activePrinces(), id);
     if(!p) return { ok: false, error: '皇子不存在' };
+    var g = princeGrowth(p, Date.now());
+    if(g.key !== 'adult')
+      return { ok: false, error: '皇子尚在' + g.name + '，约 ' + g.remainMin + ' 分钟后成年' };
     var R = QZD.config.PRINCE;
     var n = Math.max(0, Math.floor(Number(p.trainCount) || 0));
     var cost = R.TRAIN_COST + n * R.TRAIN_STEP;
@@ -240,26 +314,35 @@
   function princeToMinister(id){
     var p = findById(activePrinces(), id);
     if(!p) return { ok: false, error: '皇子不存在' };
+    var g = princeGrowth(p, Date.now());
+    if(g.key !== 'adult')
+      return { ok: false, error: '皇子尚在' + g.name + '，成年后方可入朝' };
     var cost = QZD.config.PRINCE.MINISTER_COST_SW || 0;
     if((state().resources.shengWang || 0) + 1e-9 < cost){
       return { ok: false, error: '声望不足（入朝需 ' + cost + '）' };
     }
     if(cost > 0) QZD.resources.remove({ shengWang: cost });
     if(!Array.isArray(state().ministers)) state().ministers = [];
+    var ob = (QZD.config.MINISTER && QZD.config.MINISTER.ORIGIN_BONUS &&
+              QZD.config.MINISTER.ORIGIN_BONUS.prince) || {};
     var m = {
       id: 'min-' + p.id,
       name: p.name,
-      war: p.war || 0,
+      war: (p.war || 0) + (ob.war || 0),
       gov: p.gov || 0,
-      lit: p.lit || 0,
+      lit: (p.lit || 0) + (ob.lit || 0),
       createdAt: Date.now(),
       fielded: false,
       fromPrince: true,
+      origin: 'prince',
       /* 保留皇子身份快照，供日后致仕回归名册（旧档无此字段则致仕时降级还原） */
       princeId: p.id,
       princeMeta: {
         motherId: p.motherId, motherName: p.motherName, bornAt: p.bornAt,
-        seq: p.seq, trainCount: p.trainCount
+        seq: p.seq, trainCount: p.trainCount,
+        /* 宗室加成只属于「名臣」身份；归宗时用原始资质还原，防反复入朝叠加 */
+        baseWar: p.war, baseGov: p.gov, baseLit: p.lit,
+        growthEdu: p.growthEdu || {}
       }
     };
     state().ministers.push(m);
@@ -716,6 +799,8 @@
       c.pregnant = { conceivedAt: now, dueAt: now + H.PREGNANCY_MIN * 60000 };
       QZD.stateIO.pushLog('harem', '召幸「' + c.name + '」，喜讯有孕 · 喜爱 +' +
         favorGain + ' · 宠爱 +' + doteGain + ' · 受孕率 ' + Math.round(rate * 100) + '%');
+      /* 事件剧情：喜讯当下强推（孕期仅30分钟，随机 roll 几乎必错过） */
+      if(QZD.story && QZD.story.onEvent) QZD.story.onEvent('conceive', c);
     }else if(isSleep){
       QZD.stateIO.pushLog('harem', '召幸「' + c.name + '」，未得喜讯 · 喜爱 +' +
         favorGain + ' · 宠爱 +' + doteGain + ' · 受孕率 ' + Math.round(rate * 100) + '%');
@@ -734,6 +819,44 @@
              isSleep: isSleep, favorGain: favorGain, doteGain: doteGain };
   }
 
+  /* 孕期阶段：早(0–1/3) 引导文采 lit、中(1/3–2/3) 引导理政 gov、晚(2/3–1) 引导用兵 war */
+  var VISIT_STAGES = [
+    { key:'early', name:'初孕', attr:'lit', lo:0,   hi:1/3 },
+    { key:'mid',   name:'中期', attr:'gov', lo:1/3, hi:2/3 },
+    { key:'late',  name:'临盆', attr:'war', lo:2/3, hi:1.01 }
+  ];
+  function pregnancyStage(p, now){
+    if(!p || !p.dueAt) return null;
+    var total = Math.max(1, p.dueAt - (p.conceivedAt || (p.dueAt - QZD.config.HAREM.PREGNANCY_MIN * 60000)));
+    var t = Math.max(0, Math.min(1, ((now || Date.now()) - (p.conceivedAt || 0)) / total));
+    var name = t < 1/3 ? '初孕' : (t < 2/3 ? '中期' : '临盆');
+    return { t: t, pct: Math.floor(t * 100), name: name,
+             remainMin: Math.max(0, Math.ceil((p.dueAt - (now || Date.now())) / 60000)),
+             visits: (p.visits || []).length };
+  }
+  /* 探视：花勤政值，按当前阶段引导皇子一项先天。
+     ★ 孕期 10h，探视是把「等待」变成「经营」的核心动作。 */
+  function visitPregnant(id){
+    var c = findById(consorts(), id);
+    if(!c || !c.pregnant) return { ok: false, error: '她并未有孕' };
+    var H = QZD.config.HAREM, p = c.pregnant;
+    var visits = Array.isArray(p.visits) ? p.visits : (p.visits = []);
+    if(visits.length >= (H.VISIT_MAX || 6)) return { ok: false, error: '探视已足，静待临盆罢' };
+    var cost = H.VISIT_COST_QIN || 8;
+    if((state().resources.qinZheng || 0) + 1e-9 < cost)
+      return { ok: false, error: '勤政值不足（探视需 ' + cost + '）' };
+    QZD.resources.remove({ qinZheng: cost });
+    var st = pregnancyStage(p, Date.now());
+    var stage = VISIT_STAGES.filter(function(s){ return s.name === st.name; })[0];
+    visits.push({ at: Date.now(), stage: stage.key, attr: stage.attr });
+    QZD.stateIO.pushLog('harem', '探视「' + c.name + '」· ' + stage.name +
+      '陪伴，皇子先天' + ({ lit:'文采', gov:'理政', war:'用兵' })[stage.attr] +
+      '有望 +' + (H.VISIT_ATTR_BONUS || 3) + ' · 耗勤政 ' + cost);
+    QZD.stateIO.save();
+    return { ok: true, name: c.name, stage: stage.name, attr: stage.attr,
+             visits: visits.length, cost: cost };
+  }
+
   function makePrince(mother, bornAt){
     var used = {};
     princes().forEach(function(p){ used[p.name] = true; });
@@ -746,6 +869,13 @@
     if(used[name]) name = pick(P.GIVEN) + seq;
 
     var e = state().emperor;
+    var H = QZD.config.HAREM;
+    var bonus = { war:0, gov:0, lit:0 };
+    /* 探视加成：每次按当时阶段给对应属性 +N，封顶 PRINCE.ATTR_MAX */
+    (mother.pregnant && mother.pregnant.visits ? mother.pregnant.visits : []).forEach(function(v){
+      if(v && bonus[v.attr] != null) bonus[v.attr] += (H.VISIT_ATTR_BONUS || 3);
+    });
+    var cap = QZD.config.PRINCE.ATTR_MAX || 120;
     return {
       id: 'prince-' + Date.now().toString(36) + '-' + randInt(100000, 999999).toString(36),
       name: name,
@@ -753,9 +883,13 @@
       motherId: mother.id,
       motherName: mother.name,
       bornAt: bornAt,
-      war: QZD.formulas.princeAttr(e.yuLue, mother.ti),
-      gov: QZD.formulas.princeAttr(e.mingDe, mother.cai),
-      lit: QZD.formulas.princeAttr(e.ningShen, mother.cai)
+      war: Math.min(cap, QZD.formulas.princeAttr(e.yuLue, mother.ti) + bonus.war),
+      gov: Math.min(cap, QZD.formulas.princeAttr(e.mingDe, mother.cai) + bonus.gov),
+      lit: Math.min(cap, QZD.formulas.princeAttr(e.ningShen, mother.cai) + bonus.lit),
+      visitCount: Object.keys(bonus).reduce(function(s,k){ return s + (bonus[k] ? 1 : 0); }, 0),
+      /* 出生即入襁褓，24h 后成年；每段教养一次 */
+      stage: 'infant',
+      growthEdu: {}
     };
   }
 
@@ -772,8 +906,16 @@
       born.push({ mother: c, prince: prince });
       QZD.stateIO.pushLog('harem', '寝宫喜讯，「' + c.name + '」诞下皇子「' +
         prince.name + '」 · 用兵 ' + prince.war + ' · 理政 ' + prince.gov + ' · 文采 ' + prince.lit);
+      /* 事件剧情：诞子当刻强推，不随每日 roll；专注中只落数据不弹窗 */
+      if(QZD.story && QZD.story.onEvent){
+        var quiet = !!(QZD.pomodoro && QZD.pomodoro.isActive &&
+          QZD.pomodoro.isActive() && QZD.state.settings && QZD.state.settings.focusQuiet);
+        QZD.story.onEvent('birth', c, { quiet: quiet });
+      }
     });
     if(born.length) QZD.stateIO.save();
+    /* 皇子阶段推进：与临盆同一主循环，离线也按到期时刻补算 */
+    settlePrinceGrowth(now);
     return born;
   }
 
@@ -818,6 +960,11 @@
     ennoble: ennoble,
     summonCostOf: summonCostOf,
     trainPrince: trainPrince,
+    pregnancyStage: pregnancyStage,
+    visitPregnant: visitPregnant,
+    princeGrowth: princeGrowth,
+    settlePrinceGrowth: settlePrinceGrowth,
+    educatePrince: educatePrince,
     princeToMinister: princeToMinister,
     retirePrince: retirePrince,
     restorePrince: restorePrince,
