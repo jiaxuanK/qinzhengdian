@@ -34,7 +34,7 @@
       ['settings',  81,   14, 10, 66, '纪年碑 · 历代年表']
     ],
     map: [
-      ['roster',    26,   33, 15, 28, '宫阙 · 名册'],
+      ['consorts',  26,   33, 15, 28, '宫阙 · 妃嫔名册'],
       ['conquest',  66,   28, 15, 28, '敌城 · 征伐'],
       ['works',     48,    8, 14, 26, '在建城楼 · 营造']
     ]
@@ -148,6 +148,13 @@
     if(go === 'chronos'){
       UI.pendingOvTab = 'chronos';
       UI.show('ov');
+      return;
+    }
+    /* 宫阙→妃嫔名册：借名册页现成的 openTab 切到"妃嫔"子页，
+       再跳名册（复用 data-harem 入口的既有做法）。 */
+    if(go === 'consorts'){
+      if(QZD.roster && QZD.roster.openTab) QZD.roster.openTab('consorts');
+      UI.show('roster');
       return;
     }
     UI.show(go);
