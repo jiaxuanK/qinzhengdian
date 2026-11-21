@@ -175,7 +175,13 @@
   function todayTier(){
     var st = QZD.state, d = S(), t = today();
     var focusMin = (st.study && st.study.date === t) ? (st.study.doneMin || 0) : 0;
-    var target = (QZD.config.STUDY && QZD.config.STUDY.DAILY_TARGET_MIN) || 480;
+    /* 11-21：恢复「工作日10h + 周末8h = 66h/周」，按当天取目标。
+       state.__testWeekend 仅供测试固定口径，正常游戏不设。 */
+    var SC = QZD.config.STUDY || {};
+    var dow = new Date().getDay();
+    var isWeekend = (typeof st.__testWeekend === 'boolean')
+      ? st.__testWeekend : (dow === 0 || dow === 6);
+    var target = isWeekend ? (SC.WEEKEND_TARGET_MIN || 480) : (SC.DAILY_TARGET_MIN || 600);
     var veryLowLine = CFG.VERYLOW_LINE_MIN || 120;
     /* 今日登录以「登录打卡」为准（state.login.lastDate），旧档/测试桩退回 dynasty.lastLoginDate */
     var loggedIn = (st.login && typeof st.login.lastDate === 'string')
