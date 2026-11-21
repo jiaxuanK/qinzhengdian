@@ -62,22 +62,9 @@ QZD.ASSETS = {
       ]
     },
     {
-      "folder": "05",
-      "name": "星杓",
-      "personality": "duan",
-      "poses": [
-        "enc:YXNzZXRzL2E4Zi80N2U1MzgwOWJmOGM4ZTZjLmpwZw==",
-        "enc:YXNzZXRzL2E4Zi8yZGExNmNhMzI5MGFkMGI0LmpwZw==",
-        "enc:YXNzZXRzL2E4Zi80OGU0ZGE0ZWEzZmQ1OWU4LmpwZw==",
-        "enc:YXNzZXRzL2E4Zi85MWU0ZDY4ZDVhYjNhNmEyLmpwZw==",
-        "enc:YXNzZXRzL2E4Zi9mMzllNjhmZTFhMjhmOTUyLmpwZw==",
-        "enc:YXNzZXRzL2E4Zi9lNWUyZWU3NTEzZjhhNTFkLmpwZw=="
-      ]
-    },
-    {
       "folder": "06",
       "name": "子衿",
-      "personality": "jue",
+      "personality": "duan",
       "poses": [
         "enc:YXNzZXRzL2E4Zi9mYTc1YWVkNDhjY2U0ZWE4LmpwZw==",
         "enc:YXNzZXRzL2E4Zi8zMGQ5ZGNlMGQ1MTA0NTk1LmpwZw==",
@@ -88,7 +75,7 @@ QZD.ASSETS = {
     {
       "folder": "07",
       "name": "汀兰",
-      "personality": "min",
+      "personality": "jue",
       "poses": [
         "enc:YXNzZXRzL2E4Zi9lNGRhZmUwOWE5YzAxMmIwLmpwZw==",
         "enc:YXNzZXRzL2E4Zi84OGQwZDVhNTQzMTMxMmM2LmpwZw=="
@@ -97,7 +84,7 @@ QZD.ASSETS = {
     {
       "folder": "08",
       "name": "琼琚",
-      "personality": "chou",
+      "personality": "min",
       "poses": [
         "enc:YXNzZXRzL2E4Zi9kM2NjMGYzMmZkM2RjYzk2LmpwZw==",
         "enc:YXNzZXRzL2E4Zi82NWM3NjcxNTc0NjY4MWQyLmpwZw==",
@@ -108,7 +95,7 @@ QZD.ASSETS = {
     {
       "folder": "09",
       "name": "澧兰",
-      "personality": "wen",
+      "personality": "chou",
       "poses": [
         "enc:YXNzZXRzL2E4Zi8wMTIwZTNkNzlkNzk0ZjZmLmpwZw==",
         "enc:YXNzZXRzL2E4Zi8yMWQxYzE2MTc1MGQyZGYxLmpwZw==",
@@ -118,7 +105,7 @@ QZD.ASSETS = {
     {
       "folder": "10",
       "name": "听澜",
-      "personality": "huo",
+      "personality": "wen",
       "poses": [
         "enc:YXNzZXRzL2E4Zi9jMGU1MTlhYjc2ZTU5MzA5LmpwZw==",
         "enc:YXNzZXRzL2E4Zi80Mzc0NTg3NTZmMmQ4MDVhLmpwZw==",
@@ -129,7 +116,7 @@ QZD.ASSETS = {
     {
       "folder": "11",
       "name": "嫣然",
-      "personality": "qing",
+      "personality": "huo",
       "poses": [
         "enc:YXNzZXRzL2E4Zi80YTVjNTQ1YzZhMTE4ZGI3LmpwZw==",
         "enc:YXNzZXRzL2E4Zi9jMmZiNGJiZDM3NzQzNzhjLmpwZw=="
@@ -138,7 +125,7 @@ QZD.ASSETS = {
     {
       "folder": "12",
       "name": "杜若",
-      "personality": "mei",
+      "personality": "qing",
       "poses": [
         "enc:YXNzZXRzL2E4Zi80M2Q2OTY0Y2E1ZDVlOGQ5LmpwZw==",
         "enc:YXNzZXRzL2E4Zi8yYjQ3ZDQ2MGRmYjYyYzg4LmpwZw==",
@@ -149,7 +136,7 @@ QZD.ASSETS = {
     {
       "folder": "13",
       "name": "粲然",
-      "personality": "duan",
+      "personality": "mei",
       "poses": [
         "enc:YXNzZXRzL2E4Zi8zNDRkYWI5ZjM4NmU3ZGViLmpwZw==",
         "enc:YXNzZXRzL2E4Zi84ODUxZTU1Yjg1NDc4YTVjLmpwZw=="
@@ -158,7 +145,7 @@ QZD.ASSETS = {
     {
       "folder": "14",
       "name": "白芷",
-      "personality": "jue",
+      "personality": "duan",
       "poses": [
         "enc:YXNzZXRzL2E4Zi81NDY5YzMxNmQwYmM2ODc2LmpwZw==",
         "enc:YXNzZXRzL2E4Zi8yMGZmM2RkNDA5MDlmY2Q3LmpwZw==",
@@ -168,7 +155,7 @@ QZD.ASSETS = {
     {
       "folder": "15",
       "name": "令仪",
-      "personality": "min",
+      "personality": "jue",
       "poses": [
         "enc:YXNzZXRzL2E4Zi9mMWZjN2Y1Yjk0YTU4Y2NmLmpwZw==",
         "enc:YXNzZXRzL2E4Zi9iYThiYjFkOGI1ZThjOTQ5LmpwZw==",
@@ -178,7 +165,7 @@ QZD.ASSETS = {
     {
       "folder": "16",
       "name": "流萤",
-      "personality": "chou",
+      "personality": "min",
       "poses": [
         "enc:YXNzZXRzL2E4Zi9kODdlOWMzZGQ4Nzk3MzJlLmpwZw==",
         "enc:YXNzZXRzL2E4Zi8wZjQ4YjEyYjlhYzhiMjg3LmpwZw=="
@@ -187,11 +174,22 @@ QZD.ASSETS = {
     {
       "folder": "17",
       "name": "烟渚",
-      "personality": "wen",
+      "personality": "chou",
       "poses": [
         "enc:YXNzZXRzL2E4Zi9hNWQ2NzQyYjZiOTIzZmY1LmpwZw==",
         "enc:YXNzZXRzL2E4Zi9jYTlhOTdjOTg3OTFhMzg0LmpwZw==",
         "enc:YXNzZXRzL2E4Zi85YzAyYWI5MzJiYTU4YmYzLmpwZw=="
+      ]
+    },
+    {
+      "folder": "20",
+      "name": "莞尔",
+      "personality": "wen",
+      "poses": [
+        "enc:YXNzZXRzL2E4Zi9mYjRkMGFhNTI2NjFiNGM0LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi84YTAwOTRkZmUyNmJhNGE2LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi8wMTI1NTRhNTEwYTIwNDQyLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9iOGM1ZWJmNjIwY2Q4MmZmLmpwZw=="
       ]
     },
     {
@@ -393,12 +391,9 @@ QZD.ASSETS = {
     "enc:YXNzZXRzL2E4Zi8xMjUyZTI4NGQ0OWY0MDYxLmpwZw==",
     "enc:YXNzZXRzL2E4Zi9jN2E1MjU3ZjI5ZDkyZmE0LmpwZw==",
     "enc:YXNzZXRzL2E4Zi81YmI2YWQ4MTkwMTM3Y2QxLmpwZw==",
-    "enc:YXNzZXRzL2E4Zi8yNTAyYmNjNWFkN2U5OTFiLmpwZw==",
     "enc:YXNzZXRzL2E4Zi82OTU5YmE4YTUwZjU2NmZkLmpwZw==",
     "enc:YXNzZXRzL2E4Zi9lNjBlN2MyYjJmMmExZjdiLmpwZw==",
     "enc:YXNzZXRzL2E4Zi9hM2VkYWFlMmFmZDg2MTQ0LmpwZw==",
-    "enc:YXNzZXRzL2E4Zi9lZDI0MWZlOTg5NTk4ZmRhLmpwZw==",
-    "enc:YXNzZXRzL2E4Zi9mOTM4NGNiZjFhODRkZDM4LmpwZw==",
     "enc:YXNzZXRzL2E4Zi9lMTkwNmE0OTA4MGUyMTlmLmpwZw==",
     "enc:YXNzZXRzL2E4Zi84ZTU3Y2I5YTUzMjMxZTBjLmpwZw==",
     "enc:YXNzZXRzL2E4Zi8yOTg0ZDFhOWQwNGJiNGM2LmpwZw==",
@@ -414,16 +409,12 @@ QZD.ASSETS = {
     "enc:YXNzZXRzL2E4Zi84M2UzNGFhYjA2Y2IxYWY3LmpwZw==",
     "enc:YXNzZXRzL2E4Zi82MGFhMmRiMzIwYTQ1ZmViLmpwZw==",
     "enc:YXNzZXRzL2E4Zi9kNjBkNDk3ZDhiOTMyNmUwLmpwZw==",
-    "enc:YXNzZXRzL2E4Zi9lNDEzMDE0ZDQxNGJmODA0LmpwZw==",
-    "enc:YXNzZXRzL2E4Zi81ODI5MzhlZTI1ZmNhYTMxLmpwZw==",
     "enc:YXNzZXRzL2E4Zi9kZTA0MWJmYmJlMDg2OTEyLmpwZw==",
-    "enc:YXNzZXRzL2E4Zi80YjhlMzRjNjQ0ZjRmZjIwLmpwZw==",
     "enc:YXNzZXRzL2E4Zi83MTgxNGMwYTU4ZjA3YmQ5LmpwZw==",
     "enc:YXNzZXRzL2E4Zi85NTkzM2ExNzJmNmM4NDA4LmpwZw==",
     "enc:YXNzZXRzL2E4Zi8wZTNiYTYxNzgxNjRlYTZjLmpwZw==",
     "enc:YXNzZXRzL2E4Zi8yZjQ5ZjkyYzM3MTZhMzhiLmpwZw==",
     "enc:YXNzZXRzL2E4Zi8yYzgxMmUzYjI2ZWI1MWNkLmpwZw==",
-    "enc:YXNzZXRzL2E4Zi82ODZkYjkzMTY4YTY1YzI5LmpwZw==",
     "enc:YXNzZXRzL2E4Zi9hM2ZkMmQyNWU0ZDFiYWJmLmpwZw==",
     "enc:YXNzZXRzL2E4Zi9hMjllNGIxMDFhNTQ2NjUwLmpwZw==",
     "enc:YXNzZXRzL2E4Zi81N2JlZjdjNzUzMjNiNzU0LmpwZw==",
@@ -431,7 +422,6 @@ QZD.ASSETS = {
     "enc:YXNzZXRzL2E4Zi83M2Q3MWFjNWFkMjc3MDQxLmpwZw==",
     "enc:YXNzZXRzL2E4Zi81MmUxODExMzU1ZWIxN2QxLmpwZw==",
     "enc:YXNzZXRzL2E4Zi84MWIyMzQ4MTgzOWI3ZmY5LmpwZw==",
-    "enc:YXNzZXRzL2E4Zi83YWZkODkwZjdjODUwZjBiLmpwZw==",
     "enc:YXNzZXRzL2E4Zi84NWRiNTk5Y2RlYTEyZTllLmpwZw=="
   ]
 };

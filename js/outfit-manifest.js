@@ -4,6 +4,85 @@ QZD.QUEEN_OUTFITS = {
   "root": "assets/images/皇后",
   "outfits": [
     {
+      "name": "01",
+      "folder": "01",
+      "images": [
+        "enc:YXNzZXRzL2E4Zi81NDNhOTNmZTZlOTBiMzk2LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi84YzQ1ZDk2NDMwNzc5ZWE3LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9mMDgwNDJhMzMyOWQxZDc3LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi8wMzcyYTY4MzMxNTA0MTUyLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi80YWVmZDdjZGQ0ZDQ3NWFjLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9iOTA4YjVmMDM0NTcxZjJiLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9kM2I2MmM4Mzg4ODQ2NDA1LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi83NzlkMTFlNGE3ZmE5OTkxLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi85MmNjOGNjZThkZDY5YTA0LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi8zYzgzN2ZjNDEwMmY1YjA0LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9lYTU3NmUwYWMxMTUzYzE4LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9kYzY0NDgzMmE2NDM5MGQyLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9lNjE1MTJhZDY5ZWIxMjdhLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi8wNTRhZTljNjg2MzI0YjJkLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi8xNzdhZTg1YmRhMmM0MDBjLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi85N2EwYjdjMmM5YjZmMGRmLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi83Yzg4MWNiNjY4NTAyY2M5LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi8wNzk0MDFkMWZkM2YzYTg5LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9iNTFiYjhmZmY3MzkxNTRiLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9iZTFiMzYwZWM5YTkzODE0LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi8yMTllZGQ2MjNkN2M1ZjM3LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi8yM2JhMjMyNDA4YTA2NTQ0LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi85NmVjYTJjOWU1YzJiZDE3LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi80MDRhMDFjMWRiNTA2Y2E0LmpwZw=="
+      ],
+      "cover": "enc:YXNzZXRzL2E4Zi81NDNhOTNmZTZlOTBiMzk2LmpwZw=="
+    },
+    {
+      "name": "02",
+      "folder": "02",
+      "images": [
+        "enc:YXNzZXRzL2E4Zi85MjM0YmJkZjEzNGI0ZjBhLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi84NDAxODRjMTQwNTc2YTdjLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi8yZTBiOWMxM2Y4Y2Y3YWRjLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi81M2QzMWMzOWY2ZTM0NmIzLmpwZw=="
+      ],
+      "cover": "enc:YXNzZXRzL2E4Zi85MjM0YmJkZjEzNGI0ZjBhLmpwZw=="
+    },
+    {
+      "name": "03",
+      "folder": "03",
+      "images": [
+        "enc:YXNzZXRzL2E4Zi80ZDEyNjcxZDE4YjNjOGYwLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9hMjY1YWVmNDA3MmM2MDdhLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi8zZmRjMjIxYmY1OGJlMjVmLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi85Y2Y4MDg3YjI2OTE4M2M2LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9lNjBhODZmMTVjZDliNmI1LmpwZw=="
+      ],
+      "cover": "enc:YXNzZXRzL2E4Zi80ZDEyNjcxZDE4YjNjOGYwLmpwZw=="
+    },
+    {
+      "name": "04",
+      "folder": "04",
+      "images": [
+        "enc:YXNzZXRzL2E4Zi9jNDNlMGRlM2ZhZTIwNDk0LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9lYzUxNTBkYWRlMTViNDczLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi8xZjNhNjE1MjUxZjI5MWQxLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi83ODU5OTkzZjNlMzYwNGQ1LmpwZw=="
+      ],
+      "cover": "enc:YXNzZXRzL2E4Zi9jNDNlMGRlM2ZhZTIwNDk0LmpwZw=="
+    },
+    {
+      "name": "05",
+      "folder": "05",
+      "images": [
+        "enc:YXNzZXRzL2E4Zi81NzBlOWY1Y2RkYzI2ZjNkLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9mNjFiZDk0ZGI0MzZkYWY5LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi80Y2ZhMDBhZGFkNmZiNjg0LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9hOGU3MmY0YTExOWY1YzI4LmpwZw==",
+        "enc:YXNzZXRzL2E4Zi8wODVkNmQ3ZWU5OWIyZTBhLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi83MzcxZjU1Y2IzYThmY2UxLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi8wY2FlYmI1OTE0M2RjZmU3LmpwZw=="
+      ],
+      "cover": "enc:YXNzZXRzL2E4Zi81NzBlOWY1Y2RkYzI2ZjNkLmpwZw=="
+    },
+    {
       "name": "常服",
       "folder": "常服",
       "images": [
