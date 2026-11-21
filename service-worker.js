@@ -3,7 +3,7 @@
    策略：预缓存关键文件 + cache-first 静态资源 + network-first 存档 API
    版本号每次改 SW 时递增，浏览器会自动更新。
    ============================================================ */
-var CACHE_NAME = 'qzd-20261120-1506';
+var CACHE_NAME = 'qzd-20261121-1616';
 
 /* 预缓存：首次安装就拉进缓存的核心文件 */
 var PRECACHE_URLS = [
@@ -54,7 +54,10 @@ var PRECACHE_URLS = [
   './css/scenes.css',
   './assets/pwa/icon-192.png',
   './assets/pwa/icon-512.png',
-  './assets/icon.ico'
+  './assets/icon.ico',
+  './assets/scenes/hall_desk.webp',
+  './assets/scenes/desk_desk.webp',
+  './assets/scenes/map_desk.webp'
 ];
 
 self.addEventListener('install', function(event){
