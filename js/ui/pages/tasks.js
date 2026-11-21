@@ -121,24 +121,75 @@
     var memByGoal = (QZD.memorials && QZD.memorials.byGoal) ? QZD.memorials.byGoal() : {};
     var body;
     if(goals.length){
-      body = '<div class="plan-goals">' + goals.map(function(g){
+      /* 升级1：整体完成度大环（按每件三事的完成比例平均） */
+      var sumPct = 0;
+      goals.forEach(function(g){
+        var mb = memByGoal[g.id] || { total:0, done:0 };
+        sumPct += (g.done || (mb.total > 0 && mb.done === mb.total)) ? 100
+                : (mb.total ? mb.done / mb.total * 100 : 0);
+      });
+      var overall = Math.round(sumPct / goals.length);
+      var R = 30, CIRC = 2 * Math.PI * R, OFF = CIRC * (1 - overall / 100);
+      var ringHtml = '<div class="plan-overall">' +
+        '<svg viewBox="0 0 72 72" aria-label="周主线整体完成度 ' + overall + '%">' +
+          '<circle cx="36" cy="36" r="' + R + '" fill="none" stroke="var(--line)" stroke-width="7"/>' +
+          '<circle cx="36" cy="36" r="' + R + '" fill="none" stroke="var(--daiqing)" stroke-width="7" ' +
+            'stroke-linecap="round" stroke-dasharray="' + CIRC.toFixed(1) + '" stroke-dashoffset="' + OFF.toFixed(1) +
+            '" transform="rotate(-90 36 36)"/>' +
+          '<text x="36" y="41" text-anchor="middle" font-size="17" font-weight="700" fill="var(--ink)">' + overall + '%</text>' +
+        '</svg>' +
+        '<div class="plan-overall-note"><b>本周主线</b><span>整体完成度</span></div>' +
+      '</div>';
+
+      /* 升级3：周中提醒（周三/周五，有未完成且无进展的三事） */
+      var dow = (new Date().getDay() + 6) % 7;   /* 周一=0 */
+      var warn = '';
+      if(dow === 2 || dow === 4){
+        var stale = goals.filter(function(g){
+          var done = g.done || (function(){ var mb=memByGoal[g.id]||{total:0,done:0}; return mb.total>0&&mb.done===mb.total; })();
+          return !done && !(byGoal[g.id] || []).length;
+        });
+        if(stale.length) warn = '<div class="plan-warn">周中提醒：还有 ' + stale.length +
+          ' 件主线既没进展也没挂奏折，趁周末前推进一下。' +
+          stale.map(function(g){ return esc(g.text); }).join(' / ') + '</div>';
+      }
+
+      /* 大计下拉选项（升级4）：挂靠到大计节点，完成三事时在节点留痕迹 */
+      var goalNodes = (QZD.goals && QZD.goals.list) ? QZD.goals.list() : [];
+      /* 每项三事的选中态不同，故在 map 内各自生成；这里只留空壳占位避免重复计算 */
+      function nodeOptions(selId){
+        return goalNodes.map(function(n){
+          return '<option value="' + esc(n.id) + '"' + (n.id === selId ? ' selected' : '') + '>' +
+            esc(n.title) + '</option>';
+        }).join('');
+      }
+
+      body = ringHtml + warn + '<div class="plan-goals">' + goals.map(function(g){
         var mb = memByGoal[g.id] || { total:0, done:0, focusMin:0 };
         var notes = (byGoal[g.id] || []).length;
         var pct = mb.total ? Math.round(mb.done / mb.total * 100) : 0;
         var autoDone = mb.total > 0 && mb.done === mb.total;
-        var isDone = g.done || autoDone;   /* 手动勾选 OR 挂靠奏折全办结 */
+        var isDone = g.done || autoDone;
+        var node = (QZD.goals && QZD.goals.find && g.goalNodeId) ? QZD.goals.find(g.goalNodeId) : null;
         var note = (mb.total || notes)
           ? '<em class="plan-gprog">' + mb.done + '/' + mb.total + ' 折' +
             (mb.focusMin ? ' · ' + mb.focusMin + '分' : '') +
             (notes ? ' · ' + notes + '进展' : '') + '</em>'
           : '<em class="plan-gprog plain">未挂靠奏折</em>';
-        return '<label class="plan-goal' + (isDone ? ' done' : '') + '">' +
-          '<input type="checkbox" data-plan-toggle="' + g.id + '"' + (isDone ? ' checked' : '') + '>' +
-          '<span>' + esc(g.text) + '</span>' + note +
+        var tools = '<div class="plan-gtools">' +
+          '<button type="button" class="chip sm" data-plan-attach="' + esc(g.id) + '" title="挂靠奏折">＋挂折</button>' +
+          '<select class="plan-node-sel" data-plan-node="' + esc(g.id) + '" title="关联千秋大计">' +
+            '<option value="">链大计</option>' + nodeOptions(g.goalNodeId || '') +
+          '</select></div>';
+        return '<div class="plan-goal' + (isDone ? ' done' : '') + '">' +
+          '<label class="plan-glabel">' +
+            '<input type="checkbox" data-plan-toggle="' + g.id + '"' + (isDone ? ' checked' : '') + '>' +
+            '<span>' + esc(g.text) + '</span>' + note +
+          '</label>' +
           (mb.total ? '<i class="plan-gbar"><b style="width:' + pct + '%"></b></i>' : '') +
-        '</label>';
+          tools + '</div>';
       }).join('') + '</div>' +
-      '<p class="card-note" style="margin:6px 0 0">新建/修订奏折时「挂到本周三事」，进度自动汇总；勾满是给没挂折的目标手动收尾。</p>' +
+      '<p class="card-note" style="margin:6px 0 0">「＋挂折」把已有奏折挂到主线；「链大计」关联长期目标。挂靠奏折全办结即自动完成。</p>' +
       '<div class="btn-row" style="margin-top:8px">' +
         '<button class="chip sm" data-plan-reset>重设本周三事</button>' +
       '</div>';
@@ -677,6 +728,40 @@
       UI.onStateChanged();
       return;
     }
+    /* 升级2：＋挂折 —— 弹出奏折列表，勾选挂到这条主线 */
+    var attachBtn = e.target.closest('[data-plan-attach]');
+    if(attachBtn){
+      var gid = attachBtn.getAttribute('data-plan-attach');
+      var mems = (QZD.memorials && QZD.memorials.find) ? (QZD.state.memorials || []) : [];
+      var actives = mems.filter(function(m){ return m && m.status !== 'banjie'; });
+      if(!actives.length){ UI.toast('没有可挂靠的在办奏折'); return; }
+      var rows = actives.map(function(m){
+        var checked = m.goalId === gid;
+        return '<label class="plan-attach-row"><input type="checkbox" data-attach-mem="' + UI.fmt.escape(m.id) +
+          '"' + (checked ? ' checked' : '') + '> <span>' + UI.fmt.escape(m.title) + '</span></label>';
+      }).join('');
+      UI.modal({
+        title: '挂靠奏折到本周主线',
+        body: '<p class="card-note">勾选要挂到这条主线的奏折（可多选，取消勾选即脱离）</p>' +
+          '<div class="plan-attach-list">' + rows + '</div>',
+        ok: true, okText: '保存挂靠',
+        onOk: function(mask){
+          var changed = 0;
+          mask.querySelectorAll('[data-attach-mem]').forEach(function(cb){
+            var mid = cb.getAttribute('data-attach-mem');
+            var hit = QZD.memorials.find(mid);
+            if(!hit) return;
+            var want = cb.checked ? gid : null;
+            if((hit.goalId || null) === want) return;
+            QZD.memorials.update(mid, { goalId: want });
+            changed++;
+          });
+          UI.toast(changed ? ('已挂靠/调整 ' + changed + ' 折') : '无改动');
+          UI.onStateChanged();
+        }
+      });
+      return;
+    }
 
     var lvBtn = e.target.closest('[data-ci-level]');
     if(lvBtn){
@@ -814,8 +899,30 @@
   /* 本周三事：勾选完成 */
   document.addEventListener('change', function(e){
     var cb = e.target.closest ? e.target.closest('[data-plan-toggle]') : null;
-    if(!cb) return;
-    QZD.plan.toggleGoal(cb.getAttribute('data-plan-toggle'));
-    UI.onStateChanged();
+    if(cb){
+      var gid = cb.getAttribute('data-plan-toggle');
+      var wasOn = (QZD.plan.goals() || []).filter(function(g){ return g.id === gid; })[0];
+      var r = QZD.plan.toggleGoal(gid);
+      /* 升级4：三事手动勾完成时，给关联的大计节点留一条达成痕迹（不覆盖自动进度） */
+      if(r.ok && r.goal && r.goal.done && wasOn && !wasOn.done && r.goal.goalNodeId){
+        var node = QZD.goals && QZD.goals.find ? QZD.goals.find(r.goal.goalNodeId) : null;
+        if(node && QZD.goals.addLink){
+          /* ref 用三事 id 保证每个主线留独立痕迹（addLink 按 type+ref 去重） */
+          var has = (node.links || []).some(function(lk){ return lk.type === 'custom' && lk.ref === gid; });
+          if(!has) QZD.goals.addLink(node.id, 'custom', gid, '本周主线达成 · ' + r.goal.text);
+          UI.toast('主线达成 · 已记入大计「' + node.title + '」');
+        }
+      }
+      UI.onStateChanged();
+      return;
+    }
+    /* 升级4：链大计下拉 */
+    var ns = e.target.closest ? e.target.closest('[data-plan-node]') : null;
+    if(ns){
+      var nid = ns.getAttribute('data-plan-node');
+      var rr = QZD.plan.setGoalNode(nid, ns.value || null);
+      UI.toast(rr.ok ? (ns.value ? '已链到大计' : '已取消大计关联') : (rr.error || '操作失败'));
+      UI.onStateChanged();
+    }
   });
 })();

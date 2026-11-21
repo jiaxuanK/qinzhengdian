@@ -119,6 +119,25 @@
     return tips.join('；') + '。';
   }
 
+  /* 11-21 升级6：周主线复盘评语——完成度 + 投入最多的一条主线 */
+  function mainlineReview(c){
+    var goals = c.goals || [];
+    if(!goals.length) return '';
+    var mg = c.memByGoal || {};
+    var doneN = 0, top = null, topMin = -1;
+    goals.forEach(function(g){
+      var mb = mg[g.id] || { done:0, total:0, focusMin:0 };
+      if(g.done || (mb.total > 0 && mb.done === mb.total)) doneN++;
+      if(mb.focusMin > topMin){ topMin = mb.focusMin; top = g; }
+    });
+    var s = '本周主线完成 ' + doneN + '/' + goals.length;
+    if(top && topMin > 0) s += '，主要投入在「' + top.text + '」（' + topMin + ' 分）';
+    if(doneN === goals.length) s += '，三条主线全部收官，值得记一笔。';
+    else if(doneN === 0) s += '，主线推进偏慢，下周可先把一条做扎实。';
+    else s += '，收尾那条下周优先。';
+    return s;
+  }
+
   /* 生成周报文本 */
   function build(){
     var c = collect();
@@ -230,6 +249,9 @@
     L.push('');
     L.push('十、小结');
     L.push('· ' + summaryLine(c));
+    /* 11-21 升级6：周主线复盘评语 */
+    var review = mainlineReview(c);
+    if(review) L.push('· ' + review);
     return L.join('\n');
   }
 

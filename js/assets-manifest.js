@@ -47,6 +47,7 @@ QZD.ASSETS = {
         "enc:YXNzZXRzL2E4Zi9lZDA3YWU1NjVlYTE3MGJjLmpwZw==",
         "enc:YXNzZXRzL2E4Zi82MjA1YjlhNTUzNTVkYzdhLmpwZw==",
         "enc:YXNzZXRzL2E4Zi80YmM5ZTYxN2IyZmU3ZjZkLmpwZw==",
+        "enc:YXNzZXRzL2E4Zi9kMjQzM2Y3ZWQzYTIxZjczLmpwZw==",
         "enc:YXNzZXRzL2E4Zi85OWZmMzQwYjlkMmI3MjA1LmpwZw=="
       ]
     },
@@ -419,7 +420,6 @@ QZD.ASSETS = {
     "enc:YXNzZXRzL2E4Zi80YjhlMzRjNjQ0ZjRmZjIwLmpwZw==",
     "enc:YXNzZXRzL2E4Zi83MTgxNGMwYTU4ZjA3YmQ5LmpwZw==",
     "enc:YXNzZXRzL2E4Zi85NTkzM2ExNzJmNmM4NDA4LmpwZw==",
-    "enc:YXNzZXRzL2E4Zi82MTk4MWY5MTI3MDZjY2IwLmpwZw==",
     "enc:YXNzZXRzL2E4Zi8wZTNiYTYxNzgxNjRlYTZjLmpwZw==",
     "enc:YXNzZXRzL2E4Zi8yZjQ5ZjkyYzM3MTZhMzhiLmpwZw==",
     "enc:YXNzZXRzL2E4Zi8yYzgxMmUzYjI2ZWI1MWNkLmpwZw==",

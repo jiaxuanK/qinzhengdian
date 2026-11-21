@@ -86,6 +86,18 @@
     return { ok: false, error: '目标不存在' };
   }
 
+  /* 11-21 升级4：三事关联千秋大计节点（null=取消关联） */
+  function setGoalNode(id, nodeId){
+    var p = ensureWeek();
+    for(var i = 0; i < p.goals.length; i++){
+      if(p.goals[i].id !== id) continue;
+      p.goals[i].goalNodeId = nodeId || null;
+      IO.save();
+      return { ok: true, goal: p.goals[i] };
+    }
+    return { ok: false, error: '目标不存在' };
+  }
+
   /* 记一条专注进展（专注收工后调用） */
   function addProgress(o){
     o = o || {};
@@ -133,6 +145,7 @@
     nextGoals: nextGoals,
     clearGoals: clearGoals,
     toggleGoal: toggleGoal,
+    setGoalNode: setGoalNode,
     addProgress: addProgress,
     progress: function(){ return P().progress; },
     recent: recent,

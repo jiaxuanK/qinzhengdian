@@ -515,7 +515,11 @@
           note: mask.querySelector('#mem-note').value
         });
         if(!res.ok){ UI.toast(res.error); return false; }
-        UI.toast('奏折已落案');
+        /* 升级5：未挂三事时温和提示（有三事才提示） */
+        var hasGoals = (QZD.plan && QZD.plan.goals && QZD.plan.goals().length);
+        UI.toast(!res.memorial.goalId && hasGoals
+          ? '奏折已落案 · 可到三事卡「＋挂折」挂到本周主线'
+          : '奏折已落案');
         UI.onStateChanged();
       }
     });
