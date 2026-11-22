@@ -417,6 +417,46 @@
     return Math.round((R.COST_JIN || 800) * (QZD.study ? QZD.study.multiplier() : 1));
   }
 
+  /* 4–5 张图的目录 = 稀有妃池（2026-11-22） */
+  function uncommonEntries(){
+    return (QZD.ASSETS && QZD.ASSETS.uncommon) || [];
+  }
+  function uncommonRemaining(usedRare){
+    var owned = rareOwned();
+    return uncommonEntries().filter(function(r){
+      return !owned[r.folder] && !(usedRare && usedRare[r.folder]);
+    });
+  }
+  function makeUncommonConsort(entry){
+    var G = QZD.config.GACHA || {};
+    var poses = (entry.poses || []).slice();
+    return {
+      id: 'uncommon-' + Date.now().toString(36) + '-' + randInt(100000, 999999).toString(36),
+      name: entry.name || '秀女',
+      yan: randInt(G.UNCOMMON_MIN || 70, G.UNCOMMON_MAX || 120),
+      ti:  randInt(G.UNCOMMON_MIN || 70, G.UNCOMMON_MAX || 120),
+      cai: randInt(G.UNCOMMON_MIN || 70, G.UNCOMMON_MAX || 120),
+      img: poses[0] || null,
+      poses: poses,
+      poseIndex: 0,
+      rare: false,
+      rareKey: entry.folder,
+      tier: 'uncommon',
+      personality: entry.personality || 'wen',
+      age: randInt(17, 23),
+      hometown: pick((QZD.config.XUANXIU || {}).HOMETOWNS || ['江南']),
+      origin: '稀有采选',
+      trait: pick((QZD.config.XUANXIU || {}).TRAITS || ['善舞']),
+      blood: rollBlood('uncommon'),
+      veil: false,
+      favor: randInt(15, 32),
+      dote: (QZD.config.DOTE ? QZD.config.DOTE.INIT : 0),
+      rank: 0,
+      joinedAt: Date.now(),
+      pregnant: null
+    };
+  }
+
   /* 由稀世条目构造一位绝色妃嫔（三维 90–120，多姿态 / 动态立绘） */
   function makeRareConsort(entry){
     var R = QZD.config.RARE || {};
@@ -531,6 +571,16 @@
       rarity = 'uncommon';
     }
 
+    /* 稀有档：优先用 4–5 图目录，池空才退回普通随机秀女 */
+    if(rarity === 'uncommon'){
+      var uPool = uncommonRemaining(usedRare);
+      if(uPool.length){
+        var uEntry = pick(uPool);
+        if(usedRare) usedRare[uEntry.folder] = true;
+        return { rarity: 'uncommon', consort: makeUncommonConsort(uEntry) };
+      }
+    }
+
     var lo = rarity === 'uncommon' ? (G.UNCOMMON_MIN || 70) : (G.COMMON_MIN || 30);
     var hi = rarity === 'uncommon' ? (G.UNCOMMON_MAX || 120) : (G.COMMON_MAX || 90);
     var c = makeCandidate(used, bloodTier);
@@ -554,6 +604,7 @@
       poseIndex: 0,
       rare: !!src.rare,
       rareKey: src.rareKey || null,
+      tier: src.tier || (src.rare ? 'rare' : null),
       personality: src.personality,
       age: src.age,
       hometown: src.hometown,
@@ -1017,6 +1068,7 @@
     restorePrince: restorePrince,
     /* 稀世妃嫔 / 姿态切换 */
     rareRemaining: rareRemaining,
+    uncommonRemaining: uncommonRemaining,
     rareCost: rareCost,
     recruitRare: recruitRare,
     gacha: gacha,
@@ -1026,6 +1078,7 @@
     finalizeConsort: finalizeConsort,
     makeCandidate: makeCandidate,
     makeRareConsort: makeRareConsort,
+    makeUncommonConsort: makeUncommonConsort,
     setPose: setPose,
     cyclePose: cyclePose
   };

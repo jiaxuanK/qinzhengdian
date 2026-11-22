@@ -6,8 +6,17 @@
   function kvRow(k, v){
     return '<div class="setting-row"><span class="k">' + k + '</span><span class="v">' + (v == null ? '—' : v) + '</span></div>';
   }
+  /* 异步填充本机图包计数（IDB 计数是异步的，渲染后补填） */
+  function updateUpicCount(){
+    var el = document.getElementById('upic-count');
+    if(!el) return;
+    if(!QZD.userpics || !QZD.userpics.count){ el.textContent = '不支持'; return; }
+    QZD.userpics.count().then(function(n){ el.textContent = n + ' 张（本机）'; });
+  }
 
   UI.register('settings', function(){
+    /* 本页 DOM 落地后异步补填图包计数（IDB 异步） */
+    setTimeout(updateUpicCount, 0);
     var s = QZD.state || {};
     var meta = s.meta || {};
     var set = s.settings || {};
@@ -78,7 +87,28 @@
         (desktop ? '' : '<p style="margin:8px 0 0;font-size:11px;color:var(--ink2)">浏览器版没有文件权限，请用「导出存档」手动保存。</p>') +
       '</section>' +
 
-      /* ===== 立绘素材 ===== */
+      /* ===== 自带图包（隐私：图只在本机，不随游戏发布） ===== */
+      '<section class="card">' +
+        '<div class="card-head"><span class="card-title">自 带 图 包</span>' +
+          '<span class="card-note">图只存本机 · 别人看不到</span></div>' +
+        '<p style="margin:0 0 12px;font-size:12px;color:var(--ink2)">游戏本体不含妃子图。点「导入图包」选你自己的图片文件夹，' +
+        '按文件夹自动分组（一个文件夹=一位妃子，多图=多姿态）。图存在这台设备，不会上传。</p>' +
+        kvRow('本机图包', '<span id="upic-count">读取中…</span>') +
+        '<div class="btn-row" style="flex-wrap:wrap;gap:6px">' +
+          '<button class="btn primary" data-act="import-pics">导入图包</button>' +
+          '<button class="btn" data-act="export-pics">导出备份</button>' +
+          '<button class="btn ghost" data-act="clear-pics">清空图包</button>' +
+        '</div>' +
+        '<p style="margin:8px 0 0;font-size:11px;color:var(--ink2)">' +
+          '换设备：先在旧设备「导出备份」存成文件，再到新设备「导入备份」恢复。' +
+          '图包与存档分开存，清存档不会丢图。' +
+        '</p>' +
+        '<div class="btn-row" style="margin-top:8px">' +
+          '<button class="btn ghost" data-act="import-pic-pack">导入备份文件</button>' +
+        '</div>' +
+      '</section>' +
+
+      /* ===== 立绘素材（桌面版扫描 / 兼容旧流程） ===== */
       '<section class="card">' +
         '<div class="card-head"><span class="card-title">立 绘 素 材</span></div>' +
         '<p style="margin:0 0 12px;font-size:12px;color:var(--ink2)">往 <code>assets/images/</code> 丢新图即新增普通/稀有妃嫔；' +
@@ -192,6 +222,73 @@
       UI.toast('已＋全套四维（测试）');
     }else if(act === 'refresh-assets'){
       if(QZD.assetsRefresh && QZD.assetsRefresh.refresh) QZD.assetsRefresh.refresh();
+    }else if(act === 'import-pics'){
+      /* 选文件夹：webkitdirectory 多选，导入到本机图包库 */
+      var inp = document.createElement('input');
+      inp.type = 'file';
+      inp.setAttribute('webkitdirectory','');
+      inp.setAttribute('mozdirectory','');
+      inp.multiple = true;
+      inp.style.cssText = 'position:absolute;left:-9999px;top:-9999px;opacity:0';
+      document.body.appendChild(inp);
+      inp.addEventListener('change', function(){
+        var fs = inp.files; inp.remove();
+        if(!fs || !fs.length){ return; }
+        UI.toast('正在导入 ' + fs.length + ' 个文件…');
+        QZD.userpics.importFiles(fs).then(function(r){
+          if(!r.ok){ UI.toast(r.error || '导入失败'); return; }
+          return QZD.userpics.applyToGame().then(function(a){
+            UI.onStateChanged();
+            UI.toast('已导入 ' + r.added + ' 张 · ' + (r.groups||[]).length + ' 组，图只存在本机');
+            updateUpicCount();
+          });
+        }).catch(function(err){ UI.toast('导入失败：' + (err && err.message || err)); });
+      });
+      if(window.requestAnimationFrame) requestAnimationFrame(function(){ inp.click(); });
+      else setTimeout(function(){ inp.click(); }, 0);
+    }else if(act === 'import-pic-pack'){
+      /* 恢复备份 JSON */
+      var pin = document.createElement('input');
+      pin.type = 'file'; pin.accept = '.json,application/json';
+      pin.style.cssText = 'position:absolute;left:-9999px;top:-9999px;opacity:0';
+      document.body.appendChild(pin);
+      pin.addEventListener('change', function(){
+        var f = pin.files && pin.files[0]; pin.remove();
+        if(!f) return;
+        var fr = new FileReader();
+        fr.onload = function(){
+          try{
+            QZD.userpics.importPack(String(fr.result)).then(function(r){
+              if(!r.ok){ UI.toast(r.error || '恢复失败'); return; }
+              return QZD.userpics.applyToGame().then(function(){
+                UI.onStateChanged(); UI.toast('已恢复 ' + r.added + ' 张图'); updateUpicCount();
+              });
+            }).catch(function(e){ UI.toast('恢复失败：' + (e.message||e)); });
+          }catch(err){ UI.toast('备份文件不是有效 JSON'); }
+        };
+        fr.readAsText(f);
+      });
+      if(window.requestAnimationFrame) requestAnimationFrame(function(){ pin.click(); });
+      else setTimeout(function(){ pin.click(); }, 0);
+    }else if(act === 'export-pics'){
+      QZD.userpics.count().then(function(n){
+        if(!n){ UI.toast('还没有导入图包'); return; }
+        return QZD.userpics.exportPack().then(function(pack){
+          var blob = new Blob([JSON.stringify(pack)], { type:'application/json' });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url; a.download = '勤政殿-图包备份-' + new Date().toISOString().slice(0,10) + '.json';
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+          UI.toast('图包备份已导出（' + n + ' 张）');
+        });
+      });
+    }else if(act === 'clear-pics'){
+      UI.confirm('清空本机图包？所有你自己导入的妃子图会删除，不可恢复（除非有备份）。', function(){
+        QZD.userpics.clear().then(function(){
+          UI.onStateChanged(); UI.toast('图包已清空'); updateUpicCount();
+        });
+      }, { okText:'确定清空' });
     }else if(act === 'backup-now'){
       if(!QZD.backup || !QZD.backup.run){ UI.toast('备份模块未加载'); return; }
       UI.toast('正在备份…');

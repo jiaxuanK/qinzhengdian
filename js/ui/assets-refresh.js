@@ -23,11 +23,55 @@
     '朝云': 'chou', '清商': 'qing'
   };
   var FALLBACK_P = ['wen', 'huo', 'qing', 'mei', 'duan', 'jue', 'min', 'chou'];
-  var VIDEO_META = [{ name: '霓裳', personality: 'mei' }];
+  /* 与 scripts/gen_manifest.js 一致：1–3 图普通池，4–5 图稀有，6 图+绝色 */
+  var UNCOMMON_MIN_POSES = 4;
+  var RARE_MIN_POSES = 6;
+  var SPECIAL_DIR = '特殊';
+  var SPECIAL_MIN_POSES = RARE_MIN_POSES;
+  /* 与 scripts/gen_manifest.js 保持一致：特殊妃子专用雅名池 */
+  var SPECIAL_NAME_POOL = [
+    '瑶光', '灵汐', '云绡', '月漪', '锦书', '青鸾', '素霓', '紫菱', '秋旻', '琼羽',
+    '湘灵', '洛湄', '翠微', '芳甸', '春山', '晚照', '星渚', '烟萝', '玉笙', '红笺',
+    '婉枫', '轻桡', '云鬟', '雪蘅', '碧梧', '绯烟', '露华', '银汉', '兰泽', '蕙茝',
+    '子夜', '玄霜', '繁霜', '素秋', '明霞', '纤云', '寒漪', '浅黛', '妙音', '凝碧',
+    '漱玉', '金荃', '月梳', '翠翘', '琼枝', '素翎', '青妩', '银筝'
+  ];
+  var VIDEO_META = [
+    { name: '霓裳', personality: 'mei' },
+    { name: '惊鸿', personality: 'qing' },
+    { name: '云翘', personality: 'mei' },
+    { name: '兰陵', personality: 'jue' },
+    { name: '轻霞', personality: 'huo' },
+    { name: '灵芸', personality: 'wen' },
+    { name: '月华', personality: 'qing' },
+    { name: '雪衣', personality: 'duan' }
+  ];
 
   /* 占位/代号文件夹的雅名分配器（与 scripts/gen_manifest.js 共用同一模块）。
      若模块未加载（老页面缓存），降级为「文件夹名即名字」，不影响功能。 */
   var ASSET_NAMES = (window.QZD && window.QZD.assetNames) || null;
+
+  function seededIdx(key, len) {
+    var s = String(key || ''), h = 0;
+    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return len ? h % len : 0;
+  }
+
+  function assignSpecialNames(keys, reserved) {
+    var used = Object.create(null), out = Object.create(null);
+    (reserved || []).forEach(function(n){ if(n) used[n] = true; });
+    keys.slice().sort(function(a,b){ return String(a).localeCompare(String(b), 'zh-Hans-CN', { numeric:true }); })
+      .forEach(function(key){
+        var start = seededIdx('特殊/' + key, SPECIAL_NAME_POOL.length), picked = null;
+        for(var k = 0; k < SPECIAL_NAME_POOL.length; k++){
+          var cand = SPECIAL_NAME_POOL[(start + k) % SPECIAL_NAME_POOL.length];
+          if(!used[cand]){ picked = cand; break; }
+        }
+        out[key] = picked || key;
+        if(picked) used[picked] = true;
+      });
+    return out;
+  }
 
   var isDesktop = !!(window.QZDNative && window.QZDNative.isDesktop);
 
@@ -69,7 +113,7 @@
 
   /* 浏览器：从 FileList（webkitdirectory）重建清单，逻辑镜像 gen_manifest.js */
   function buildFromFiles(fileList){
-    var emperor = [], rare = [], pool = [];
+    var emperor = [], rare = [], uncommon = [], pool = [];
     var pi = 0;
     var videoCount = 0;
     var relPaths = [];
@@ -89,22 +133,62 @@
     }
     relPaths.sort();
 
-    /* 先收集所有「有效子文件夹」，统一算显示名映射。
-       与 gen_manifest.js 的 built 集合口径一致（只含有图片/视频的目录），
-       保证桌面端与浏览器端给同一文件夹分配同一个名字。
-       映射表由 index.html 预先加载为 window.QZD.nameMap（表优先，缺省哈希兜底）。 */
+    /* 先按图片张数分档：1–3 普通池 / 4–5 稀有 / 6+ 绝色；有视频仍走绝色。 */
+    var normalStats = Object.create(null);
+    relPaths.forEach(function(p){
+      var parts = p.split('/');
+      if(parts.length < 2) return;
+      var folder = parts[0];
+      if(folder.toLowerCase() === 'king' || folder === '皇后' || folder === SPECIAL_DIR) return;
+      var last = parts[parts.length - 1];
+      if(!IMG_RE.test(last) && !VID_RE.test(last)) return;
+      if(!normalStats[folder]) normalStats[folder] = { folder:folder, poses:[], vids:[] };
+      var full = 'assets/images/' + encodeURI(p);
+      if(IMG_RE.test(last)) normalStats[folder].poses.push(full);
+      else normalStats[folder].vids.push(full);
+    });
+
+    var rareFolders = Object.create(null), uncommonFolders = Object.create(null);
+    Object.keys(normalStats).forEach(function(folder){
+      var s = normalStats[folder];
+      if(s.vids.length || s.poses.length >= RARE_MIN_POSES) rareFolders[folder] = true;
+      else if(s.poses.length >= UNCOMMON_MIN_POSES) uncommonFolders[folder] = true;
+      else pool.push.apply(pool, s.poses);
+    });
+
+    /* 特殊库：特殊/<子目录>/NN.jpg，沿用 6 张门槛；4–5 张降为稀有。 */
+    var specialStats = Object.create(null), qualifiedSpecial = Object.create(null);
+    relPaths.forEach(function(p){
+      var parts = p.split('/');
+      if(parts[0] !== SPECIAL_DIR || parts.length < 3) return;
+      var last = parts[parts.length - 1];
+      if(!IMG_RE.test(last) && !VID_RE.test(last)) return;
+      var key = SPECIAL_DIR + '/' + parts[1];
+      if(!specialStats[key]) specialStats[key] = { folder:key, sub:parts[1], poses:[], vids:[] };
+      var full = 'assets/images/' + encodeURI(p);
+      if(IMG_RE.test(last)) specialStats[key].poses.push(full);
+      else specialStats[key].vids.push(full);
+    });
+    Object.keys(specialStats).forEach(function(key){
+      var s = specialStats[key];
+      if(s.vids.length || s.poses.length >= SPECIAL_MIN_POSES) qualifiedSpecial[key] = s;
+      else if(s.poses.length >= UNCOMMON_MIN_POSES) uncommonFolders[key] = true;
+      else pool.push.apply(pool, s.poses);
+    });
+
+    /* 有效目录（绝色 + 稀有）统一算雅名，保证桌面/浏览器两端一致。 */
     var nameMap = {};
     if(ASSET_NAMES){
-      var folders = [], seenF = {};
-      relPaths.forEach(function(p){
-        var parts = p.split('/');
-        /* 「皇后」是换装角色目录，不进绝色妃子池 */
-    if(parts.length > 1 && parts[0] && parts[0].toLowerCase() !== 'king' && parts[0] !== '皇后' && !seenF[parts[0]]){
-          seenF[parts[0]] = true; folders.push(parts[0]);
-        }
-      });
-      nameMap = ASSET_NAMES.assignNames(folders);
+      nameMap = ASSET_NAMES.assignNames(Object.keys(rareFolders).concat(Object.keys(uncommonFolders)));
     }
+
+    var reservedNames = [];
+    Object.keys(nameMap).forEach(function(k){ reservedNames.push(nameMap[k]); });
+    VIDEO_META.forEach(function(v){ reservedNames.push(v.name); });
+    var specialNameMap = assignSpecialNames(Object.keys(specialStats), reservedNames);
+
+    var usedVideoNames = Object.create(null);
+    rare.forEach(function(r){ usedVideoNames[r.name] = true; });
 
     relPaths.forEach(function(p){
       if(!p) return;
@@ -113,8 +197,13 @@
         // 顶层文件
         if(IMG_RE.test(parts[0])) pool.push('assets/images/' + encodeURI(parts[0]));
         else if(VID_RE.test(parts[0])){
-          var meta = VIDEO_META[videoCount++] || { name: '惊鸿', personality: 'mei' };
-          rare.push({ folder: '__video__' + parts[0].replace(/\.[^.]+$/, ''), name: meta.name, personality: meta.personality, poses: [], video: 'assets/images/' + encodeURI(parts[0]) });
+          var idx = videoCount++;
+          var meta = VIDEO_META[idx] || { name: '影姬' + (idx + 1), personality: 'mei' };
+          var vname = meta.name;
+          while(usedVideoNames[vname]) vname = meta.name + '·' + (idx + 1);
+          usedVideoNames[vname] = true;
+          rare.push({ folder: '__video__' + parts[0].replace(/\.[^.]+$/, ''), name: vname,
+            personality: meta.personality, poses: [], video: 'assets/images/' + encodeURI(parts[0]), special: true });
         }
         return;
       }
@@ -123,8 +212,8 @@
         if(IMG_RE.test(parts[parts.length - 1])) emperor.push('assets/images/' + encodeURI(p));
         return;
       }
-      // 子文件夹 = 一位妃嫔（绝色），多图 = 多姿态；「皇后」除外
-      if(folder === '皇后') return;
+      // 只有 6 图+ / 有视频的目录进绝色池；4–5 图进稀有池；其余已下放普通池
+      if(folder === '皇后' || folder === SPECIAL_DIR || !rareFolders[folder]) return;
       var last = parts[parts.length - 1];
       var isImg = IMG_RE.test(last), isVid = VID_RE.test(last);
       if(!isImg && !isVid) return;
@@ -136,8 +225,38 @@
       if(isImg) entry.poses.push('assets/images/' + encodeURI(p));
       else if(isVid) entry.video = 'assets/images/' + encodeURI(p);
     });
+
+    /* 4–5 图目录：稀有妃池 */
+    Object.keys(uncommonFolders).forEach(function(key){
+      var s = normalStats[key] || specialStats[key];
+      if(!s || !s.poses.length) return;
+      var isSpecial = key.indexOf(SPECIAL_DIR + '/') === 0;
+      uncommon.push({
+        folder: key,
+        name: (isSpecial ? specialNameMap[key] : nameMap[key]) || key,
+        personality: PERSONALITY[s.sub || key] || FALLBACK_P[pi++ % FALLBACK_P.length],
+        poses: s.poses.slice(),
+        tier: 'uncommon'
+      });
+    });
+
+    /* 特殊库里达到绝色门槛的条目 */
+    Object.keys(qualifiedSpecial).forEach(function(key){
+      var s = qualifiedSpecial[key];
+      if(!s.poses.length && !s.vids.length) return;
+      var entry = {
+        folder: key,
+        name: specialNameMap[key] || s.sub,
+        personality: PERSONALITY[s.sub] || FALLBACK_P[pi++ % FALLBACK_P.length],
+        poses: s.poses,
+        special: s.poses.length >= SPECIAL_MIN_POSES
+      };
+      if(s.vids.length) entry.video = s.vids[0];
+      rare.push(entry);
+    });
+
     rare = rare.filter(function(r){ return r.poses.length || r.video; });
-    return { emperor: emperor, rare: rare, pool: pool };
+    return { emperor: emperor, rare: rare, uncommon: uncommon, pool: pool };
   }
 
   function findRare(arr, folder){
@@ -242,6 +361,11 @@
     buildFromFiles: buildFromFiles,
     buildQueenFromFiles: buildQueenFromFiles,
     applyQueenManifest: applyQueenManifest,
-    isDesktop: isDesktop
+    isDesktop: isDesktop,
+    UNCOMMON_MIN_POSES: UNCOMMON_MIN_POSES,
+    RARE_MIN_POSES: RARE_MIN_POSES,
+    SPECIAL_DIR: SPECIAL_DIR,
+    SPECIAL_MIN_POSES: SPECIAL_MIN_POSES,
+    SPECIAL_NAME_POOL: SPECIAL_NAME_POOL
   };
 })();
