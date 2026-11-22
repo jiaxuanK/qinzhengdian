@@ -39,7 +39,7 @@
 
   function createState(){
     var now = Date.now();
-    return {
+    var state = {
       meta: {
         schemaVersion: CFG.SCHEMA_VERSION,
         createdAt: now,
@@ -171,6 +171,9 @@
         return { id: c.id, name: c.name, parentId: c.parentId || '' };
       })
     };
+    /* 新档也必须走同一套归一化，否则清档后会漏掉皇后等固定成员。 */
+    normalize(state);
+    return state;
   }
 
   /* 旧档补齐 M2/M3/M4/M5 字段，避免读档后某些模块拿到 undefined */

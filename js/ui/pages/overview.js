@@ -452,11 +452,20 @@
     '</section>';
   }
 
-  /* F1/F2 国势横幅：只在危机时出现，温和叙事 + 明确「可挽回」出口 */
+  /* F1/F2 国势条：平时也常驻一条紧凑小卡，手机端随时能看到安定度；
+     危机时改用完整横幅，温和叙事 + 明确「可挽回」出口。 */
   function dynastyBanner(){
     if(!QZD.dynasty) return '';
     var v = QZD.dynasty.view();
-    if(!v.isCrisis) return '';
+    var num = Math.round(v.stability);
+    var pct = Math.max(0, Math.min(100, v.stability));
+    if(!v.isCrisis){
+      return '<section class="card dynasty-mini">' +
+        '<div class="card-head"><span class="card-title">国势 · ' + UI.fmt.escape(v.name) +
+        '</span><span class="card-note">安定 ' + num + '</span></div>' +
+        '<div class="bar"><i style="width:' + pct + '%;background:var(--daiqing)"></i></div>' +
+      '</section>';
+    }
     var tips = {
       talk: '朝臣窃议，勤政数日即可平息。',
       omen: '御案已添《修省弭灾疏》，批阅即是修省。',

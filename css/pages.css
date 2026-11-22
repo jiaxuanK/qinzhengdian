@@ -1900,6 +1900,10 @@ body.zen .sidebar{display:none}
 .bar{background:var(--viz-surface)}
 .dur-bar,.sub-bar,.sub-week{background:var(--viz-surface)}
 
+/* 总览常驻国势小条：手机端不用等危机也能看到安定度 */
+.dynasty-mini .card-head{margin-bottom:6px}
+.dynasty-mini .bar{height:8px}
+
 /* 折线图悬停竖线：命中区透明，竖线与点默认隐藏，:hover 才显（纯 CSS，无 JS 事件） */
 .tz-guide{opacity:0;transition:opacity .15s ease}
 .tz-pt:hover .tz-guide{opacity:1}
