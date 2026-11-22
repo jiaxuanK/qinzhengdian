@@ -182,9 +182,21 @@ QZD.ASSETS = {
       ]
     },
     {
+      "folder": "18",
+      "name": "疏桐",
+      "personality": "wen",
+      "poses": [
+        "enc:YXNzZXRzL2E4Zi8yOWE4YWZmZWY3NDEwZGFjLmpwZWc=",
+        "enc:YXNzZXRzL2E4Zi8xZWM2ZGY3OTM5N2E3YzUxLmpwZWc=",
+        "enc:YXNzZXRzL2E4Zi84ZTVlNDBiYjRkMzRlY2IxLmpwZWc=",
+        "enc:YXNzZXRzL2E4Zi8yZmZiNDhiMzFhYTY4NTg4LmpwZWc=",
+        "enc:YXNzZXRzL2E4Zi9iZTU0MzVjODgzOGRjMTM4LmpwZWc="
+      ]
+    },
+    {
       "folder": "20",
       "name": "莞尔",
-      "personality": "wen",
+      "personality": "huo",
       "poses": [
         "enc:YXNzZXRzL2E4Zi9mYjRkMGFhNTI2NjFiNGM0LmpwZw==",
         "enc:YXNzZXRzL2E4Zi84YTAwOTRkZmUyNmJhNGE2LmpwZw==",
@@ -323,7 +335,7 @@ QZD.ASSETS = {
     {
       "folder": "钰",
       "name": "钰",
-      "personality": "huo",
+      "personality": "qing",
       "poses": [
         "enc:YXNzZXRzL2E4Zi82OGFlNDk5NGFiOTk5MWIzLmpwZw==",
         "enc:YXNzZXRzL2E4Zi8zMjBhMWQwODEwN2U4NDE1LmpwZw==",
@@ -499,7 +511,53 @@ QZD.ASSETS = {
     "enc:YXNzZXRzL2E4Zi9hYmVhZGZkMDc3YzE3MjQyLmpwZWc=",
     "enc:YXNzZXRzL2E4Zi81ZjliN2FjNjgwMmVkZWY4LmpwZWc=",
     "enc:YXNzZXRzL2E4Zi85OTVhNjA4MTgxYmFiZDAwLnBuZw==",
-    "enc:YXNzZXRzL2E4Zi9kMDI2NDVjOTNmMmNjYjQyLnBuZw=="
+    "enc:YXNzZXRzL2E4Zi9kMDI2NDVjOTNmMmNjYjQyLnBuZw==",
+    "enc:YXNzZXRzL2E4Zi83Y2YyOWIzNTE0Y2FjNmM4LmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi8yZGJhZGY3ZGQ3NzJiMjFiLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi8xYmI1ZDEyYzE1YjMzODI0LmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi83ZTNjMjFhODE4MzllYjNmLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi85MDFmNDczMjI4ZWIzNTA0LmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi80MjYwOTA2NDc3MWMwOTM4LnBuZw==",
+    "enc:YXNzZXRzL2E4Zi81OGU2MDI2MjRkZDQzYTg3LmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi81MjhmODY5M2VlMWY2NTVhLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi9lM2NiMThlZjA0ZGFmYTg0LmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi8zYjc2ZGMzMjg2ODM1Y2E3LmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi84NTAwMzY1YjQyODc3MTdlLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi9hOTliNzE0ODUzMmZjYTk1LmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi9lODU3NDU1YmI5NTkzYmRjLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi82ZGU4YTJiODk2MWE5NTc4LmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi8zNDdlOWNmOTQ4OWRmODdjLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi82N2YyMTk1YzgyZmE0YzcxLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi85ZDM5NGRlZmY5NzUzZmNhLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi85NjM3ODI3ZTliNmIyYjYwLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi80OTgwZDE4ZGM2OTU4MjNlLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi83YjNiOTNkYzIyMGMyMTE1LmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi82NWExZGYxZDMxNTk2ZmE4LmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi8zZjFlMzA4ZjQzNjIxNDhiLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi8yYjFjMWVjMzg0MjQ5NzQ5LmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi84ZTNkMGU2NWRjZjE5OGJjLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi82NGUwMmEyY2M1Y2ZkZWI4LmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi8xYzI3M2FjMDg0YjMyNmE3LmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi81ZmFkYzZmZGY4ZTg0NWFmLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi84NjM2MDUxZjRlMzhkYzIwLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi8wZDQ2YTc1N2NkYWU0NDhhLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi9jMGNjMGM5YmUzN2FkM2UwLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi9lZDJiOGI4ZGVmYjZjMTAyLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi8zYjU1NjE4ZDU1MDkxNDZkLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi9iNzE1ZDY1MmE0YmU0NjRmLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi9hYjhiY2MyNjYyZGFhNWI2LmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi9lZTZlNWQ2ODFmODZhMzAyLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi9iYzFhZGFkOGZhZmFiOGQxLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi8yZDc2ZjViMDk1MWMwNTUzLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi8xNmQyNDNlNzU5NjYxY2IxLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi9hOTc3NjhiMmUwMzkwZTgzLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi9lNTdhY2I2NjdhODI5ZDUzLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi84ZDVkZTk4NmU2MGRkMTU5LmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi8wYWJkNmI1MjhiNjc1OGQyLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi9jNDNiY2M2MGQwZmMzZTBmLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi82MjI2ZGY1ODc2MWEzNTcwLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi9jNzdjMDBkNjhiZWVjNDUzLmpwZWc=",
+    "enc:YXNzZXRzL2E4Zi9jODAzMDQxZWU5YjgxNzY2LmpwZWc="
   ]
 };
 
