@@ -114,20 +114,29 @@
   UI.register('my-map', myPage);
 
   /* 自定义导图节点编辑弹窗 */
-  function openMyNode(id){
+  function openMyNode(id, defaultParentId){
     var isNew = !id;
     var n = isNew ? null : QZD.notemap.find(id);
     if(!isNew && !n) return;
-    var kids = isNew ? [] : QZD.notemap.childrenOf(id).map(function(c){ return c; });
-    var allNodes = QZD.notemap.nodes().filter(function(x){ return !isNew && x.id !== id && kids.indexOf(x) < 0 && QZD.notemap.descendants(id).indexOf(x) < 0; });
+    var kids = isNew ? [] : QZD.notemap.childrenOf(id);
+    /* 上级候选：新建时所有节点都可作上级；编辑时排除自己与自己的子孙（防环） */
+    var allNodes;
+    if(isNew){
+      allNodes = QZD.notemap.nodes();
+    }else{
+      var ex = [id].concat(QZD.notemap.descendants(id).map(function(x){ return x.id; }));
+      allNodes = QZD.notemap.nodes().filter(function(x){ return ex.indexOf(x.id) < 0; });
+    }
+    var presetParent = defaultParentId || (n ? n.parentId : '');
     var parentOpts = '<option value="">（顶级主题）</option>' + allNodes.map(function(x){
-      return '<option value="'+esc(x.id)+'"'+(n && n.parentId===x.id?' selected':'')+'>'+esc(x.text.slice(0,16))+'</option>';
+      return '<option value="'+esc(x.id)+'"'+(x.id===presetParent?' selected':'')+'>'+esc(x.text.slice(0,16))+'</option>';
     }).join('');
     var body = '<div class="field"><label for="mn-text">内容</label>' +
       '<input id="mn-text" maxlength="120" value="'+esc(n?n.text:'')+'" placeholder="比如：这周要解决的核心问题"></div>' +
       '<div class="field"><label for="mn-parent">上级节点</label><select id="mn-parent">'+parentOpts+'</select></div>' +
       (isNew ? '' : '<p class="card-note">下级节点 '+kids.length+' 个 · 修改上级会整支搬移，不能挂到自己的分支下。</p>');
-    var foot = isNew ? '' : '<button class="chip danger" data-mm-del="'+esc(id)+'" style="float:left;margin-top:6px">删除此节点及子节点</button>';
+    var foot = isNew ? '' : '<button class="chip primary" data-mm-addchild="'+esc(id)+'" style="float:left;margin-top:6px">＋ 加子分支</button>' +
+      '<button class="chip danger" data-mm-del="'+esc(id)+'" style="float:left;margin-top:6px">删除此节点及子节点</button>';
     var modal = UI.modal({
       title: isNew ? '加一个节点' : '编辑节点',
       body: body + '<div style="clear:both"></div>' + foot,
@@ -142,6 +151,11 @@
         UI.toast(isNew?'已添加节点':'已保存'); UI.onStateChanged();
       }
     });
+    var addChild = modal.root.querySelector('[data-mm-addchild]');
+    if(addChild) addChild.onclick = function(){
+      modal.close();
+      openMyNode(null, id);   /* 新节点默认挂到当前节点下 */
+    };
     var del = modal.root.querySelector('[data-mm-del]');
     if(del) del.onclick = function(){
       UI.confirm('删除这个节点及其所有子节点？', function(){
@@ -168,8 +182,10 @@
         if(nid && nid !== 'root'){
           var nn = QZD.notemap.find(nid);
           var hasKids = QZD.notemap.childrenOf(nid).length;
-          /* 点 ± 号=折叠；点节点主体=编辑 */
-          var isToggle = (e.target.tagName === 'text' || (e.target.textContent||'').match(/^[+−]$/));
+          /* 只有 target 本身是 +/− 文本才折叠；点节点标题/主体=编辑 */
+          var tg = e.target;
+          var isToggle = tg && tg.tagName && String(tg.tagName).toLowerCase()==='text' &&
+            /^[+−]$/.test((tg.textContent||'').trim());
           if(isToggle && hasKids){ QZD.notemap.toggleCollapse(nid); UI.onStateChanged(); }
           else openMyNode(nid);
         } else if(nid === 'root'){ openMyNode(null); }
