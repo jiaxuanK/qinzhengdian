@@ -111,7 +111,7 @@
 
     return '<section class="card">' +
       '<div class="card-head"><span class="card-title">归档起居注</span>' +
-      '<span class="card-note">共 ' + all.length + ' 条 · 当前 ' + list.length + ' 条</span></div>' +
+      '<span class="card-note"><button class="chip sm" data-goto="log-map" title="查看起居注导图">🗳 发展导图 →</button> · 共 ' + all.length + ' 条 · 当前 ' + list.length + ' 条</span></div>' +
       chips +
       (list.length ? groupHTML : '<div class="empty">这一类还没有记录</div>') +
     '</section>';
