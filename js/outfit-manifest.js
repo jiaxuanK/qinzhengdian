@@ -82,15 +82,6 @@ QZD.QUEEN_OUTFITS = {
       "cover": "enc:YXNzZXRzL2E4Zi81NzBlOWY1Y2RkYzI2ZjNkLmpwZw=="
     },
     {
-      "name": "常服",
-      "folder": "常服",
-      "images": [
-        "enc:YXNzZXRzL2E4Zi84YzU5MGVmN2FiMTA5NWE1LmpwZw==",
-        "enc:YXNzZXRzL2E4Zi8wMWY3ZDA3OWE5YTcxZWNhLmpwZw=="
-      ],
-      "cover": "enc:YXNzZXRzL2E4Zi84YzU5MGVmN2FiMTA5NWE1LmpwZw=="
-    },
-    {
       "name": "swim",
       "folder": "swim",
       "images": [
