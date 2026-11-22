@@ -74,7 +74,11 @@
     var title = document.getElementById('page-title');
     if(title) title.textContent = navName(current);
     var warn = document.getElementById('storage-warn');
-    if(warn) warn.classList.toggle('show', QZD.stateIO.backend() !== 'local');
+    if(warn){
+      var canSave = QZD.stateIO.persistent ? QZD.stateIO.persistent() :
+        (QZD.stateIO.backend() === 'local');
+      warn.classList.toggle('show', !canSave);
+    }
   };
 
   /* ---------- 导航 ---------- */

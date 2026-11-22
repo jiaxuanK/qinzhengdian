@@ -675,6 +675,7 @@
   var memory = {};
   var backend = 'memory';         /* 'idb' | 'local' | 'memory' */
   var idbReady = false;
+  var idbOk = false;              /* IndexedDB 是否可用（localStorage 被禁时的持久化兜底） */
   var IDB_NAME = 'qzd-save';
   var IDB_STORE = 'saves';
 
@@ -700,6 +701,33 @@
       tx.objectStore(IDB_STORE).put({ key: SAVE_KEY, val: str });
       idbReady = true;
     });
+  }
+
+  /* 异步只读：localStorage 被禁时从 IndexedDB 镜像回读存档。
+     镜像由 idbWrite 定期写入；这里只取最新一条，不改动它。 */
+  function idbRead(cb){
+    var done = false;
+    function finish(v){ if(done) return; done = true; cb(v || null); }
+    if(!('indexedDB' in window)){ finish(null); return; }
+    var timer = setTimeout(function(){ finish(null); }, 2000); /* 网关 WebView 可能挂起 IDB，超时兜底 */
+    try{
+      var req = indexedDB.open(IDB_NAME, 1);
+      req.onsuccess = function(e){
+        var db = e.target.result;
+        idbOk = true;
+        try{
+          if(!db.objectStoreNames.contains(IDB_STORE)){ clearTimeout(timer); finish(null); return; }
+          var tx = db.transaction(IDB_STORE, 'readonly');
+          var g = tx.objectStore(IDB_STORE).get(SAVE_KEY);
+          g.onsuccess = function(){
+            clearTimeout(timer);
+            finish(g.result && g.result.val ? g.result.val : null);
+          };
+          g.onerror = function(){ clearTimeout(timer); finish(null); };
+        }catch(err){ clearTimeout(timer); finish(null); }
+      };
+      req.onerror = function(){ clearTimeout(timer); finish(null); };
+    }catch(e){ clearTimeout(timer); finish(null); }
   }
 
   function readRaw(){
@@ -846,6 +874,17 @@
       return backend === 'local';
     },
     backend: function(){ return backend; },
+    /* 存储是否真正可持久化：localStorage 可用，或 IndexedDB 镜像可用 */
+    persistent: function(){ return backend === 'local' || idbOk; },
+    /* localStorage 被禁时的异步预载：IDB 有档则写进 memory，随后 load() 正常读。
+       回调一定执行（成功/失败/超时），不阻塞启动流程。 */
+    hydrate: function(cb){
+      if(backend === 'local'){ cb(); return; }
+      idbRead(function(str){
+        if(str) memory[SAVE_KEY] = str;
+        cb();
+      });
+    },
     createState: createState,
     todayStr: todayStr,
     /* 供回归测试精确验证旧档字段兼容（纯内存归一化，不写盘） */

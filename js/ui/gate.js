@@ -72,12 +72,29 @@
 
   function check(pin){ return !!HASH && sha256(SALT + ':' + String(pin)) === HASH; }
 
+  /* localStorage 被内嵌 WebView 禁用时，退回 cookie 记住已验证状态 */
+  function cookieGet(name){
+    try{
+      var m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+      return m ? decodeURIComponent(m[1]) : '';
+    }catch(e){ return ''; }
+  }
+  function cookieSet(name, val){
+    try{
+      document.cookie = name + '=' + encodeURIComponent(val) +
+        ';max-age=' + (DAYS * 86400) + ';path=/;SameSite=Lax';
+    }catch(e){}
+  }
   function untilOk(){
-    try { return Number(localStorage.getItem(UNTIL_KEY) || 0) > Date.now(); }
-    catch(e){ return false; }
+    var until = 0;
+    try { until = Number(localStorage.getItem(UNTIL_KEY) || 0); } catch(e){}
+    if(!(until > 0)) until = Number(cookieGet(UNTIL_KEY) || 0);
+    return until > Date.now();
   }
   function remember(){
-    try { localStorage.setItem(UNTIL_KEY, String(Date.now() + DAYS * 86400000)); } catch(e){}
+    var until = String(Date.now() + DAYS * 86400000);
+    try { localStorage.setItem(UNTIL_KEY, until); } catch(e){}
+    cookieSet(UNTIL_KEY, until);
   }
 
   function showGate(){

@@ -4,7 +4,7 @@
 (function(){
   function fmtDec(n){ return (Math.round((n || 0) * 10) / 10).toFixed(1); }
 
-  QZD.stateIO.probe();
+  function start(){
   QZD.stateIO.load();
   QZD.stateIO.checkDailyReset();
 
@@ -81,4 +81,13 @@
   document.addEventListener('visibilitychange', function(){
     if(document.visibilityState === 'hidden') QZD.stateIO.save();
   });
+  }
+
+  /* 探测存储 → localStorage 可用则同步启动；被禁则先异步回读 IndexedDB 镜像再启动 */
+  QZD.stateIO.probe();
+  if(QZD.stateIO.backend() === 'local'){
+    start();
+  }else{
+    QZD.stateIO.hydrate(start);
+  }
 })();
