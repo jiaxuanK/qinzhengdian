@@ -7,6 +7,10 @@
   function startAfterAssets(){
   QZD.stateIO.checkDailyReset();
 
+  /* 皇后立绘始终以当前装扮清单为准：清档、换图、旧缓存清单失效后
+     都不会残留旧路径或空立绘；玩家手动选过的装扮仍由 state.queen.outfit 保留。 */
+  if(QZD.queen && QZD.queen.refreshPortrait) QZD.queen.refreshPortrait();
+
   /* 刷新 / 误关页面后按真实时间补齐番茄结算 */
   var restored = QZD.pomodoro.restore();
 
