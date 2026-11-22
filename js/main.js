@@ -4,8 +4,7 @@
 (function(){
   function fmtDec(n){ return (Math.round((n || 0) * 10) / 10).toFixed(1); }
 
-  function start(){
-  QZD.stateIO.load();
+  function startAfterAssets(){
   QZD.stateIO.checkDailyReset();
 
   /* 刷新 / 误关页面后按真实时间补齐番茄结算 */
@@ -81,6 +80,25 @@
   document.addEventListener('visibilitychange', function(){
     if(document.visibilityState === 'hidden') QZD.stateIO.save();
   });
+  }
+
+  function start(){
+    QZD.stateIO.load();
+    /* 本机图包存在独立 IndexedDB，刷新后 blob: 地址会失效；
+       必须在渲染前重新生成并覆盖 QZD.ASSETS，否则新抽的妃子没有立绘。 */
+    if(QZD.userpics && QZD.userpics.count && QZD.userpics.applyToGame){
+      var counted = QZD.userpics.count();
+      if(!counted || !counted.then){ startAfterAssets(); return; }
+      /* 国内 WebView 里 IDB 偶发挂起：最多等 1.5s，绝不卡住进殿。 */
+      return Promise.race([
+        counted,
+        new Promise(function(res){ setTimeout(function(){ res(0); }, 1500); })
+      ]).then(function(n){
+        if(!n) return null;
+        return QZD.userpics.applyToGame();
+      }).then(function(){ startAfterAssets(); }).catch(function(){ startAfterAssets(); });
+    }
+    startAfterAssets();
   }
 
   /* 探测存储 → localStorage 可用则同步启动；被禁则先异步回读 IndexedDB 镜像再启动 */

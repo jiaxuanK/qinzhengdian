@@ -778,9 +778,15 @@
     if(s.logs.length > 300) s.logs = s.logs.slice(-300);
   }
 
+  /* blob: 地址只在本次页面有效，绝不能写进存档；启动时由 userpics 按 rareKey 重新生成。 */
+  function stripTransient(key, value){
+    if(typeof value === 'string' && value.indexOf('blob:') === 0) return '';
+    return value;
+  }
+
   function save(){
     QZD.state.meta.lastSavedAt = Date.now();
-    return writeRaw(JSON.stringify(QZD.state));
+    return writeRaw(JSON.stringify(QZD.state, stripTransient));
   }
 
   function load(){
@@ -822,7 +828,7 @@
 
   function exportFile(){
     save();
-    var text = JSON.stringify(QZD.state, null, 2);
+    var text = JSON.stringify(QZD.state, stripTransient, 2);
     var blob = new Blob([text], { type: 'application/json' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
@@ -839,6 +845,7 @@
     reader.onload = function(){
       try{
         var obj = JSON.parse(String(reader.result));
+        obj = JSON.parse(JSON.stringify(obj, stripTransient));
         if(!obj || !obj.meta || obj.meta.schemaVersion !== CFG.SCHEMA_VERSION){
           throw new Error('存档版本不匹配（需要 schemaVersion ' + CFG.SCHEMA_VERSION + '）');
         }

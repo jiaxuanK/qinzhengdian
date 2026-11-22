@@ -410,7 +410,7 @@
       });
       /* 皇帝立绘：若有导入的 emperor 组则替换 */
       if(QZD.state && m.emperor && m.emperor.length) QZD.state.emperorPortrait = m.emperor[0];
-      if(QZD.stateIO && QZD.stateIO.save) QZD.stateIO.save();
+      /* 不落盘 blob: 地址：它只在本次页面有效，state.js 保存时也会剥离。 */
       return { ok:true, rare:(m.rare||[]).length, special:(m.special||[]).length,
                pool:(m.pool||[]).length, rebound:rebound };
     });
