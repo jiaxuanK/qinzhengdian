@@ -119,6 +119,8 @@
       ideas: [],
       theses: [],
       goalTree: [],
+      /* 11-22 自定义导图：扁平节点 {id,text,parentId,collapsed}，无限层级 */
+      notemap: [],
 
       /* M8 科研办公：本周三事 + 专注进展流水 / 组会纪要 / 精读队列 */
       plan: { weekKey: '', goals: [], progress: [] },
@@ -370,6 +372,13 @@
     if(!Array.isArray(obj.goalTree)) obj.goalTree = [];
     /* 旧档 goal 可能缺 links 字段 */
     obj.goalTree.forEach(function(g){ if(!Array.isArray(g.links)) g.links = []; });
+    /* 11-22 自定义导图：旧档补空，节点字段兜底 */
+    if(!Array.isArray(obj.notemap)) obj.notemap = [];
+    obj.notemap.forEach(function(n){
+      if(typeof n.id !== 'string') n.id = 'n' + Math.random().toString(36).slice(2, 9);
+      if(typeof n.parentId !== 'string') n.parentId = '';
+      if(typeof n.text !== 'string') n.text = '';
+    });
     if(!obj.study.hourStats || typeof obj.study.hourStats !== 'object') obj.study.hourStats = {};
     if(!obj.study.dayHour || typeof obj.study.dayHour !== 'object' || Array.isArray(obj.study.dayHour)) obj.study.dayHour = {};
     if(!Array.isArray(obj.study.focusLog)) obj.study.focusLog = [];

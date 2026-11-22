@@ -313,7 +313,8 @@
       : '<p class="card-note">还没有进展记录 · 写完一项就记一句，周报会自动带上</p>';
     return '<section class="card">' +
       '<div class="card-head"><span class="card-title">速 记 进 展</span>' +
-        '<span class="card-note"><button class="chip sm" data-goto="study-map" title="查看学习记录导图">🗳 导图 →</button></span></div>' +
+        '<span class="card-note"><button class="chip sm" data-goto="study-map" title="查看学习记录导图">🗳 导图 →</button> ' +
+          '<button class="chip sm" data-goto="my-map" title="自己填写的思维导图">✎ 我的导图 →</button></span></div>' +
       goalSelect +
       '<div class="qp-add">' +
         '<input id="qp-text" maxlength="200" placeholder="如：调通了行波电极的 S 参数仿真">' +
