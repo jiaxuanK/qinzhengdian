@@ -90,7 +90,7 @@
       bloodTalent: { dailyQinDate: '' },
       items: {},              /* 珍宝阁背包：itemId -> 数量 */
       /* 学习目标与偏好：把游戏节奏绑回真实专注 */
-      settings: { focusQuiet: true, zen: false, chronosView: 'hour' },
+      settings: { focusQuiet: true, zen: false, chronosView: 'hour', userpicsEnabled: true },
       study: {
         date: todayStr(),
         targetMin: (CFG.STUDY ? CFG.STUDY.DAILY_TARGET_MIN : 120),
@@ -338,6 +338,7 @@
     }
     if(!obj.settings || typeof obj.settings !== 'object') obj.settings = {};
     if(typeof obj.settings.focusQuiet !== 'boolean') obj.settings.focusQuiet = true;
+    if(typeof obj.settings.userpicsEnabled !== 'boolean') obj.settings.userpicsEnabled = true;
 
     if(!obj.study || typeof obj.study !== 'object') obj.study = {};
     var ST = obj.study;
@@ -863,6 +864,8 @@
 
   function wipe(){
     QZD.state = createState();
+    /* 清档默认解除本机图包绑定：图还在，但要重新应用才生效。 */
+    QZD.state.settings.userpicsEnabled = false;
     rolloverCheckin(QZD.state);
     pushLog('system', '山河重开，旧档尽焚');
     save();

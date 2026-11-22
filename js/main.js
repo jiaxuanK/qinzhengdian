@@ -86,7 +86,8 @@
     QZD.stateIO.load();
     /* 本机图包存在独立 IndexedDB，刷新后 blob: 地址会失效；
        必须在渲染前重新生成并覆盖 QZD.ASSETS，否则新抽的妃子没有立绘。 */
-    if(QZD.userpics && QZD.userpics.count && QZD.userpics.applyToGame){
+    var picsAllowed = !QZD.state.settings || QZD.state.settings.userpicsEnabled !== false;
+    if(picsAllowed && QZD.userpics && QZD.userpics.count && QZD.userpics.applyToGame){
       var counted = QZD.userpics.count();
       if(!counted || !counted.then){ startAfterAssets(); return; }
       /* 国内 WebView 里 IDB 偶发挂起：最多等 1.5s，绝不卡住进殿。 */
@@ -98,6 +99,8 @@
         return QZD.userpics.applyToGame();
       }).then(function(){ startAfterAssets(); }).catch(function(){ startAfterAssets(); });
     }
+    /* 清档后图包保留但暂不生效：恢复公开清单，等用户手动应用或重新导入。 */
+    if(QZD.userpics && QZD.userpics.unbindFromGame) QZD.userpics.unbindFromGame();
     startAfterAssets();
   }
 

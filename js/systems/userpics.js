@@ -21,6 +21,9 @@
   var MIN_COMPRESS_BYTES = 40 * 1024;
   var KEEP_RATIO = 0.95;
   var urlCache = {};
+  /* 记住页面最初加载到的公开素材清单，供清档后「解除绑定但保留图包」还原。 */
+  var baseAssets = null;
+  try{ baseAssets = (window.QZD && QZD.ASSETS) ? JSON.parse(JSON.stringify(QZD.ASSETS)) : null; }catch(e){}
 
   function openDB(){
     return new Promise(function(resolve){
@@ -377,6 +380,16 @@
     }).catch(function(){ return original; });
   }
 
+  /* 只解除当前会话绑定，不删 IndexedDB 里的图。 */
+  function unbindFromGame(){
+    QZD.ASSETS = baseAssets
+      ? JSON.parse(JSON.stringify(baseAssets))
+      : { emperor:[], rare:[], uncommon:[], pool:[], special:[] };
+    if(QZD.state && QZD.state.settings) QZD.state.settings.userpicsEnabled = false;
+    clearUrls();
+    return Promise.resolve({ ok:true });
+  }
+
   /* 把本机图包应用到游戏：
      1) 生成清单覆盖 QZD.ASSETS（新选秀/新抽卡自动用本机图）
      2) 已存在妃子按 rareKey 重新绑定 poses/img（刷新旧妃子的图）
@@ -385,6 +398,7 @@
     return toManifest().then(function(m){
       window.QZD = window.QZD || {};
       QZD.ASSETS = m;
+      if(QZD.state && QZD.state.settings) QZD.state.settings.userpicsEnabled = true;
       var rebound = 0;
       var consorts = (QZD.state && QZD.state.consorts) || [];
       function entryFor(c){
@@ -419,7 +433,7 @@
   QZD.userpics = {
     importFiles: importFiles, importPack: importPack, exportPack: exportPack,
     list: list, count: count, clear: clear, recompress: recompress, toManifest: toManifest,
-    applyToGame: applyToGame,
+    applyToGame: applyToGame, unbindFromGame: unbindFromGame,
     urlOf: urlOf, clearUrls: clearUrls, relOf: relOf, groupOf: groupOf,
     IMG_RE: IMG_RE, VID_RE: VID_RE,
     MAX_IMG_EDGE: MAX_IMG_EDGE, IMG_QUALITY: IMG_QUALITY,

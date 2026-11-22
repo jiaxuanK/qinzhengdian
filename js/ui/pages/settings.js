@@ -13,6 +13,11 @@
     if(!QZD.userpics || !QZD.userpics.count){ el.textContent = '不支持'; return; }
     QZD.userpics.count().then(function(n){ el.textContent = n + ' 张（本机）'; });
   }
+  function setUserpicsEnabled(on){
+    QZD.state.settings = QZD.state.settings || {};
+    QZD.state.settings.userpicsEnabled = !!on;
+    if(QZD.stateIO && QZD.stateIO.save) QZD.stateIO.save();
+  }
 
   UI.register('settings', function(){
     /* 本页 DOM 落地后异步补填图包计数（IDB 异步） */
@@ -96,6 +101,7 @@
         kvRow('本机图包', '<span id="upic-count">读取中…</span>') +
         '<div class="btn-row" style="flex-wrap:wrap;gap:6px">' +
           '<button class="btn primary" data-act="import-pics">导入图包</button>' +
+          '<button class="btn" data-act="apply-pics">应用本机图包</button>' +
           '<button class="btn" data-act="export-pics">导出备份</button>' +
           '<button class="btn" data-act="compact-pics">压缩现有图包</button>' +
           '<button class="btn ghost" data-act="clear-pics">清空图包</button>' +
@@ -193,10 +199,11 @@
     }else if(act === 'import'){
       document.getElementById('import-file').click();
     }else if(act === 'wipe'){
-      UI.confirm('清档将删除全部进度且不可恢复。确定重开山河吗？', function(){
+      UI.confirm('清档将删除全部进度且不可恢复；本机图包会保留但暂时解除绑定。确定重开山河吗？', function(){
         QZD.stateIO.wipe();
+        if(QZD.userpics && QZD.userpics.unbindFromGame) QZD.userpics.unbindFromGame();
         UI.onStateChanged();
-        UI.toast('已清档重开');
+        UI.toast('已清档重开；图包保留，需重新应用才生效');
       }, { okText: '确定清档' });
     }else if(act === 'debug-money'){
       QZD.resources.add({ jinQian: 500 });
@@ -223,6 +230,14 @@
       UI.toast('已＋全套四维（测试）');
     }else if(act === 'refresh-assets'){
       if(QZD.assetsRefresh && QZD.assetsRefresh.refresh) QZD.assetsRefresh.refresh();
+    }else if(act === 'apply-pics'){
+      /* 清档后图包仍在，只是解除了绑定；手动点这里恢复。 */
+      QZD.userpics.applyToGame().then(function(a){
+        setUserpicsEnabled(true);
+        UI.onStateChanged();
+        UI.toast('已应用本机图包 · 绝色 ' + a.rare + ' · 普通 ' + a.pool);
+        updateUpicCount();
+      }).catch(function(err){ UI.toast('应用失败：' + (err && err.message || err)); });
     }else if(act === 'import-pics'){
       /* 选文件夹：webkitdirectory 多选，导入到本机图包库 */
       var inp = document.createElement('input');
@@ -239,6 +254,7 @@
         QZD.userpics.importFiles(fs).then(function(r){
           if(!r.ok){ UI.toast(r.error || '导入失败'); return; }
           return QZD.userpics.applyToGame().then(function(a){
+            setUserpicsEnabled(true);
             UI.onStateChanged();
             UI.toast('已导入 ' + r.added + ' 张 · ' + (r.groups||[]).length + ' 组，图只存在本机');
             updateUpicCount();
@@ -262,6 +278,7 @@
             QZD.userpics.importPack(String(fr.result)).then(function(r){
               if(!r.ok){ UI.toast(r.error || '恢复失败'); return; }
               return QZD.userpics.applyToGame().then(function(){
+                setUserpicsEnabled(true);
                 UI.onStateChanged(); UI.toast('已恢复 ' + r.added + ' 张图'); updateUpicCount();
               });
             }).catch(function(e){ UI.toast('恢复失败：' + (e.message||e)); });
@@ -289,6 +306,7 @@
       QZD.userpics.recompress().then(function(r){
         if(!r.ok){ UI.toast(r.error || '压缩失败'); return; }
         return QZD.userpics.applyToGame().then(function(){
+          setUserpicsEnabled(true);
           UI.onStateChanged();
           var mb = Math.round((r.savedBytes || 0) / 1048576 * 10) / 10;
           UI.toast(r.changed ? ('已压缩 ' + r.changed + ' 张' + (mb > 0 ? '，约省 ' + mb + ' MB' : ''))
@@ -299,6 +317,7 @@
     }else if(act === 'clear-pics'){
       UI.confirm('清空本机图包？所有你自己导入的妃子图会删除，不可恢复（除非有备份）。', function(){
         QZD.userpics.clear().then(function(){
+          setUserpicsEnabled(false);
           UI.onStateChanged(); UI.toast('图包已清空'); updateUpicCount();
         });
       }, { okText:'确定清空' });
