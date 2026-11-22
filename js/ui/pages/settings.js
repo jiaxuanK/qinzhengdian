@@ -97,6 +97,7 @@
         '<div class="btn-row" style="flex-wrap:wrap;gap:6px">' +
           '<button class="btn primary" data-act="import-pics">导入图包</button>' +
           '<button class="btn" data-act="export-pics">导出备份</button>' +
+          '<button class="btn" data-act="compact-pics">压缩现有图包</button>' +
           '<button class="btn ghost" data-act="clear-pics">清空图包</button>' +
         '</div>' +
         '<p style="margin:8px 0 0;font-size:11px;color:var(--ink2)">' +
@@ -283,6 +284,18 @@
           UI.toast('图包备份已导出（' + n + ' 张）');
         });
       });
+    }else if(act === 'compact-pics'){
+      UI.toast('正在压缩本机图包…');
+      QZD.userpics.recompress().then(function(r){
+        if(!r.ok){ UI.toast(r.error || '压缩失败'); return; }
+        return QZD.userpics.applyToGame().then(function(){
+          UI.onStateChanged();
+          var mb = Math.round((r.savedBytes || 0) / 1048576 * 10) / 10;
+          UI.toast(r.changed ? ('已压缩 ' + r.changed + ' 张' + (mb > 0 ? '，约省 ' + mb + ' MB' : ''))
+                             : '图包已经足够小');
+          updateUpicCount();
+        });
+      }).catch(function(err){ UI.toast('压缩失败：' + (err && err.message || err)); });
     }else if(act === 'clear-pics'){
       UI.confirm('清空本机图包？所有你自己导入的妃子图会删除，不可恢复（除非有备份）。', function(){
         QZD.userpics.clear().then(function(){

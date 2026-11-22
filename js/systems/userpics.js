@@ -3,8 +3,9 @@
    - 独立 IndexedDB 库 qzd-userpics，存图片 Blob（与 qzd-save 存档完全隔离）
    - 图按「妃子文件夹 / 姿态」组织，与 assets-manifest 的 rare/special 结构对齐
    - importFiles(FileList) 从「选文件夹」或「多选图片」导入，按 webkitRelativePath 分组
+   - 图片导入/导出时本机压缩（长边1200、WebP优先、JPEG兜底），只采纳明显更小的结果
    - toManifest() 生成覆盖 QZD.ASSETS 的清单（src 为 blob: 本机链接）
-   - exportPack() 导出备份（JSON 清单 + 图 base64），换设备可再导入
+   - exportPack() 导出备份（JSON 清单 + 图 base64 + MIME），换设备可再导入
    - 全部异步（IDB），blobUrl 缓存本次会话，revoke 避免内存泄漏
    ============================================================ */
 (function(){
@@ -14,6 +15,11 @@
   var META = 'meta';        /* 可选：导入时间等 */
   var IMG_RE = /\.(jpe?g|png|webp|gif|bmp)$/i;
   var VID_RE = /\.(mp4|webm)$/i;
+  /* 浏览器端图包压缩：游戏卡片不需要原图级分辨率，长边 1200 足够清晰。 */
+  var MAX_IMG_EDGE = 1200;
+  var IMG_QUALITY = 0.82;
+  var MIN_COMPRESS_BYTES = 40 * 1024;
+  var KEEP_RATIO = 0.95;
   var urlCache = {};
 
   function openDB(){
@@ -60,37 +66,55 @@
     return '__pool__';                        /* 顶层散图 → 普通池 */
   }
 
-  /* 从 FileList 导入：读成 Blob 存 IDB（不读文本，省内存） */
+  /* 从 FileList 导入：图片先在本机压缩，再存 IDB（不读文本，省内存） */
   function importFiles(fileList){
     var files = Array.prototype.slice.call(fileList || []).filter(function(f){
       return IMG_RE.test(f.name || '') || VID_RE.test(f.name || '');
     });
     if(!files.length) return Promise.resolve({ ok:false, error:'没有可用的图片/视频', added:0 });
-    return openDB().then(function(db){
-      if(!db) return { ok:false, error:'浏览器不支持本地存储，无法导入图包', added:0 };
-      var store = tx(db, 'readwrite');
-      var count = 0;
-      var tasks = files.map(function(f, i){
-        var rel = relOf(f);
-        var group = groupOf(rel);
-        var key = group + '|' + (f.name || '') + '|' + i + '|' + Date.now();
-        var isImg = IMG_RE.test(f.name || '');
-        var rec = {
-          key: key, group: group, name: f.name || ('img'+i),
-          isImg: isImg, blob: f, order: i, at: Date.now()
+    var at = Date.now();
+    return Promise.all(files.map(function(f, i){
+      var rel = relOf(f);
+      var group = groupOf(rel);
+      var isImg = IMG_RE.test(f.name || '');
+      return normalizeBlob(f, f.name, isImg).then(function(out){
+        return {
+          key: group + '|' + (f.name || '') + '|' + i + '|' + at,
+          group: group,
+          name: f.name || ('img'+i),
+          isImg: isImg,
+          blob: out.blob,
+          type: out.type,
+          order: i,
+          at: at,
+          compressed: !!out.compressed,
+          saved: out.saved || 0
         };
-        return reqP(store.put(rec)).then(function(){ count++; });
       });
-      return Promise.all(tasks).then(function(){
-        clearUrls();
-        return { ok:true, added:count, groups:uniqueGroups(files) };
+    })).then(function(rows){
+      var compressedImages = rows.filter(function(r){ return r.compressed; }).length;
+      var savedBytes = rows.reduce(function(n, r){ return n + (r.saved || 0); }, 0);
+      return openDB().then(function(db){
+        if(!db) return { ok:false, error:'浏览器不支持本地存储，无法导入图包', added:0 };
+        var store = tx(db, 'readwrite');
+        var tasks = rows.map(function(rec){ return reqP(store.put(rec)); });
+        return Promise.all(tasks).then(function(){
+          clearUrls();
+          return {
+            ok:true, added:rows.length, groups:uniqueGroups(rows),
+            compressedImages:compressedImages, savedBytes:savedBytes
+          };
+        });
       });
     });
   }
 
-  function uniqueGroups(files){
+  function uniqueGroups(items){
     var set = {};
-    files.forEach(function(f){ set[groupOf(relOf(f))] = 1; });
+    (items || []).forEach(function(x){
+      var g = x.group || groupOf(relOf(x));
+      set[g] = 1;
+    });
     return Object.keys(set).filter(function(g){ return g !== '__pool__'; });
   }
 
@@ -167,12 +191,45 @@
     });
   }
 
-  /* 导出备份：{v,at,pics:[{group,name,isImg,data(base64)}]} */
+  /* 给已经导入过的老图包补一次压缩：不改分组、不删图，只把 Blob 换成更小的版本。 */
+  function recompress(){
+    return list().then(function(rows){
+      return Promise.all(rows.map(function(r){
+        var known = r.type || (r.isImg ? guessType(r.name) : 'video/mp4');
+        return normalizeBlob(r.blob, r.name, !!r.isImg, known).then(function(out){
+          return { row:r, out:out };
+        });
+      }));
+    }).then(function(jobs){
+      var changed = 0, savedBytes = 0;
+      return openDB().then(function(db){
+        if(!db) return { ok:false, error:'无法打开本地存储' };
+        var store = tx(db, 'readwrite');
+        var tasks = jobs.filter(function(j){ return j.out.compressed; }).map(function(j){
+          j.row.blob = j.out.blob;
+          j.row.type = j.out.type;
+          return reqP(store.put(j.row)).then(function(){
+            changed++;
+            savedBytes += j.out.saved || 0;
+          });
+        });
+        return Promise.all(tasks).then(function(){
+          clearUrls();
+          return { ok:true, changed:changed, savedBytes:savedBytes };
+        });
+      });
+    });
+  }
+
+  /* 导出备份：{v,at,pics:[{group,name,isImg,type,data(base64)}]} */
   function exportPack(){
     return list().then(function(rows){
       var tasks = rows.map(function(r){
-        return blobToB64(r.blob).then(function(b64){
-          return { group:r.group, name:r.name, isImg:r.isImg, order:r.order, data:b64 };
+        var known = r.type || (r.isImg ? guessType(r.name) : 'video/mp4');
+        return normalizeBlob(r.blob, r.name, !!r.isImg, known).then(function(out){
+          return blobToB64(out.blob).then(function(b64){
+            return { group:r.group, name:r.name, isImg:r.isImg, type:out.type, order:r.order, data:b64 };
+          });
         });
       });
       return Promise.all(tasks).then(function(pics){
@@ -207,9 +264,11 @@
       var store = tx(db, 'readwrite');
       var n = 0;
       var tasks = obj.pics.map(function(p, i){
-        var blob = b64ToBlob(p.data, p.isImg ? guessType(p.name) : 'video/mp4');
+        var type = p.type || (p.isImg ? guessType(p.name) : 'video/mp4');
+        var blob = b64ToBlob(p.data, type);
         var rec = { key:'backup|'+p.group+'|'+(p.name||i)+'|'+Date.now(),
-          group:p.group, name:p.name||('img'+i), isImg:!!p.isImg, blob:blob, order:p.order||i, at:Date.now() };
+          group:p.group, name:p.name||('img'+i), isImg:!!p.isImg, blob:blob, type:type,
+          order:p.order||i, at:Date.now() };
         return reqP(store.put(rec)).then(function(){ n++; });
       });
       return Promise.all(tasks).then(function(){ clearUrls(); return { ok:true, added:n }; });
@@ -220,6 +279,102 @@
     if(/\.webp$/i.test(name)) return 'image/webp';
     if(/\.gif$/i.test(name)) return 'image/gif';
     return 'image/jpeg';
+  }
+
+  /* 图片导入/导出统一走这里：视频原样，图片尽力本机压缩 */
+  function normalizeBlob(blob, name, isImg, knownType){
+    var type = knownType || (blob && blob.type) || (isImg ? guessType(name) : 'video/mp4');
+    if(!isImg) return Promise.resolve({ blob:blob, type:type, compressed:false, saved:0 });
+    return compressImageBlob(blob, name, type);
+  }
+
+  function canCompressInBrowser(){
+    var hasDecoder = typeof createImageBitmap === 'function' ||
+      (typeof Image === 'function' && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function');
+    return hasDecoder && typeof document !== 'undefined' && !!document.createElement;
+  }
+
+  function loadBitmap(blob){
+    if(typeof createImageBitmap === 'function') return createImageBitmap(blob);
+    return new Promise(function(res, rej){
+      var u = URL.createObjectURL(blob);
+      var im = new Image();
+      im.onload = function(){ try{ URL.revokeObjectURL(u); }catch(e){} res(im); };
+      im.onerror = function(e){ try{ URL.revokeObjectURL(u); }catch(e){} rej(e || new Error('decode failed')); };
+      im.src = u;
+    });
+  }
+
+  function canvasToBlob(canvas, type){
+    return new Promise(function(res){
+      try{
+        if(canvas.toBlob){
+          canvas.toBlob(function(b){ res(b || null); }, type, IMG_QUALITY);
+          return;
+        }
+      }catch(e){}
+      try{
+        var data = canvas.toDataURL(type, IMG_QUALITY);
+        if(!data || data.indexOf('data:' + type) !== 0){ res(null); return; }
+        var comma = data.indexOf(',');
+        res(b64ToBlob(comma >= 0 ? data.slice(comma + 1) : data, type));
+      }catch(e){ res(null); }
+    });
+  }
+
+  function isWorth(candidate, originalSize){
+    if(!candidate || typeof candidate.size !== 'number') return false;
+    if(!originalSize) return true;
+    return candidate.size < originalSize * KEEP_RATIO;
+  }
+
+  function tryCanvasTypes(canvas, originalType, name){
+    return canvasToBlob(canvas, 'image/webp').then(function(webp){
+      if(webp && webp.type === 'image/webp') return { blob:webp, type:'image/webp' };
+      /* 不支持 WebP 编码时，只把原本就是 JPEG 的图降级为 JPEG；PNG 保持原样以免丢透明。 */
+      if(originalType === 'image/jpeg' || /\.jpe?g$/i.test(name || '')){
+        return canvasToBlob(canvas, 'image/jpeg').then(function(jpg){
+          return jpg && jpg.type === 'image/jpeg' ? { blob:jpg, type:'image/jpeg' } : null;
+        });
+      }
+      return null;
+    });
+  }
+
+  /* 只采纳明显更小（至少省 5%）的结果；失败一律原样返回，绝不丢图。 */
+  function compressImageBlob(blob, name, type){
+    var original = {
+      blob:blob, type:type || (blob && blob.type) || guessType(name),
+      compressed:false, saved:0
+    };
+    if(!blob || /\.gif$/i.test(name || '') || original.type === 'image/gif') return Promise.resolve(original);
+    if(blob.size && blob.size < MIN_COMPRESS_BYTES) return Promise.resolve(original);
+    if(!canCompressInBrowser()) return Promise.resolve(original);
+
+    return loadBitmap(blob).then(function(img){
+      var w = img.width || img.naturalWidth;
+      var h = img.height || img.naturalHeight;
+      if(!w || !h) throw new Error('空图');
+      var scale = Math.min(1, MAX_IMG_EDGE / Math.max(w, h));
+      var nw = Math.max(1, Math.round(w * scale));
+      var nh = Math.max(1, Math.round(h * scale));
+      var canvas = document.createElement('canvas');
+      canvas.width = nw;
+      canvas.height = nh;
+      var ctx = canvas.getContext && canvas.getContext('2d');
+      if(!ctx || !ctx.drawImage) throw new Error('canvas 不可用');
+      ctx.drawImage(img, 0, 0, nw, nh);
+      if(img.close){ try{ img.close(); }catch(e){} }
+      return tryCanvasTypes(canvas, original.type, name);
+    }).then(function(out){
+      if(out && isWorth(out.blob, blob.size)){
+        return {
+          blob:out.blob, type:out.type, compressed:true,
+          saved:Math.max(0, blob.size - out.blob.size)
+        };
+      }
+      return original;
+    }).catch(function(){ return original; });
   }
 
   /* 把本机图包应用到游戏：
@@ -263,9 +418,11 @@
 
   QZD.userpics = {
     importFiles: importFiles, importPack: importPack, exportPack: exportPack,
-    list: list, count: count, clear: clear, toManifest: toManifest,
+    list: list, count: count, clear: clear, recompress: recompress, toManifest: toManifest,
     applyToGame: applyToGame,
     urlOf: urlOf, clearUrls: clearUrls, relOf: relOf, groupOf: groupOf,
-    IMG_RE: IMG_RE, VID_RE: VID_RE
+    IMG_RE: IMG_RE, VID_RE: VID_RE,
+    MAX_IMG_EDGE: MAX_IMG_EDGE, IMG_QUALITY: IMG_QUALITY,
+    compressImageBlob: compressImageBlob
   };
 })();

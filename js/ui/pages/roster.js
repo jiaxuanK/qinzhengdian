@@ -183,8 +183,16 @@
     var ckScore = QZD.checkin && QZD.checkin.todayStat ? QZD.checkin.todayStat().score : 100;
     var costMult = QZD.study && QZD.study.multiplier ? QZD.study.multiplier() : 1;
 
+    /* 11-22 图包自传：公开版无内置妃子图，空池时引导玩家导入自己的图包 */
+    var A = QZD.ASSETS || {};
+    var hasPics = ((A.rare||[]).length + (A.uncommon||[]).length + (A.special||[]).length + (A.pool||[]).length) > 0;
+    var picHint = hasPics ? '' :
+      '<p class="card-note" style="margin:2px 0 8px;color:var(--daiqing)">' +
+        '当前未导入妃子图，抽到的秀女会没有立绘。到「设置 → 自带图包」导入你自己的图片即可显示。</p>';
+
     return '<section class="card">' +
       '<div class="card-head"><span class="card-title">选秀</span></div>' +
+      picHint +
       /* 两条注释合并到标题下方一行，避免手机端拆成两段换行 */
       '<p class="card-note" style="margin:2px 0 6px">单抽 ' + single + ' 金 · 十连 ' + ten +
         ' 金（9折）· 今日打卡 ' + ckScore + '% · 消费 ×' + costMult +
