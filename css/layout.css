@@ -20,7 +20,8 @@
   padding:9px 12px;border-radius:8px;border:none;border-left:3px solid transparent;
   background:transparent;color:var(--ink2);font-size:14px;text-align:left;
 }
-.nav-icon{font-size:16px;line-height:1;flex:none;width:20px;text-align:center}
+.nav-icon{width:20px}
+.nav-icon svg{width:18px;height:18px}
 .nav-item:hover{background:var(--soft);color:var(--ink)}
 .nav-item.active{
   background:#EDF3EF;color:var(--daiqing);

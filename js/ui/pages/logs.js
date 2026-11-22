@@ -6,22 +6,23 @@
   var filter = 'all';
   var lastTopTs = 0;   /* 11-19：仅最新日志变化时才淡入，避免每次渲染全表重播 */
 
-  /* 类型定义：emoji + 中文名 + CSS 颜色（chip 背景 + chip 字色）*/
+  /* 类型定义：11-22 单色线性图标语义名 + 中文名 + CSS 颜色 */
   var TYPES = {
-    system:   { icon:'⚙️', name:'系统',   bg:'rgba(124,107,148,.10)', fg:'#7C6B94' },
-    daily:    { icon:'🌅', name:'每日',   bg:'rgba(168,132,44,.12)', fg:'#A8842C' },
-    dynasty:  { icon:'🏛️', name:'朝政',   bg:'rgba(47,107,120,.10)', fg:'#2F6B78' },
-    harem:    { icon:'🌸', name:'后宫',   bg:'rgba(148,103,138,.12)', fg:'#94678A' },
-    conquest: { icon:'⚔️', name:'征战',   bg:'rgba(168,87,63,.12)',  fg:'#A8573F' },
-    checkin:  { icon:'✅', name:'常课',   bg:'rgba(94,122,74,.10)',  fg:'#5E7A4A' },
-    meeting:  { icon:'💬', name:'议事',   bg:'rgba(76,110,140,.10)', fg:'#4C6E8C' },
-    thesis:   { icon:'📖', name:'修书',   bg:'rgba(47,107,120,.10)', fg:'#2F6B78' },
-    memorial: { icon:'📋', name:'奏折',   bg:'rgba(168,87,63,.12)',  fg:'#A8573F' },
-    story:    { icon:'📜', name:'故事',   bg:'rgba(124,107,148,.12)',fg:'#7C6B94' },
-    life:     { icon:'☕', name:'日常',   bg:'rgba(94,122,74,.10)',  fg:'#5E7A4A' },
-    other:    { icon:'📌', name:'其它',   bg:'rgba(120,116,105,.10)',fg:'#6F6B5F' }
+    system:   { icon:'gear',    name:'系统',   bg:'rgba(124,107,148,.10)', fg:'#7C6B94' },
+    daily:    { icon:'sunrise', name:'每日',   bg:'rgba(168,132,44,.12)', fg:'#A8842C' },
+    dynasty:  { icon:'crown',   name:'朝政',   bg:'rgba(47,107,120,.10)', fg:'#2F6B78' },
+    harem:    { icon:'heart',   name:'后宫',   bg:'rgba(148,103,138,.12)', fg:'#94678A' },
+    conquest: { icon:'sword',   name:'征战',   bg:'rgba(168,87,63,.12)',  fg:'#A8573F' },
+    checkin:  { icon:'check',   name:'常课',   bg:'rgba(94,122,74,.10)',  fg:'#5E7A4A' },
+    meeting:  { icon:'chat',    name:'议事',   bg:'rgba(76,110,140,.10)', fg:'#4C6E8C' },
+    thesis:   { icon:'book',    name:'修书',   bg:'rgba(47,107,120,.10)', fg:'#2F6B78' },
+    memorial: { icon:'scroll',  name:'奏折',   bg:'rgba(168,87,63,.12)',  fg:'#A8573F' },
+    story:    { icon:'sparkle', name:'故事',   bg:'rgba(124,107,148,.12)',fg:'#7C6B94' },
+    life:     { icon:'moon',    name:'日常',   bg:'rgba(94,122,74,.10)',  fg:'#5E7A4A' },
+    other:    { icon:'info',    name:'其它',   bg:'rgba(120,116,105,.10)',fg:'#6F6B5F' }
   };
   function typeInfo(t){ return TYPES[t] || TYPES.other; }
+  function iconHTML(ti){ return QZD.icons ? QZD.icons.span(ti.icon, 'log-ico') : ''; }
   function kindOf(l){ return (TYPES[l.type]) ? l.type : 'other'; }
 
   /* 筛选按钮列表：从实际数据里出现的类型动态生成（+ all）*/
@@ -31,9 +32,9 @@
     var list = [{ id:'all', name:'全部' }];
     /* 按预设顺序排，未预设的放后面 */
     var PRESET = ['system','daily','dynasty','harem','conquest','checkin','meeting','thesis','memorial','story','life'];
-    PRESET.forEach(function(t){ if(present[t]) list.push({ id:t, name:typeInfo(t).icon + ' ' + typeInfo(t).name }); });
+    PRESET.forEach(function(t){ if(present[t]) list.push({ id:t, name:typeInfo(t).name }); });
     Object.keys(present).forEach(function(t){
-      if(PRESET.indexOf(t) < 0) list.push({ id:t, name:typeInfo(t).icon + ' ' + typeInfo(t).name });
+      if(PRESET.indexOf(t) < 0) list.push({ id:t, name:typeInfo(t).name });
     });
     return list;
   }
@@ -100,7 +101,7 @@
           ';border:1px solid ' + ti.fg + '33;font-weight:600';
         return '<li class="log-item' + (freshTop && l === all[0] ? ' log-new' : '') + '">' +
           '<span class="log-time">' + UI.fmt.time(l.ts) + '</span>' +
-          '<span class="log-type-chip" style="' + chipStyle + '">' + ti.icon + ' ' + UI.fmt.escape(ti.name) + '</span>' +
+          '<span class="log-type-chip" style="' + chipStyle + '">' + iconHTML(ti) + UI.fmt.escape(ti.name) + '</span>' +
           '<span class="log-text">' + fmtLog(l) + '</span>' +
         '</li>';
       }).join('');

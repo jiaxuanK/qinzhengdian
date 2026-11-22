@@ -174,10 +174,13 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:var(--ink)}
 /* 标题前竖标加粗到 5×18，与顶条同色 */
 .card-title:before{content:'';width:5px;height:18px;border-radius:2px;
   background:var(--accent);flex:none}
-/* 11-21 标题图标：紧跟竖标后，字号略大于正文、不撑高卡片 */
-.title-ico{font-size:15px;line-height:1;flex:none;
-  margin-left:-2px;filter:saturate(.9)}
-.btn-ico{font-size:12px;line-height:1;margin-right:1px;opacity:.9}
+/* 11-22 单色线性图标：span.ico 内嵌 svg，currentColor 描边随文字色 */
+.ico{display:inline-flex;align-items:center;justify-content:center;flex:none;line-height:0}
+.ico svg{width:18px;height:18px;display:block}
+.title-ico{margin-left:-2px;opacity:.85}
+.title-ico svg{width:17px;height:17px}
+.btn-ico{opacity:.9}
+.btn-ico svg{width:14px;height:14px}
 /* 说明性文字：弱于标题/正文，手机端再收一档提高信息密度 */
 .card-note{font-size:11px;color:var(--ink2);line-height:1.5}
 /* 语义色标类：显式指定时覆盖自动轮换色（今日勤政页各卡用） */

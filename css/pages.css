@@ -96,7 +96,8 @@
 /* 链接样式的按钮不要下划线 */
 a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
 .tab.active{background:var(--daiqing);border-color:var(--daiqing);color:var(--card)}
-.tab-icon{font-size:14px;line-height:1}
+.tab-icon svg{width:15px;height:15px}
+.page-tabs .tab.active .ico{color:inherit}
 
 /* ---------- M3 名臣 / 立绘 ---------- */
 .talent-list{display:flex;flex-direction:column;gap:10px}
@@ -2172,10 +2173,11 @@ body.zen .sidebar{display:none}
    起居注：类型 chip + 日期分组
    ============================================================ */
 .log-type-chip{
-  display:inline-block;font-size:11px;font-weight:500;
+  display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;
   padding:1px 8px;border-radius:10px;white-space:nowrap;flex-shrink:0;
   margin-right:6px;
 }
+.log-ico svg{width:12px;height:12px}
 .log-group{margin:6px 0 14px}
 .log-group-title{
   font-size:11px;color:#8a8574;font-weight:600;

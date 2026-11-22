@@ -30,11 +30,11 @@ QZD.config = {
   /* 读文献卡时「有疑问」的去处：点一下先复制提问模板，再开网页 */
   DEEPSEEK_URL: 'https://chat.deepseek.com/',
 
-  /* 三个一级入口，顺序即导航顺序（11-21：icon 用于导航图标） */
+  /* 三个一级入口，顺序即导航顺序（11-22：icon 为 QZD.icons 语义图标名） */
   NAV: [
-    { id: 'summary',  name: '总览', icon: '🏯' },
-    { id: 'research', name: '政务', icon: '📜' },
-    { id: 'court',    name: '朝野', icon: '🗺️' }
+    { id: 'summary',  name: '总览', icon: 'overview' },
+    { id: 'research', name: '政务', icon: 'scroll' },
+    { id: 'court',    name: '朝野', icon: 'map' }
   ],
 
   /* 分组页：一级入口下的页内标签 */
@@ -42,32 +42,32 @@ QZD.config = {
     {
       id: 'summary',
       tabs: [
-        { id: 'ov',       name: '概览', icon: '📊' },
-        { id: 'quick',    name: '速行', icon: '⚡' },
-        { id: 'idea',     name: '灵感', icon: '💡' },
-        { id: 'settings', name: '设置', icon: '⚙️' }
+        { id: 'ov',       name: '概览', icon: 'gauge' },
+        { id: 'quick',    name: '速行', icon: 'bolt' },
+        { id: 'idea',     name: '灵感', icon: 'bulb' },
+        { id: 'settings', name: '设置', icon: 'gear' }
       ]
     },
     {
       id: 'research',
       tabs: [
-        { id: 'goals',     name: '宏图', icon: '🎯' },
-        { id: 'memorials', name: '奏折', icon: '📋' },
-        { id: 'checkin',   name: '常课', icon: '✅' },
-        { id: 'library',   name: '文渊', icon: '📚' },
-        { id: 'meetings',  name: '议事', icon: '💬' },
-        { id: 'thesis',    name: '修书', icon: '📖' },
-        { id: 'archive',   name: '档册', icon: '🗄️' }
+        { id: 'goals',     name: '宏图', icon: 'target' },
+        { id: 'memorials', name: '奏折', icon: 'scroll' },
+        { id: 'checkin',   name: '常课', icon: 'check' },
+        { id: 'library',   name: '文渊', icon: 'book' },
+        { id: 'meetings',  name: '议事', icon: 'chat' },
+        { id: 'thesis',    name: '修书', icon: 'pen' },
+        { id: 'archive',   name: '档册', icon: 'archive' }
       ]
     },
     {
       id: 'court',
       tabs: [
-        { id: 'roster',   name: '名册', icon: '👥' },
-        { id: 'conquest', name: '征伐', icon: '⚔️' },
-        { id: 'works',    name: '营造', icon: '🔨' },
-        { id: 'treasure', name: '珍宝', icon: '💎' },
-        { id: 'logs',     name: '起居', icon: '📜' }
+        { id: 'roster',   name: '名册', icon: 'people' },
+        { id: 'conquest', name: '征伐', icon: 'sword' },
+        { id: 'works',    name: '营造', icon: 'hammer' },
+        { id: 'treasure', name: '珍宝', icon: 'gem' },
+        { id: 'logs',     name: '起居', icon: 'history' }
       ]
     }
   ],

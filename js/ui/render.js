@@ -29,7 +29,7 @@
       var bar = '<div class="tab-row wrap page-tabs">' + tabs.map(function(t){
         return '<button class="tab' + (t.id === cur ? ' active' : '') +
           '" data-gtab="' + t.id + '">' +
-          (t.icon ? '<span class="tab-icon">' + t.icon + '</span>' : '') +
+          (t.icon && QZD.icons ? QZD.icons.span(t.icon, 'tab-icon') : '') +
           '<span>' + t.name + '</span></button>';
       }).join('') + '</div>';
       var fn = pages[cur];
@@ -82,7 +82,7 @@
     var nav = document.getElementById('nav');
     nav.innerHTML = CFG.NAV.map(function(item){
       return '<button class="nav-item" data-page="' + item.id + '">' +
-        (item.icon ? '<span class="nav-icon">' + item.icon + '</span>' : '') +
+        (item.icon && QZD.icons ? QZD.icons.span(item.icon, 'nav-icon') : '') +
         '<span>' + item.name + '</span></button>';
     }).join('');
     nav.addEventListener('click', function(e){
@@ -175,36 +175,36 @@
     for(var j = 0; j < nodes.length; j++) portraitObserver.observe(nodes[j]);
   }
 
-  /* 11-21 图标体系：给卡片标题自动配图，位于 :before 竖标之后、文字之前。
-     按「去空格标题」查表，命中即插入图标 span；不影响布局（竖标与文字间距已预留）。 */
+  /* 11-22 图标体系（单色线性）：按「去空格标题」查 QZD.icons 语义名，
+     位于 :before 竖标之后、文字之前；图标由 icons.js 统一生成 SVG。 */
   var TITLE_ICONS = {
-    '今日治学':'📖', '江山':'🏯', '国势':'🏯', '批阅中的奏折':'📋', '今日行动':'⚡',
-    '本周进度':'📊', '速记进展':'✍️', '科研台账':'🗂️', '便捷门':'🔗',
-    '今日概览':'📊', '习惯打卡':'✅', '打卡热力图':'🔥', '本周三事':'🎯',
-    '科研成就':'🏆', '期限':'⏰', '期限前瞻·日历':'📅', '歇一歇':'☕',
-    '进行中的奏折':'📋', '近7天专注':'⏱️',
-    '名册':'👥', '科举':'🏛️', '待录人才':'📥', '在朝名臣':'🎓', '后宫':'🌸',
-    '选秀':'🎀', '在宫妃嫔':'🌺', '已致仕宗室':'👴', '皇子':'👶',
-    '课题管理':'📚', '本周星盘':'✨', '周内进度带':'📈', '专注趋势':'📉',
-    '勤政画像':'🛡️', '本周目标':'🎯', '计划vs实际':'⚖️', '中断原因':'⚠️',
-    '深度与碎片':'🧩', '中断时段':'⏳', '帝王四维成长':'📈', '本周日程网格':'🗓️',
-    '议事厅':'💬', '待办总览':'📝', '历次组会':'🗃️',
-    '灵感罐':'💡', '落笔':'✒️',
-    '文渊阁':'📚', '今日精读':'📖',
-    '营造概览':'🔨', '工程营造':'🏗️',
-    '期限前瞻':'📅', '畅想所':'🧠', '杂学':'📌', '珍宝阁':'💎',
-    '征服':'⚔️', '属地':'🗺️', '征伐':'⚔️', '营造':'🔨', '珍宝':'💎', '起居':'📜',
-    '数据导出':'📤', '完整存档':'💾', '今日时间轴':'🕐', '科研投入结构':'📊',
-    '效率时段分析':'⏱️', '批语':'✍️', '周几×时辰':'🗓️', '单场时长分布':'⏳',
-    '兵势':'⚔️', '贡赋':'💰', '已归版图':'🗺️', '归档起居注':'📜',
-    '帝王设置':'⚙️', '存档信息':'💾', '自动备份':'🔄', '立绘素材':'🖼️',
-    '测试工具':'🔧', '历代年表':'📜', '立书':'📖', '货架':'🛒', '我的珍藏':'💎'
+    '今日治学':'book', '江山':'crown', '国势':'shield', '批阅中的奏折':'scroll', '今日行动':'bolt',
+    '本周进度':'chart', '速记进展':'pen', '科研台账':'layers', '便捷门':'link',
+    '今日概览':'gauge', '习惯打卡':'check', '打卡热力图':'flame', '本周三事':'target',
+    '科研成就':'trophy', '期限':'clock', '期限前瞻·日历':'calendar', '歇一歇':'moon',
+    '进行中的奏折':'scroll', '近7天专注':'clock',
+    '名册':'people', '科举':'scroll', '待录人才':'plus', '在朝名臣':'people', '后宫':'heart',
+    '选秀':'star', '在宫妃嫔':'heart', '已致仕宗室':'back', '皇子':'people',
+    '课题管理':'book', '本周星盘':'sparkle', '周内进度带':'bar', '专注趋势':'chart',
+    '勤政画像':'shield', '本周目标':'target', '计划vs实际':'layers', '中断原因':'info',
+    '深度与碎片':'layers', '中断时段':'clock', '帝王四维成长':'chart', '本周日程网格':'calendar',
+    '议事厅':'chat', '待办总览':'scroll', '历次组会':'archive',
+    '灵感罐':'bulb', '落笔':'pen',
+    '文渊阁':'book', '今日精读':'book',
+    '营造概览':'hammer', '工程营造':'hammer',
+    '期限前瞻':'calendar', '畅想所':'bulb', '杂学':'info', '珍宝阁':'gem',
+    '征服':'sword', '属地':'map', '征伐':'sword', '营造':'hammer', '珍宝':'gem', '起居':'history',
+    '数据导出':'export', '完整存档':'save', '今日时间轴':'clock', '科研投入结构':'chart',
+    '效率时段分析':'clock', '批语':'pen', '周几×时辰':'calendar', '单场时长分布':'bar',
+    '兵势':'sword', '贡赋':'money', '已归版图':'map', '归档起居注':'history',
+    '帝王设置':'gear', '存档信息':'save', '自动备份':'refresh', '立绘素材':'image',
+    '测试工具':'tools', '历代年表':'history', '立书':'book', '货架':'cart', '我的珍藏':'gem'
   };
   /* 关键词兜底：标题含这些词时配图（顺序即优先级） */
   var TITLE_HINTS = [
-    ['奏折','📋'], ['专注','⏱️'], ['打卡','✅'], ['日历','📅'], ['趋势','📈'],
-    ['目标','🎯'], ['灵感','💡'], ['文献','📖'], ['精读','📖'], ['组会','💬'],
-    ['方向','🗺️'], ['热区','🔥'], ['热力','🔥'], ['大计','🎯'], ['课题','📚']
+    ['奏折','scroll'], ['专注','clock'], ['打卡','check'], ['日历','calendar'], ['趋势','chart'],
+    ['目标','target'], ['灵感','bulb'], ['文献','book'], ['精读','book'], ['组会','chat'],
+    ['方向','map'], ['热区','flame'], ['热力','flame'], ['大计','target'], ['课题','book']
   ];
   function decorateTitles(root){
     if(!root || !root.querySelectorAll) return;
@@ -221,22 +221,21 @@
         }
       }
       if(!icon) continue;
+      if(!QZD.icons) continue;                       /* 测试桩无图标库时跳过 */
       el.setAttribute('data-ico', '1');
       var span = document.createElement('span');
-      span.className = 'title-ico';
-      span.textContent = icon;
+      span.innerHTML = QZD.icons.span(icon, 'title-ico');
       /* 插到第一个文本节点前（:before 竖标由 CSS 生成，不受影响） */
-      el.insertBefore(span, el.firstChild);
+      el.insertBefore(span.firstChild, el.firstChild);
     }
   }
 
-  /* 11-21 按钮图标：仅对明确的高频动作词加图标，保守 lists 避免满屏 emoji。
-     只装饰纯文字按钮（含空格的中文短语），已有图标的不动。 */
+  /* 11-22 按钮图标（单色线性）：仅高频动作词，语义名对应 QZD.icons。 */
   var BTN_ICONS = [
-    ['新建奏折','📝'], ['立奏折','📝'], ['编辑','✏️'], ['删除','🗑️'], ['移除','✕'],
-    ['继续专注','▶️'], ['开始专注','▶️'], ['办结','✓'], ['记一句','✍️'],
-    ['保存','💾'], ['取消','↩️'], ['确认','✓'], ['详情','🔍'], ['购买','🛒'],
-    ['采纳为下周三事','✅'], ['记录组会','💬'], ['读完了','📖'], ['设为今日','📌']
+    ['新建奏折','plus'], ['立奏折','plus'], ['编辑','edit'], ['删除','trash'], ['移除','trash'],
+    ['继续专注','play'], ['开始专注','play'], ['办结','done'], ['记一句','pen'],
+    ['保存','save'], ['取消','back'], ['确认','done'], ['详情','search'], ['购买','cart'],
+    ['采纳为下周三事','check'], ['记录组会','chat'], ['读完了','check'], ['设为今日','flag']
   ];
   function decorateButtons(root){
     if(!root || !root.querySelectorAll) return;
@@ -252,11 +251,11 @@
         if(key === BTN_ICONS[j][0]){ icon = BTN_ICONS[j][1]; break; }
       }
       if(!icon) continue;
+      if(!QZD.icons) continue;
       el.setAttribute('data-ico', '1');
       var span = document.createElement('span');
-      span.className = 'btn-ico';
-      span.textContent = icon;
-      el.insertBefore(span, el.firstChild);
+      span.innerHTML = QZD.icons.span(icon, 'btn-ico');
+      el.insertBefore(span.firstChild, el.firstChild);
     }
   }
 
