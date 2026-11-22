@@ -29,7 +29,6 @@ QZD.QUEEN_OUTFITS = {
         "enc:YXNzZXRzL2E4Zi9iZTFiMzYwZWM5YTkzODE0LmpwZw==",
         "enc:YXNzZXRzL2E4Zi8yMTllZGQ2MjNkN2M1ZjM3LmpwZw==",
         "enc:YXNzZXRzL2E4Zi8yM2JhMjMyNDA4YTA2NTQ0LmpwZw==",
-        "enc:YXNzZXRzL2E4Zi85NmVjYTJjOWU1YzJiZDE3LmpwZw==",
         "enc:YXNzZXRzL2E4Zi80MDRhMDFjMWRiNTA2Y2E0LmpwZw=="
       ],
       "cover": "enc:YXNzZXRzL2E4Zi81NDNhOTNmZTZlOTBiMzk2LmpwZw=="
