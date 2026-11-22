@@ -11,7 +11,7 @@
         游戏存档在 localStorage，由浏览器持久化，与本 SW 无关。
    ============================================================ */
 
-const VERSION = 'qzd-20261123-0018';
+const VERSION = 'qzd-20261123-0021';
 const SHELL_CACHE = `qzd-shell-${VERSION}`;
 const ASSET_CACHE = `qzd-asset-${VERSION}`;
 

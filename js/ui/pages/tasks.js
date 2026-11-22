@@ -309,7 +309,8 @@
         all.push({ dueAt: dlMs, title: g.title, _src: '大计' });
       });
     }
-    if(!all.length) return '';
+    /* 没有截止日也要留着这张卡：格子里的专注分钟和打卡圆点本身就有价值，
+       不能因为「还没设期限」就把整张日历藏起来。 */
 
     /* 按日分桶 + 逾期 */
     var buckets = {}, overdue = [];
@@ -379,9 +380,11 @@
         }).join('、')) + (overdue.length > 3 ? ' 等' : '') + '</div>';
     }
     var busyDays = Object.keys(buckets).filter(function(k){ return buckets[k].length >= 3; }).length;
-    var tip = busyDays
-      ? '未来两周有 ' + busyDays + ' 天堆了 3 项以上，提前拆一下免得到期扎堆。'
-      : '未来两周期限分布平稳，没有明显撞车。';
+    var tip = !all.length
+      ? '还没有设截止日；格子里的数字是当天专注分钟，圆点是打卡。'
+      : (busyDays
+        ? '未来两周有 ' + busyDays + ' 天堆了 3 项以上，提前拆一下免得到期扎堆。'
+        : '未来两周期限分布平稳，没有明显撞车。');
     var goalsCount = all.filter(function(x){ return x._src === '大计'; }).length;
     if(goalsCount) tip += '（含 ' + goalsCount + ' 项大计 deadline）';
 
@@ -537,6 +540,7 @@
         todayDashCard() +
         overviewCard() +
         ddlCard() +
+        ddlForecastCard() +
         G(OV.researchPanel) +
         achvCard();
     }
