@@ -161,9 +161,15 @@
           [r.isImg ? 'poses' : 'vids'].push(u);
       });
       var rare = [], uncommon = [], special = [];
+      /* 本机图包的文件夹也常是 01 / 02 / 新建文件夹 这类代号。
+         和磁盘清单走同一套雅名解析，避免选秀抽到「01」这种文件夹名。
+         folder 不动（存档 rareKey 靠它认人），只改显示名。 */
+      var folderKeys = Object.keys(grouped).filter(function(k){ return k.indexOf('特殊/') !== 0; });
+      var AN = (typeof QZD !== 'undefined' && QZD.assetNames) ? QZD.assetNames : null;
+      var nameMap = (AN && AN.assignNames) ? AN.assignNames(folderKeys) : {};
       Object.keys(grouped).forEach(function(k){
         var g = grouped[k], n = g.poses.length;
-        var entry = { folder:k, name:k, poses:g.poses.slice(), video:g.vids[0] || null };
+        var entry = { folder:k, name:nameMap[k] || k, poses:g.poses.slice(), video:g.vids[0] || null };
         if(k.indexOf('特殊/') === 0){
           entry.name = k.slice(3);
           entry.special = n >= RARE_MIN;
@@ -401,6 +407,7 @@
       if(QZD.state && QZD.state.settings) QZD.state.settings.userpicsEnabled = true;
       var rebound = 0;
       var consorts = (QZD.state && QZD.state.consorts) || [];
+      var AN = (typeof QZD !== 'undefined' && QZD.assetNames) ? QZD.assetNames : null;
       function entryFor(c){
         var key = c.rareKey;
         if(!key) return null;
@@ -415,6 +422,11 @@
       }
       consorts.forEach(function(c){
         var e = entryFor(c);
+        /* 旧档里若名字还是文件夹号（01 / 新建文件夹…），顺手回流成雅名；
+           玩家自己改过的名字不动。视频-only 条目没有 poses 也要改名。 */
+        var folderish = !c.name || c.name === c.rareKey ||
+          (AN && AN.isPlaceholder && AN.isPlaceholder(c.name));
+        if(e && e.name && folderish) c.name = e.name;
         if(!e || !e.poses || !e.poses.length) return;
         c.poses = e.poses.slice();
         c.img = e.poses[0];
