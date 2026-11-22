@@ -2303,6 +2303,9 @@ QZD.config = {
       REFUGE:{ raidPctPer12h: 0.08, hostageEveryNoDeedDays: 2 }    /* 潜邸：每12h掠−8% + 每2无勤政日掳1妃 */
     },
     PENALTY_INTERVAL_HOURS: 12,  /* 周期罚间隔；lastPenaltyAt 时间戳去重 */
+    /* 质子妃：安定跨级跌入灾异(<40)即掳一位，不再依赖「连续无勤政日 + 12h 周期罚」。
+       每跨一级掳一次，回升后再跌可再掳；保底留 1 位由 regime 负责。 */
+    HOSTAGE_ON_FALL: { ENABLED:true, MIN_LEVEL:'omen' },
     FLOOR: { jinQian: 100, guoJin: 30, minConsorts: 1 },  /* 保底，不真归零 */
 
     /* 分级事件：按 stability 从高到低逐级触发；fired 记录已触发的最高级 */

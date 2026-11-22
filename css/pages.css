@@ -186,6 +186,12 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 }
 .consort-actions{display:flex;gap:8px;flex-wrap:wrap}
 .consort-actions .btn{flex:1;min-width:0;padding:6px 8px;font-size:12px}
+/* 手机端：妃子卡按钮改两列网格，避免 6 个按钮挤一行导致文字竖排。
+   flex:1 + min-width:0 在窄屏会把「相处」「她的故事」压成单字换行。 */
+@media(max-width:560px){
+  .consort-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .consort-actions .btn{flex:none;width:100%;white-space:nowrap;padding:7px 6px;font-size:12px}
+}
 .badge.rank{background:rgba(168,132,44,.14);color:var(--teng);border:1px solid rgba(168,132,44,.3)}
 .child-count{color:var(--teng);font-weight:700;font-size:11.5px}
 .prince-actions{display:flex;flex-direction:column;gap:6px}

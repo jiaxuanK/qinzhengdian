@@ -10,9 +10,15 @@
 
   function state(){ return QZD.state; }
 
-  function consorts(){
+  /* 存档原数组（含皇后、已清退）——只在内部增删/查找时用 */
+  function rawConsorts(){
     if(!Array.isArray(QZD.state.consorts)) QZD.state.consorts = [];
     return QZD.state.consorts;
+  }
+  /* 在宫妃嫔（排除已清退）——所有玩法/剧情/清算/UI 主列表统一走这里。
+     清退是可逆标记，不真删，皇子生母引用不丢。 */
+  function consorts(){
+    return rawConsorts().filter(function(c){ return c && !c.dismissed; });
   }
 
   /* 全部皇子（含已致仕）——存档数组、名号去重、序号计算都用它 */
@@ -456,7 +462,7 @@
 
     var consort = makeRareConsort(pick(pool));
     QZD.resources.remove({ jinQian: cost });
-    consorts().push(consort);
+    rawConsorts().push(consort);
 
     QZD.stateIO.pushLog('harem', '稀世选秀，「' + consort.name + '」入宫 · 耗金钱 ' + cost +
       ' · 绝色之姿' + (consort.video ? ' · 动态立绘' : ' · 姿态 ' + (consort.poses || []).length + ' 张'));
@@ -597,7 +603,7 @@
 
     var rares = 0;
     list.forEach(function(c){
-      consorts().push(c);
+      rawConsorts().push(c);
       if(c.rare) rares++;
     });
     QZD.stateIO.pushLog('harem', '选秀入宫 ' + list.length + ' 人（绝色 ' + rares + '）');
@@ -924,8 +930,49 @@
     return born.length ? born : null;
   }
 
+  /* ---------- 手动清退 / 复召（可逆，与安定无关） ----------
+     清退 = 标记 dismissed，不真删：皇子生母引用、姿态、好感、才艺都保留；
+     清退后不参与剧情/侍寝/成长/贡赋，孕期清空（未诞皇子直接散去）。
+     皇后、质子妃不可清退；已清退者从「已清退」列表复召。 */
+  function dismissedConsorts(){
+    return rawConsorts().filter(function(c){ return !!(c && c.dismissed); });
+  }
+  function dismissConsort(id){
+    var c = findById(rawConsorts(), id);
+    if(!c) return { ok:false, error:'此妃不在宫中' };
+    if(c.isQueen) return { ok:false, error:'皇后不可清退' };
+    if(c.dismissed) return { ok:false, error:'她已被清退' };
+    if(QZD.regime && QZD.regime.isHostage && QZD.regime.isHostage(id))
+      return { ok:false, error:'质子妃需先迎归，不能清退' };
+    if(c.pregnant){
+      var pn = c.pregnant;
+      c.pregnant = null;
+      c.pregnantClearedAt = Date.now();
+      QZD.stateIO.pushLog('harem', '「' + c.name + '」腹中未及足月，清退时一并散去。');
+    }
+    c.dismissed = true;
+    c.dismissedAt = Date.now();
+    QZD.stateIO.pushLog('harem', '「' + c.name + '」自愿离宫，念旧情可复召。');
+    QZD.stateIO.save();
+    return { ok:true, consort:c, name:c.name };
+  }
+  function restoreConsort(id){
+    var c = findById(rawConsorts(), id);
+    if(!c || !c.dismissed) return { ok:false, error:'她不在已清退名册' };
+    c.dismissed = false;
+    delete c.dismissedAt;
+    delete c.pregnantClearedAt;
+    QZD.stateIO.pushLog('harem', '「' + c.name + '」复召入宫。');
+    QZD.stateIO.save();
+    return { ok:true, consort:c, name:c.name };
+  }
+
   QZD.harem = {
     list: consorts,
+    allList: rawConsorts,
+    dismissedList: dismissedConsorts,
+    dismissConsort: dismissConsort,
+    restoreConsort: restoreConsort,
     princes: princes,
     activePrinces: activePrinces,
     retiredPrinces: retiredPrinces,

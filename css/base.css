@@ -179,8 +179,16 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:var(--ink)}
 .ico svg{width:18px;height:18px;display:block}
 .title-ico{margin-left:-2px;opacity:.85}
 .title-ico svg{width:17px;height:17px}
-.btn-ico{opacity:.9}
+.btn-ico{opacity:.9;flex:none;line-height:0}
 .btn-ico svg{width:14px;height:14px}
+/* 手机端：按钮内图标随按钮收小，避免 14px 图标撑高 11px 字的小按钮 */
+@media(max-width:640px){
+  .btn{gap:3px}
+  .btn-ico svg{width:11px;height:11px}
+  /* 卡片内最小按钮（赏赐/习艺/购买/办结等）再收一档 */
+  .consort-actions .btn-ico svg,.item-foot .btn-ico svg,
+  .mem-actions .btn-ico svg,.talent-action .btn-ico svg{width:10px;height:10px}
+}
 /* 说明性文字：弱于标题/正文，手机端再收一档提高信息密度 */
 .card-note{font-size:11px;color:var(--ink2);line-height:1.5}
 /* 语义色标类：显式指定时覆盖自动轮换色（今日勤政页各卡用） */
@@ -265,6 +273,7 @@ input,select,textarea{font-family:inherit;font-size:inherit;color:var(--ink)}
 
 /* ---------- 按钮 ---------- */
 .btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
   border-radius:999px;border:1px solid transparent;padding:7px 18px;
   background:transparent;color:var(--ink);
   transition:filter .15s ease,background .15s ease;

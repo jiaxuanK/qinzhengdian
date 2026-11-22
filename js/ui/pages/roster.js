@@ -650,7 +650,8 @@
           : (isQueen ? '<button class="btn ghost" data-queen-outfit>更 衣</button>' : '') +
             modeBtn + action + rankBtn + visitBtn + learnBtn +
             '<button class="btn ghost" data-gift="consort:' + c.id + '">赏 赐</button>' +
-            wishBtn + storyBtn) + '</div>' +
+            wishBtn + storyBtn +
+            '<button class="btn ghost danger" data-dismiss-consort="' + c.id + '">清 退</button>') + '</div>' +
     '</div>';
   }
 
@@ -708,6 +709,20 @@
       '<span class="card-note">' + note + '</span></div>' +
       bar +
       '<div class="consort-grid">' + list.map(consortCard).join('') + '</div>' +
+    '</section>' + dismissedPanel();
+  }
+
+  /* 已清退：可逆，数据保留，随时复召 */
+  function dismissedPanel(){
+    var list = (QZD.harem && QZD.harem.dismissedList) ? QZD.harem.dismissedList() : [];
+    if(!list.length) return '';
+    return '<section class="card" style="margin-top:12px">' +
+      '<div class="card-head"><span class="card-title">已清退</span>' +
+      '<span class="card-note">共 ' + list.length + ' 人 · 可复召，旧情与皇子皆在</span></div>' +
+      '<div class="btn-row">' + list.map(function(c){
+        return '<button class="btn ghost" data-restore-consort="' + c.id + '">复召 ' +
+          UI.fmt.escape(c.name) + '</button>';
+      }).join('') + '</div>' +
     '</section>';
   }
 
@@ -971,6 +986,43 @@
         if(!res.ok){ UI.toast(res.error); return; }
         showGachaResult(res);
       }
+      return;
+    }
+
+    /* 手动清退妃子（可逆，与安定无关） */
+    var dcBtn = e.target.closest('[data-dismiss-consort]');
+    if(dcBtn){
+      var dc = QZD.harem.consortById(dcBtn.getAttribute('data-dismiss-consort'));
+      if(!dc) return;
+      var kidN = 0;
+      (QZD.harem.princes ? QZD.harem.princes() : []).forEach(function(p){
+        if(p && p.motherId === dc.id) kidN++;
+      });
+      UI.confirm(
+        '<p>清退「' + UI.fmt.escape(dc.name) + '」？</p>' +
+        '<p class="card-note">她将离宫，不再参与侍寝、剧情与成长；' +
+        (dc.pregnant ? '<b>腹中胎儿一并散去</b>；' : '') +
+        (kidN ? '已诞 ' + kidN + ' 位皇子<b>不受影响</b>；' : '') +
+        '日后可从「已清退」复召，旧情与位分皆保留。</p>' +
+        '<p class="card-note">此操作不扣资源、与国势安定无关。</p>',
+        function(){
+          var r = QZD.harem.dismissConsort(dc.id);
+          if(!r.ok){ UI.toast(r.error); return; }
+          UI.toast('「' + r.name + '」已离宫 · 可复召');
+          UI.onStateChanged();
+        },
+        { title:'清退', okText:'准其离宫' }
+      );
+      return;
+    }
+    /* 复召已清退妃子 */
+    var rcBtn = e.target.closest('[data-restore-consort]');
+    if(rcBtn){
+      var rc2 = rcBtn.getAttribute('data-restore-consort');
+      var rr = QZD.harem.restoreConsort(rc2);
+      if(!rr.ok){ UI.toast(rr.error); return; }
+      UI.toast('「' + rr.name + '」复召入宫');
+      UI.onStateChanged();
       return;
     }
 

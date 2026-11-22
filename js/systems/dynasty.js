@@ -157,6 +157,15 @@
     }
     if(newIdx > oldIdx) fireDown(oldIdx, newIdx);   /* 下降：触发分级事件 */
     d.level = newId;
+    /* 质子妃：跨级跌入灾异及更深（安定<40）即掳一位，不再等 noDeedDays≥2 + 12h 周期罚。
+       同一危机周期每跨一级只掳一次；回升后再次跌入可再掳（保底留 1 由 regime 负责）。 */
+    var HCFG = CFG.HOSTAGE_ON_FALL || {};
+    if(newIdx > oldIdx && HCFG.ENABLED !== false && newIdx >= levelIndex(HCFG.MIN_LEVEL || 'omen')){
+      if(QZD.regime && QZD.regime.takeHostage){
+        var hr = QZD.regime.takeHostage();
+        if(hr && hr.ok && hr.text) log(hr.text);
+      }
+    }
     /* 御极纪：安定跨级才讲一段，不把每天的微小涨跌都变成弹窗 */
     if(QZD.emperorStory && newId !== oldId)
       QZD.emperorStory.onEvent('stability', {
@@ -241,11 +250,8 @@
       QZD.resources.remove(actual);
       log('国势·周期罚 · 国库 −' + Math.round(actual.jinQian) + ' · 国力 −' + Math.round(actual.guoJin));
     }
-    /* 潜邸掳妃：每连续 2 个无勤政日掳 1 位（保底留 1）；交给 regime 系统处理 */
-    if(idx >= levelIndex('refuge') && d.noDeedDays >= ((P.REFUGE||{}).hostageEveryNoDeedDays || 2)){
-      if(QZD.regime && QZD.regime.takeHostage) QZD.regime.takeHostage();
-      d.noDeedDays = 0;
-    }
+    /* 质子妃已改由 applyDelta 的「跨级跌入灾异」触发（见上），这里不再按无勤政日重复掳，
+       避免一次危机连续掳空后宫。noDeedDays 仍用于 other 结算，保留字段。 */
     return { ran:true, effects:effects, actual:actual };
   }
 
